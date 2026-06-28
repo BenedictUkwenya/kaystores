@@ -8,14 +8,26 @@ export const siteConfig = {
   twitterHandle: "@kaystores",
 } as const;
 
+const LOCAL_APP_URL =
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
 /** Absolute site URL for metadata, OG tags, and auth redirects. */
 export function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+
+  // Ignore localhost APP_URL on Vercel — common copy-paste from .env.local.example.
+  if (appUrl && !LOCAL_APP_URL.test(appUrl)) {
+    return appUrl;
   }
+
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
+
+  if (appUrl) {
+    return appUrl;
+  }
+
   return "http://localhost:3000";
 }
 

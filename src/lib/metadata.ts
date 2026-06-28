@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { getSiteUrl, siteConfig } from "@/lib/site";
 
-const ogImage = absoluteUrl("/og/kay-stores-share.png");
+/** Relative path — resolved against metadataBase so deploy URL is never baked as localhost. */
+const ogImagePath = "/og/kay-stores-share.jpg";
 
 export const baseMetadata: Metadata = {
-  metadataBase: new URL(getSiteUrlForMetadata()),
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: siteConfig.title,
     template: `%s · ${siteConfig.name}`,
@@ -31,17 +32,17 @@ export const baseMetadata: Metadata = {
   openGraph: {
     type: "website",
     locale: siteConfig.locale,
-    url: absoluteUrl("/"),
+    url: "/",
     siteName: siteConfig.name,
     title: siteConfig.title,
     description: siteConfig.description,
     images: [
       {
-        url: ogImage,
+        url: ogImagePath,
         width: 1200,
         height: 630,
         alt: `${siteConfig.name} — ${siteConfig.tagline}`,
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
   },
@@ -49,7 +50,7 @@ export const baseMetadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
-    images: [ogImage],
+    images: [ogImagePath],
     creator: siteConfig.twitterHandle,
   },
   robots: {
@@ -68,13 +69,3 @@ export const baseMetadata: Metadata = {
     apple: "/brand/kay-logo.png",
   },
 };
-
-function getSiteUrlForMetadata(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-}
