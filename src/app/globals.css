@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+/* ─── Kay Stores — Light (Standard) ─── */
+:root {
+  --kay-bg: #f9f7f2;
+  --kay-fg: #000000;
+  --kay-muted: #5c5c5c;
+  --kay-subtle: #8a8a8a;
+  --kay-border: #e0ddd6;
+  --kay-border-light: #eceae4;
+  --kay-accent: #000000;
+  --kay-accent-fg: #ffffff;
+  --kay-surface: #f3f0ea;
+  --kay-surface-elevated: #ffffff;
+  --kay-beta: #c4a882;
+  --kay-beta-bg: #f0e8dc;
+  --kay-gold: #b89a6a;
+  --kay-gold-light: #e8dfd0;
+  --kay-input-bg: #ffffff;
+  --kay-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --kay-hero-gradient: #f9f7f2;
+}
+
+/* ─── Kay After Dark ─── */
+[data-theme="after-dark"] {
+  --kay-bg: #0a0a0a;
+  --kay-fg: #ededed;
+  --kay-muted: #a3a3a3;
+  --kay-subtle: #737373;
+  --kay-border: #2a2a2a;
+  --kay-border-light: #1f1f1f;
+  --kay-accent: #ffffff;
+  --kay-accent-fg: #0a0a0a;
+  --kay-surface: #141414;
+  --kay-surface-elevated: #1a1a1a;
+  --kay-beta: #c4a882;
+  --kay-beta-bg: #2a2418;
+  --kay-input-bg: #1a1a1a;
+  --kay-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --kay-hero-gradient: linear-gradient(135deg, #141414 0%, #0a0a0a 100%);
+}
+
+@theme inline {
+  --color-kay-bg: var(--kay-bg);
+  --color-kay-fg: var(--kay-fg);
+  --color-kay-muted: var(--kay-muted);
+  --color-kay-subtle: var(--kay-subtle);
+  --color-kay-border: var(--kay-border);
+  --color-kay-border-light: var(--kay-border-light);
+  --color-kay-accent: var(--kay-accent);
+  --color-kay-accent-fg: var(--kay-accent-fg);
+  --color-kay-surface: var(--kay-surface);
+  --color-kay-surface-elevated: var(--kay-surface-elevated);
+  --color-kay-beta: var(--kay-beta);
+  --color-kay-beta-bg: var(--kay-beta-bg);
+  --color-kay-gold: var(--kay-gold);
+  --color-kay-gold-light: var(--kay-gold-light);
+  --color-kay-input-bg: var(--kay-input-bg);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--kay-bg);
+  color: var(--kay-fg);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+/* Hide scrollbar for carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.kay-logo {
+  mix-blend-mode: multiply;
+}
+
+[data-theme="after-dark"] .hero-image {
+  filter: brightness(0.72) saturate(0.85);
+}
+
+[data-theme="after-dark"] .kay-logo {
+  mix-blend-mode: normal;
+  filter: invert(1);
+}
+
+/* Checkout — cream page + light cards (readable in both themes) */
+.checkout-page {
+  background-color: #f9f7f2;
+  color: #000000;
+}
+
+[data-theme="after-dark"] .checkout-page {
+  background-color: #0a0a0a;
+  color: #ededed;
+}
+
+.checkout-page .checkout-card {
+  --kay-fg: #000000;
+  --kay-muted: #5c5c5c;
+  --kay-subtle: #8a8a8a;
+  --kay-border: #e0ddd6;
+  --kay-border-light: #eceae4;
+  --kay-input-bg: #ffffff;
+  --kay-surface: #f3f0ea;
+  --kay-gold-light: #e8dfd0;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Concierge — always-readable light cards */
+.concierge-page .concierge-card {
+  --kay-fg: #000000;
+  --kay-muted: #5c5c5c;
+  --kay-subtle: #8a8a8a;
+  --kay-border: #e0ddd6;
+  --kay-border-light: #eceae4;
+  --kay-input-bg: #ffffff;
+  --kay-surface: #f3f0ea;
+  --kay-gold-light: #e8dfd0;
+  background-color: #ffffff;
+  color: #000000;
+}

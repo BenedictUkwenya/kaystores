@@ -1,0 +1,27 @@
+---
+description: Keep PROJECT_TODO.md in sync when building Kay Stores pages and systems
+alwaysApply: true
+---
+
+# Kay Stores — Project checklist
+
+The master todo list lives at **`PROJECT_TODO.md`** in the repo root.
+
+## When to update
+
+After completing any page, feature, or backend system for Kay Stores:
+
+1. Open `PROJECT_TODO.md`
+2. Mark the matching item `[x]`
+3. Update **Last updated** date
+4. Refresh the **Progress summary** counts if items changed
+
+## Do not
+
+- Mark items done for partial or placeholder-only work
+- Skip the checklist because work was "small"
+- Forget to update when finishing a task in the same session
+
+## Reference
+
+Use `PROJECT_TODO.md` as the source of truth for what is left to build (pages, checkout, AI, Supabase, etc.).
