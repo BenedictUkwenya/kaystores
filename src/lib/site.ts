@@ -15,9 +15,14 @@ const LOCAL_APP_URL =
 export function getSiteUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
 
-  // Ignore localhost APP_URL on Vercel — common copy-paste from .env.local.example.
   if (appUrl && !LOCAL_APP_URL.test(appUrl)) {
     return appUrl;
+  }
+
+  // Production alias (kaystores.vercel.app) — not the per-deploy preview URL.
+  // Preview URLs often return HTML to WhatsApp/Facebook crawlers instead of og:image assets.
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
 
   if (process.env.VERCEL_URL) {

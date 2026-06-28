@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { getSiteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, getSiteUrl, siteConfig } from "@/lib/site";
 
-/** Relative path — resolved against metadataBase so deploy URL is never baked as localhost. */
 const ogImagePath = "/og/kay-stores-share.jpg";
+const ogImageUrl = absoluteUrl(ogImagePath);
 
 export const baseMetadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -32,13 +32,14 @@ export const baseMetadata: Metadata = {
   openGraph: {
     type: "website",
     locale: siteConfig.locale,
-    url: "/",
+    url: absoluteUrl("/"),
     siteName: siteConfig.name,
     title: siteConfig.title,
     description: siteConfig.description,
     images: [
       {
-        url: ogImagePath,
+        url: ogImageUrl,
+        secureUrl: ogImageUrl,
         width: 1200,
         height: 630,
         alt: `${siteConfig.name} — ${siteConfig.tagline}`,
@@ -50,7 +51,7 @@ export const baseMetadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
-    images: [ogImagePath],
+    images: [ogImageUrl],
     creator: siteConfig.twitterHandle,
   },
   robots: {

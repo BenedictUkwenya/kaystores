@@ -18,11 +18,13 @@ export const metadata: Metadata = {
     ...baseMetadata.openGraph,
     title: siteConfig.title,
     description: siteConfig.tagline,
+    images: baseMetadata.openGraph?.images,
   },
   twitter: {
     ...baseMetadata.twitter,
     title: siteConfig.title,
     description: siteConfig.tagline,
+    images: baseMetadata.twitter?.images,
   },
 };
 
