@@ -5,13 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { OTPInput } from "@/components/auth/OTPInput";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { AUTH_OTP_LENGTH } from "@/lib/auth/otp";
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = AUTH_OTP_LENGTH;
 
 function VerifyFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const next = searchParams.get("next") ?? "/account";
   const type = (searchParams.get("type") ?? "signup") as
     | "signup"
     | "recovery"
@@ -56,7 +58,7 @@ function VerifyFormInner() {
     if (type === "recovery") {
       router.push("/reset-password");
     } else {
-      router.push("/gifts");
+      router.push(next);
     }
     router.refresh();
   }

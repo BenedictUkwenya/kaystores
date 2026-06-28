@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { createBrowserSupabase, getAuthRedirectUrl } from "@/lib/supabase/browser";
 
 type GoogleSignInButtonProps = {
@@ -9,6 +10,9 @@ type GoogleSignInButtonProps = {
 export function GoogleSignInButton({
   label = "Continue with Google",
 }: GoogleSignInButtonProps) {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/account";
+
   async function handleGoogle() {
     const supabase = createBrowserSupabase();
     if (!supabase) {
@@ -19,7 +23,9 @@ export function GoogleSignInButton({
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getAuthRedirectUrl("/auth/callback?next=/gifts"),
+        redirectTo: getAuthRedirectUrl(
+          `/auth/callback?next=${encodeURIComponent(next)}`,
+        ),
       },
     });
   }

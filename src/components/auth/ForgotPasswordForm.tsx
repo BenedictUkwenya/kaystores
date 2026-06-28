@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
-import { createBrowserSupabase, getAuthRedirectUrl } from "@/lib/supabase/browser";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export function ForgotPasswordForm() {
     const trimmed = email.trim();
     const { error: authError } = await supabase.auth.resetPasswordForEmail(
       trimmed,
-      { redirectTo: getAuthRedirectUrl("/auth/callback?next=/reset-password") },
     );
 
     if (authError) {

@@ -106,20 +106,6 @@ export const FOOTER_SHOP_LINKS: Record<string, string> = {
   "Gift Cards": "/gifts",
 };
 
-export const FOOTER_HELP = [
-  "FAQs",
-  "Delivery & Returns",
-  "Track Order",
-  "Contact Us",
-] as const;
-
-export const FOOTER_ABOUT = [
-  "Our Story",
-  "Careers",
-  "Press",
-  "Sustainability",
-] as const;
-
 export function formatNaira(amount: number) {
   return `₦${amount.toLocaleString("en-NG")}`;
 }

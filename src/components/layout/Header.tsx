@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconBag, IconChevronDown, IconSearch } from "@/components/ui/Icons";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
+import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AfterDarkDiscreetStrip } from "@/components/layout/AfterDarkDiscreetStrip";
 import { Logo } from "@/components/brand/Logo";
 import { useCart } from "@/providers/CartProvider";
 import {
@@ -44,11 +46,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-kay-bg">
-      <div className="relative mx-auto grid h-[60px] max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-8 sm:px-12 lg:px-16 xl:px-20">
+      <div className="relative mx-auto grid h-[60px] max-w-[1440px] grid-cols-[1fr_auto] items-center gap-2 px-4 sm:grid-cols-[1fr_auto_1fr] sm:px-8 lg:px-16 xl:px-20">
         <Logo size="md" className="justify-self-start" />
 
         <nav
-          className="hidden items-center justify-center gap-6 lg:flex"
+          className="hidden items-center justify-center gap-6 lg:flex lg:justify-self-center"
           aria-label="Main navigation"
         >
           {NAV_ITEMS.map((link) => {
@@ -102,7 +104,7 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center justify-self-end gap-0.5 sm:gap-1">
+        <div className="flex min-w-0 items-center justify-self-end gap-0.5 sm:gap-1.5">
           <div className="hidden sm:block">
             <ThemeToggle />
           </div>
@@ -126,6 +128,7 @@ export function Header() {
           >
             <IconSearch />
           </Link>
+          <HeaderPortalLink className="hidden sm:flex" />
           <HeaderAccountLink />
           <button
             type="button"
@@ -162,7 +165,7 @@ export function Header() {
 
       {menuOpen && (
         <nav
-          className="max-h-[70vh] overflow-y-auto border-t border-kay-border-light bg-kay-bg px-8 py-4 lg:hidden"
+          className="max-h-[70vh] overflow-y-auto border-t border-kay-border-light bg-kay-bg px-4 py-4 sm:px-8 lg:hidden"
           aria-label="Mobile navigation"
         >
           <ul className="space-y-4">
@@ -223,6 +226,9 @@ export function Header() {
                 Account
               </Link>
             </li>
+            <li className="md:hidden">
+              <HeaderPortalLink className="flex flex-wrap gap-2 pt-1" />
+            </li>
             <li>
               <Link
                 href="/search"
@@ -232,9 +238,16 @@ export function Header() {
                 Search
               </Link>
             </li>
+            <li className="flex items-center justify-between border-t border-kay-border-light pt-4">
+              <span className="text-[11px] uppercase tracking-wider text-kay-subtle">
+                Appearance
+              </span>
+              <ThemeToggle />
+            </li>
           </ul>
         </nav>
       )}
+      <AfterDarkDiscreetStrip />
     </header>
   );
 }

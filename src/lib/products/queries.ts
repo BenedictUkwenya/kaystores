@@ -8,6 +8,7 @@ import { mapProductRow } from "@/types/product";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 import { FALLBACK_PRODUCTS } from "@/lib/data/products-fallback";
+import { isAfterDarkCatalogProduct } from "@/lib/after-dark/catalog";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -131,7 +132,7 @@ export async function getProducts(
 
   try {
     const supabase = await createClient();
-    let query = supabase.from("products").select("*", { count: "exact" });
+    let query = supabase.from("products").select("*", { count: "exact" }).eq("status", "live");
 
     if (filters.search) {
       const q = `%${filters.search}%`;
@@ -230,6 +231,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       .from("products")
       .select("*")
       .eq("slug", slug)
+      .eq("status", "live")
       .maybeSingle();
 
     if (error || !data) {
@@ -267,4 +269,72 @@ export async function getCuratedProducts(limit = 5): Promise<Product[]> {
     pageSize: limit,
   });
   return products;
+}
+
+export async function getAfterDarkProducts(
+  params: Omit<GetProductsParams, "filters"> = {},
+): Promise<ProductsResult> {
+  const { isConfigured } = getSupabaseConfig();
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? 24;
+  const sort = params.sort ?? "newest";
+
+  if (!isConfigured) {
+    const filtered = FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct);
+    const sorted = sortProducts(filtered, sort);
+    return paginateProducts(sorted, page, pageSize);
+  }
+
+  const result = await getProducts({
+    ...params,
+    filters: { collections: ["after-dark"] },
+    page,
+    pageSize,
+    sort,
+  });
+
+  if (result.products.length === 0) {
+    const filtered = FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct);
+    const sorted = sortProducts(filtered, sort);
+    return paginateProducts(sorted, page, pageSize);
+  }
+
+  return result;
+}
+
+export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
+  if (slugs.length === 0) return [];
+
+  const unique = [...new Set(slugs)];
+  const { isConfigured } = getSupabaseConfig();
+
+  if (!isConfigured) {
+    return unique
+      .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
+      .filter((p): p is Product => p != null);
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .in("slug", unique)
+      .eq("status", "live");
+
+    if (error || !data?.length) {
+      return unique
+        .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
+        .filter((p): p is Product => p != null);
+    }
+
+    const bySlug = new Map(data.map((row) => [String(row.slug), mapProductRow(row)]));
+    return unique
+      .map((slug) => bySlug.get(slug) ?? FALLBACK_PRODUCTS.find((p) => p.slug === slug))
+      .filter((p): p is Product => p != null);
+  } catch {
+    return unique
+      .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
+      .filter((p): p is Product => p != null);
+  }
 }

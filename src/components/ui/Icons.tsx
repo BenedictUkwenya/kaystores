@@ -111,6 +111,17 @@ export function IconHeart({ className }: IconProps) {
   );
 }
 
+export function IconCompare({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M8 4H5C3.895 4 3 4.895 3 6V18C3 19.105 3.895 20 5 20H8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 4H19C20.105 4 21 4.895 21 6V18C21 19.105 20.105 20 19 20H16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 12H14" strokeLinecap="round" />
+      <path d="M12 10V14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconTruck({ className }: IconProps) {
   return (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -263,6 +274,32 @@ export function IconMoon({ className }: IconProps) {
   return (
     <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M21 14.5A8.5 8.5 0 1111.5 3A7 7 0 0021 14.5Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Moon + star — Kay After Dark entry (not the light/dark theme toggle). */
+export function IconAfterDark({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden
+    >
+      <path
+        d="M20 14.5A7.5 7.5 0 1112.5 4.5A6.5 6.5 0 0020 14.5Z"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17.5 3.5L17.8 4.6L18.9 4.9L17.8 5.2L17.5 6.3L17.2 5.2L16.1 4.9L17.2 4.6Z"
+        fill="currentColor"
+        stroke="none"
+      />
     </svg>
   );
 }

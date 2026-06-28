@@ -1,0 +1,4 @@
+-- Run once after migrations 006–008 to promote your account to admin:
+-- update public.profiles set role = 'admin' where id = (
+--   select id from auth.users where email = 'your-admin@email.com'
+-- );

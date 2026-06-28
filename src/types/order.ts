@@ -1,4 +1,5 @@
 import type { CartItem } from "@/types/cart";
+import type { OrderPricingPayload } from "@/lib/pricing/calculate";
 
 export type DeliveryType = "self" | "gift";
 
@@ -30,29 +31,60 @@ export type GiftDetails = {
 
 export type OrderItem = Pick<
   CartItem,
-  "productId" | "slug" | "name" | "brand" | "price" | "image" | "quantity"
+  | "productId"
+  | "slug"
+  | "name"
+  | "brand"
+  | "price"
+  | "image"
+  | "quantity"
+  | "segment"
+  | "vendorId"
 >;
+
+export type OrderStatus =
+  | "confirmed"
+  | "pending_handover"
+  | "processing"
+  | "shipped"
+  | "delivered";
+
+export type OrderTracking = {
+  carrier?: string;
+  number?: string;
+  url?: string;
+};
 
 export type Order = {
   id: string;
   orderNumber: string;
-  status: "confirmed" | "pending_handover" | "processing";
+  userId?: string;
+  status: OrderStatus;
   deliveryType: DeliveryType;
   items: OrderItem[];
+  /** @deprecated use pricing.productSubtotal */
   subtotal: number;
+  pricing: OrderPricingPayload;
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;
   handoverToken?: string;
   handoverStatus: "not_required" | "pending" | "completed";
   recipientAddress?: AddressDetails;
+  tracking?: OrderTracking;
   createdAt: string;
 };
+
+export type OrderSummary = Pick<
+  Order,
+  "id" | "orderNumber" | "status" | "pricing" | "createdAt" | "deliveryType"
+>;
 
 export type CreateOrderPayload = {
   deliveryType: DeliveryType;
   items: OrderItem[];
   subtotal: number;
+  pricing: OrderPricingPayload;
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;

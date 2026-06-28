@@ -3,13 +3,15 @@ import {
   completeHandover,
   getOrderByHandoverToken,
 } from "@/lib/orders/store";
+import { notifyHandoverCompleted } from "@/lib/email/send";
+import { getSiteUrl } from "@/lib/site";
 import type { AddressDetails } from "@/types/order";
 
 type RouteContext = { params: Promise<{ token: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
   const { token } = await context.params;
-  const order = getOrderByHandoverToken(token);
+  const order = await getOrderByHandoverToken(token);
 
   if (!order) {
     return NextResponse.json({ error: "Link not found." }, { status: 404 });
@@ -36,7 +38,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const order = completeHandover(token, address);
+    const order = await completeHandover(token, address);
 
     if (!order) {
       return NextResponse.json(
@@ -44,6 +46,8 @@ export async function POST(request: Request, context: RouteContext) {
         { status: 404 },
       );
     }
+
+    void notifyHandoverCompleted(order, getSiteUrl());
 
     return NextResponse.json({ success: true });
   } catch {

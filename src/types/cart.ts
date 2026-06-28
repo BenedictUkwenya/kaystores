@@ -1,3 +1,5 @@
+import type { CatalogSegment } from "@/lib/pricing/config";
+
 export type CartItem = {
   productId: string;
   slug: string;
@@ -6,6 +8,9 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  vendorId?: string | null;
+  /** Gifting vs After Dark — drives MOV and curation fee % */
+  segment: CatalogSegment;
 };
 
 export type CartState = {

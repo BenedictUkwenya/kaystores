@@ -97,7 +97,7 @@ export function CuratedSection({ products }: CuratedSectionProps) {
 
   return (
     <section
-      className="bg-kay-bg px-6 py-12 lg:px-10 lg:py-16"
+      className="bg-kay-bg px-4 py-12 lg:px-10 lg:py-16"
       aria-roledescription="carousel"
       aria-label="Curated for you"
     >

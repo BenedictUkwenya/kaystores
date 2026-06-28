@@ -15,6 +15,10 @@ export type Product = {
   tags: string[];
   in_stock: boolean;
   created_at: string;
+  vendor_id?: string | null;
+  status?: string;
+  segment?: string;
+  rejection_reason?: string | null;
 };
 
 export type ProductSort =
@@ -75,5 +79,10 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     in_stock: Boolean(row.in_stock ?? true),
     created_at: String(row.created_at ?? new Date().toISOString()),
+    vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
+    status: row.status != null ? String(row.status) : undefined,
+    segment: row.segment != null ? String(row.segment) : undefined,
+    rejection_reason:
+      row.rejection_reason != null ? String(row.rejection_reason) : null,
   };
 }

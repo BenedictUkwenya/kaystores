@@ -8,6 +8,7 @@ import {
   BuyNowButton,
   WishlistButton,
 } from "@/components/cart/AddToCartButton";
+import { CompareButton } from "@/components/compare/CompareButton";
 type ProductInfoProps = {
   product: Product;
 };
@@ -67,6 +68,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
           product={product}
           className="flex-1 sm:flex-none sm:min-w-[200px]"
         />
+        <CompareButton product={product} />
         <WishlistButton />
       </div>
 

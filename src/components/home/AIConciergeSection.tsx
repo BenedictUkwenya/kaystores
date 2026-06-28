@@ -53,7 +53,7 @@ export function AIConciergeSection() {
   }
 
   return (
-    <section id="ai-concierge" className="bg-kay-bg px-6 py-10 lg:px-10 lg:py-12">
+    <section id="ai-concierge" className="bg-kay-bg px-4 py-10 lg:px-10 lg:py-12">
       <div className="mx-auto max-w-[1280px]">
         <div className="rounded-2xl bg-kay-surface px-6 py-8 lg:px-10 lg:py-10">
           <div className="lg:grid lg:grid-cols-[1fr_1.4fr] lg:items-start lg:gap-10">

@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CartItem } from "@/types/cart";
 import { formatNaira } from "@/lib/data/home";
+import { AfterDarkSegmentBadge } from "@/components/after-dark/AfterDarkSegmentBadge";
 import { useCart } from "@/providers/CartProvider";
+import { useCompare } from "@/providers/CompareProvider";
 import { IconMinus, IconPlus, IconX } from "@/components/ui/Icons";
 
 type CartLineItemProps = {
@@ -12,7 +14,13 @@ type CartLineItemProps = {
 };
 
 export function CartLineItem({ item }: CartLineItemProps) {
-  const { updateQuantity, removeItem } = useCart();
+  const { updateQuantity, removeItem, closeCart } = useCart();
+  const { startCompareWithSlugs } = useCompare();
+
+  function handleCompare() {
+    closeCart();
+    startCompareWithSlugs([item.slug], item.slug);
+  }
 
   return (
     <li className="flex gap-3 border-b border-kay-border-light py-4 last:border-b-0">
@@ -34,6 +42,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-kay-gold">
               {item.brand}
+              {item.segment === "after_dark" && (
+                <AfterDarkSegmentBadge className="ml-2 align-middle" />
+              )}
             </p>
             <Link
               href={`/products/${item.slug}`}
@@ -41,6 +52,13 @@ export function CartLineItem({ item }: CartLineItemProps) {
             >
               {item.name}
             </Link>
+            <button
+              type="button"
+              onClick={handleCompare}
+              className="mt-1 text-[11px] font-medium text-kay-gold transition-colors hover:text-kay-fg"
+            >
+              Compare
+            </button>
           </div>
           <button
             type="button"

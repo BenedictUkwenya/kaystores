@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +11,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/gifts";
+  const next = searchParams.get("next") ?? "/account";
   const resetSuccess = searchParams.get("reset") === "success";
 
   const [email, setEmail] = useState("");
@@ -99,7 +99,9 @@ export function LoginForm() {
       </form>
 
       <div className="mt-4">
-        <GoogleSignInButton label="Sign in with Google" />
+        <Suspense fallback={null}>
+          <GoogleSignInButton label="Sign in with Google" />
+        </Suspense>
       </div>
 
       <AuthLinkRow

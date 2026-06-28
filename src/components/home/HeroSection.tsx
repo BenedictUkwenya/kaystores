@@ -8,9 +8,9 @@ export function HeroSection() {
     <section className="overflow-hidden bg-kay-bg">
       <div className="grid lg:min-h-[calc(100vh-60px)] lg:grid-cols-2 lg:grid-rows-1 lg:items-stretch">
         {/* Left — 50% */}
-        <div className="relative z-10 flex min-w-0 flex-col justify-start overflow-hidden px-8 pb-12 pt-8 sm:px-12 sm:pt-10 lg:px-16 lg:pb-16 lg:pt-10 xl:px-24 2xl:pl-[max(6rem,calc((100vw-1440px)/2+4rem))]">
+        <div className="relative z-10 flex min-w-0 flex-col justify-start overflow-hidden px-4 pb-12 pt-8 sm:px-12 sm:pt-10 lg:px-16 lg:pb-16 lg:pt-10 xl:px-24 2xl:pl-[max(6rem,calc((100vw-1440px)/2+4rem))]">
           <div className="max-w-[520px]">
-            <h1 className="font-serif text-[42px] leading-[1.12] tracking-[-0.01em] text-kay-fg sm:text-[48px] lg:text-[54px] xl:text-[58px]">
+            <h1 className="font-serif text-[32px] leading-[1.12] tracking-[-0.01em] text-kay-fg sm:text-[42px] lg:text-[54px] xl:text-[58px]">
               Thoughtful gifts.
               <br />
               Beautifully curated.

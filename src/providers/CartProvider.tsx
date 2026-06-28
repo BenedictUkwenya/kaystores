@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { CartItem } from "@/types/cart";
 import type { Product } from "@/types/product";
+import { getProductSegment } from "@/lib/pricing/segment";
 import {
   cartItemCount,
   cartSubtotal,
@@ -42,7 +43,16 @@ function productToCartItem(product: Product, quantity: number): CartItem {
     price: product.price,
     image: product.images[0] ?? "/images/kay-hero-luxury-box.png",
     quantity,
+    vendorId: product.vendor_id ?? null,
+    segment: getProductSegment(product),
   };
+}
+
+function normalizeCartItems(items: CartItem[]): CartItem[] {
+  return items.map((item) => ({
+    ...item,
+    segment: item.segment ?? "gifting",
+  }));
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -51,7 +61,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setItems(loadCart().items);
+    const saved = loadCart();
+    setItems(normalizeCartItems(saved.items));
     setHydrated(true);
   }, []);
 

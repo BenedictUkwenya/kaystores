@@ -13,6 +13,7 @@ export type Theme = "standard" | "after-dark";
 type ThemeContextValue = {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
   isAfterDark: boolean;
 };
 
@@ -52,6 +53,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       value={{
         theme,
         toggleTheme,
+        setTheme,
         isAfterDark: theme === "after-dark",
       }}
     >

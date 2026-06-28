@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { Logo } from "@/components/brand/Logo";
 
@@ -11,10 +10,8 @@ type AuthShellProps = {
 export function AuthShell({ children }: AuthShellProps) {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <div className="flex flex-1 flex-col justify-center px-6 py-10 sm:px-12 lg:max-w-[540px] lg:px-16 lg:py-16 xl:max-w-[580px] xl:px-20">
-        <Link href="/" className="mb-10 inline-block w-fit">
-          <Logo size="md" />
-        </Link>
+      <div className="flex flex-1 flex-col justify-center px-4 py-10 sm:px-12 lg:max-w-[540px] lg:px-16 lg:py-16 xl:max-w-[580px] xl:px-20">
+        <Logo size="md" className="mb-10" />
         {children}
       </div>
 

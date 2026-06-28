@@ -16,6 +16,7 @@
   --kay-beta-bg: #f0e8dc;
   --kay-gold: #b89a6a;
   --kay-gold-light: #e8dfd0;
+  --kay-compare-highlight: #fef9e7;
   --kay-input-bg: #ffffff;
   --kay-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   --kay-hero-gradient: #f9f7f2;
@@ -35,6 +36,7 @@
   --kay-surface-elevated: #1a1a1a;
   --kay-beta: #c4a882;
   --kay-beta-bg: #2a2418;
+  --kay-compare-highlight: #2a2418;
   --kay-input-bg: #1a1a1a;
   --kay-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   --kay-hero-gradient: linear-gradient(135deg, #141414 0%, #0a0a0a 100%);
@@ -55,7 +57,9 @@
   --color-kay-beta-bg: var(--kay-beta-bg);
   --color-kay-gold: var(--kay-gold);
   --color-kay-gold-light: var(--kay-gold-light);
+  --color-kay-compare-highlight: var(--kay-compare-highlight);
   --color-kay-input-bg: var(--kay-input-bg);
+  --color-ad-amber: #e8a24a;
   --font-sans: var(--font-inter);
   --font-serif: var(--font-playfair);
 }
@@ -66,6 +70,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -74,6 +79,8 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 h1,
@@ -114,10 +121,36 @@ h6 {
   color: #000000;
 }
 
-[data-theme="after-dark"] .checkout-page {
+/* After Dark — full private checkout (cart is After Dark only) */
+.after-dark-private-checkout {
   background-color: #0a0a0a;
   color: #ededed;
 }
+
+.after-dark-private-checkout .checkout-card {
+  --kay-fg: #ededed;
+  --kay-muted: #a3a3a3;
+  --kay-subtle: #737373;
+  --kay-border: #2a2a2a;
+  --kay-border-light: #1f1f1f;
+  --kay-input-bg: #141414;
+  --kay-surface: #111111;
+  --kay-gold-light: #2a2418;
+  background-color: #111111;
+  color: #ededed;
+  border: 1px solid #2a2a2a;
+}
+
+.after-dark-private-checkout .checkout-step-title {
+  color: #ededed;
+}
+
+.after-dark-private-checkout input,
+.after-dark-private-checkout textarea,
+.after-dark-private-checkout select {
+  color-scheme: dark;
+}
+
 
 .checkout-page .checkout-card {
   --kay-fg: #000000;
@@ -132,6 +165,166 @@ h6 {
   color: #000000;
 }
 
+/* Compare page — editorial luxury matrix */
+.compare-page {
+  background: linear-gradient(
+    180deg,
+    var(--kay-bg) 0%,
+    var(--kay-surface) 42%,
+    var(--kay-bg) 100%
+  );
+}
+
+.compare-matrix {
+  border-radius: 1.25rem;
+  border: 1px solid var(--kay-border-light);
+  background: var(--kay-surface-elevated);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 24px 48px -12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+[data-theme="after-dark"] .compare-matrix {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 48px -12px rgba(0, 0, 0, 0.45);
+}
+
+.compare-matrix-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.compare-matrix-grid {
+  display: grid;
+  min-width: 720px;
+}
+
+.compare-col-divider {
+  border-right: 1px solid var(--kay-border-light);
+}
+
+.compare-col-best {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--kay-gold) 8%, transparent) 0%,
+    transparent 140px
+  );
+}
+
+.compare-row-label {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kay-subtle);
+  border-bottom: 1px solid var(--kay-border-light);
+  background: var(--kay-surface);
+}
+
+.compare-cell {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.75rem;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--kay-muted);
+  border-bottom: 1px solid var(--kay-border-light);
+  min-height: 4.25rem;
+}
+
+.compare-cell.is-winner {
+  background: var(--kay-compare-highlight);
+  color: var(--kay-fg);
+  font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--kay-gold);
+}
+
+.compare-product-header {
+  position: relative;
+  padding: 2rem 1.75rem 1.75rem;
+  text-align: center;
+  border-bottom: 1px solid var(--kay-border-light);
+}
+
+.compare-product-image {
+  position: relative;
+  margin: 0 auto;
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  max-width: 200px;
+  overflow: hidden;
+  border-radius: 0.875rem;
+  background: var(--kay-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="after-dark"] .compare-product-image {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.compare-tag {
+  display: inline-block;
+  border-radius: 9999px;
+  border: 1px solid var(--kay-border);
+  background: var(--kay-bg);
+  padding: 0.2rem 0.55rem;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+  color: var(--kay-muted);
+}
+
+.compare-best-badge {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 2;
+  border-radius: 9999px;
+  background: var(--kay-gold);
+  padding: 0.3rem 0.65rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.compare-cta-cell {
+  padding: 1.5rem 1.75rem 1.75rem;
+  background: var(--kay-surface);
+}
+
+.compare-picker-card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--kay-border-light);
+  background: var(--kay-surface-elevated);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.06);
+}
+
+.compare-trust-card {
+  border-radius: 1rem;
+  border: 1px solid var(--kay-border-light);
+  background: var(--kay-surface-elevated);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.compare-trust-card:hover {
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+[data-theme="after-dark"] .compare-trust-card:hover {
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.4);
+}
+
 /* Concierge — always-readable light cards */
 .concierge-page .concierge-card {
   --kay-fg: #000000;
@@ -144,4 +337,85 @@ h6 {
   --kay-gold-light: #e8dfd0;
   background-color: #ffffff;
   color: #000000;
+}
+
+/* Kay After Dark — dedicated 18+ experience */
+.after-dark-experience {
+  --ad-amber: #e8a24a;
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.after-dark-contact-form {
+  --kay-fg: #ffffff;
+  --kay-muted: #a3a3a3;
+  --kay-subtle: #737373;
+  --kay-border: #2a2a2a;
+  --kay-border-light: #333333;
+  --kay-input-bg: #0a0a0a;
+  --kay-surface: #1a1a1a;
+  --kay-surface-elevated: #141414;
+  --kay-gold: #e8a24a;
+  --kay-accent: #e8a24a;
+  --kay-accent-fg: #000000;
+}
+
+/* After Dark segment chip — fixed contrast on any background */
+.ad-segment-badge {
+  background-color: #1a1a1a;
+  color: #e8a24a;
+  box-shadow: inset 0 0 0 1px rgba(232, 162, 74, 0.4);
+}
+
+.checkout-page .checkout-card .ad-segment-badge {
+  background-color: #1a1a1a;
+  color: #e8a24a;
+  box-shadow: inset 0 0 0 1px rgba(232, 162, 74, 0.45);
+}
+
+/* Cart drawer — always readable cream panel */
+.cart-drawer {
+  --kay-bg: #f9f7f2;
+  --kay-fg: #000000;
+  --kay-muted: #5c5c5c;
+  --kay-subtle: #8a8a8a;
+  --kay-border: #e0ddd6;
+  --kay-border-light: #eceae4;
+  --kay-accent: #000000;
+  --kay-accent-fg: #ffffff;
+  --kay-surface: #f3f0ea;
+  --kay-gold: #b89a6a;
+  --kay-input-bg: #ffffff;
+  background-color: #f9f7f2;
+  color: #000000;
+}
+
+.cart-drawer-footer {
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Horizontal dashboard nav — hide scrollbar, keep touch scroll */
+.dashboard-nav-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.compare-matrix-scroll-hint {
+  position: relative;
+}
+
+.compare-matrix-scroll-hint::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2rem;
+  background: linear-gradient(to left, var(--kay-surface-elevated), transparent);
 }

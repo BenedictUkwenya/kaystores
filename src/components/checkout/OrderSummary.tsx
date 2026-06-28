@@ -1,48 +1,77 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import type { CartItem } from "@/types/cart";
+import { calculateOrderPricing } from "@/lib/pricing/calculate";
 import { formatNaira } from "@/lib/data/home";
+import { OrderPricingBreakdown } from "@/components/pricing/OrderPricingBreakdown";
+import { MovAlert } from "@/components/pricing/MovAlert";
+import { AfterDarkSegmentBadge } from "@/components/after-dark/AfterDarkSegmentBadge";
 import { SatisfactionBanner } from "@/components/checkout/SatisfactionBanner";
-
-const FREE_SHIPPING_THRESHOLD = 100_000;
-const TAX_RATE = 0.075;
+import { AfterDarkSatisfactionBanner } from "@/components/checkout/AfterDarkSatisfactionBanner";
+import { IconLock } from "@/components/ui/Icons";
+import {
+  DISCREET_BRAND_LABEL,
+  DISCREET_ITEM_LABEL,
+} from "@/lib/after-dark/checkout-privacy";
 
 type OrderSummaryProps = {
   items: CartItem[];
-  subtotal: number;
+  isPrivateCheckout?: boolean;
 };
 
-export function OrderSummary({ items, subtotal }: OrderSummaryProps) {
+export function OrderSummary({
+  items,
+  isPrivateCheckout = false,
+}: OrderSummaryProps) {
   const [promo, setPromo] = useState("");
-  const shipping =
-    subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : null;
-  const tax = Math.round(subtotal * TAX_RATE);
-  const total = subtotal + (shipping ?? 0) + tax;
+  const pricing = useMemo(() => calculateOrderPricing(items), [items]);
 
   return (
     <div>
       <div className="checkout-card rounded-xl p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] sm:p-6">
-        <h2 className="text-[18px] font-semibold text-kay-fg">Order Summary</h2>
+        <h2 className="text-[18px] font-semibold text-kay-fg">
+          {isPrivateCheckout ? "Private summary" : "Order Summary"}
+        </h2>
+
+        {isPrivateCheckout && (
+          <p className="mt-2 flex items-center gap-2 text-[11px] text-kay-muted">
+            <IconLock className="h-3 w-3 text-ad-amber" />
+            Item titles hidden on screen &amp; in your confirmation email
+          </p>
+        )}
 
         <ul className="mt-5 space-y-4">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li key={item.productId} className="flex gap-3">
-              <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg bg-kay-surface">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  sizes="72px"
-                  className="object-cover"
-                />
+              <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#1a1a1a]">
+                {isPrivateCheckout ? (
+                  <IconLock className="h-5 w-5 text-ad-amber/70" />
+                ) : (
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    sizes="72px"
+                    className="object-cover"
+                  />
+                )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-medium leading-snug text-kay-fg">
-                  {item.name}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[14px] font-medium leading-snug text-kay-fg">
+                    {isPrivateCheckout
+                      ? `${DISCREET_ITEM_LABEL} ${index + 1}`
+                      : item.name}
+                  </p>
+                  {!isPrivateCheckout && item.segment === "after_dark" && (
+                    <AfterDarkSegmentBadge className="text-[9px]" />
+                  )}
+                </div>
+                <p className="mt-0.5 text-[12px] text-kay-muted">
+                  {isPrivateCheckout ? DISCREET_BRAND_LABEL : item.brand}
                 </p>
-                <p className="mt-0.5 text-[12px] text-kay-muted">{item.brand}</p>
                 <p className="mt-1 text-[12px] text-kay-subtle">
                   Qty: {item.quantity}
                 </p>
@@ -54,30 +83,15 @@ export function OrderSummary({ items, subtotal }: OrderSummaryProps) {
           ))}
         </ul>
 
-        <div className="mt-5 space-y-2.5 border-t border-kay-border-light pt-4 text-[13px]">
-          <div className="flex justify-between text-kay-muted">
-            <span>Subtotal</span>
-            <span>{formatNaira(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-kay-muted">
-            <span>Shipping</span>
-            {shipping === 0 ? (
-              <span className="font-medium text-emerald-600">Free</span>
-            ) : (
-              <span className="text-kay-subtle">At dispatch</span>
-            )}
-          </div>
-          <div className="flex justify-between text-kay-muted">
-            <span>Estimated Tax</span>
-            <span>{formatNaira(tax)}</span>
-          </div>
+        <div className="mt-5 border-t border-kay-border-light pt-4">
+          <OrderPricingBreakdown
+            pricing={pricing}
+            discreet={isPrivateCheckout}
+          />
         </div>
 
-        <div className="mt-4 flex items-baseline justify-between border-t border-kay-border-light pt-4">
-          <span className="text-[15px] font-semibold text-kay-fg">Total</span>
-          <span className="text-[22px] font-bold text-kay-fg">
-            {formatNaira(total)}
-          </span>
+        <div className="mt-5">
+          <MovAlert pricing={pricing} discreet={isPrivateCheckout} />
         </div>
 
         <div className="mt-5 flex gap-2">
@@ -97,7 +111,7 @@ export function OrderSummary({ items, subtotal }: OrderSummaryProps) {
         </div>
       </div>
 
-      <SatisfactionBanner />
+      {isPrivateCheckout ? <AfterDarkSatisfactionBanner /> : <SatisfactionBanner />}
     </div>
   );
 }

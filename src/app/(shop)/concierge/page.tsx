@@ -4,7 +4,7 @@ import { ConciergeSidebar } from "@/components/concierge/ConciergeSidebar";
 
 export default function ConciergePage() {
   return (
-    <div className="concierge-page mx-auto max-w-[1140px] px-6 py-6 sm:px-10 lg:px-12 lg:py-10">
+    <div className="concierge-page mx-auto max-w-[1140px] px-4 py-6 sm:px-10 lg:px-12 lg:py-10">
       <nav className="flex flex-wrap items-center gap-1.5 text-[12px] text-kay-subtle">
         <Link href="/" className="transition-colors hover:text-kay-fg">
           Home

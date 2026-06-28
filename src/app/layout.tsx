@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { CartProvider } from "@/providers/CartProvider";
+import { CompareProvider } from "@/providers/CompareProvider";
 import { CartShell } from "@/components/cart/CartShell";
 import { baseMetadata } from "@/lib/metadata";
 import "./globals.css";
@@ -39,11 +40,13 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full min-w-0 flex-col overflow-x-hidden">
         <ThemeProvider>
           <CartProvider>
-            {children}
-            <CartShell />
+            <CompareProvider>
+              {children}
+              <CartShell />
+            </CompareProvider>
           </CartProvider>
         </ThemeProvider>
       </body>

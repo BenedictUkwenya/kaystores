@@ -8,6 +8,7 @@ import { ProductGallery } from "@/components/shop/ProductGallery";
 import { ProductInfo } from "@/components/shop/ProductInfo";
 import { ProductSpecs } from "@/components/shop/ProductSpecs";
 import { RelatedProducts } from "@/components/shop/RelatedProducts";
+import { ProductComparePanel } from "@/components/compare/ProductComparePanel";
 
 type ProductDetailPageProps = {
   slug: string;
@@ -20,7 +21,7 @@ export async function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const related = await getRelatedProducts(product);
 
   return (
-    <div className="mx-auto max-w-[1440px] px-8 py-10 sm:px-12 lg:px-16 lg:py-12">
+    <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-12 lg:px-16 lg:py-12">
       <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-kay-subtle">
         <Link href="/" className="transition-colors hover:text-kay-fg">
           Home
@@ -39,6 +40,7 @@ export async function ProductDetailPage({ slug }: ProductDetailPageProps) {
       </div>
 
       <ProductSpecs specs={product.specs} />
+      <ProductComparePanel product={product} />
       <RelatedProducts products={related} />
     </div>
   );

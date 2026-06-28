@@ -1,0 +1,33 @@
+import { apiErrorResponse, getSessionUser } from "@/lib/auth/roles";
+import { submitVendorApplication } from "@/lib/vendors/repository";
+import { notifyVendorApplication } from "@/lib/email/vendor";
+
+export async function POST(request: Request) {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return Response.json({ error: "Sign in to apply." }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const vendor = await submitVendorApplication({
+      userId: user.id,
+      businessName: String(body.businessName ?? "").trim(),
+      contactName: String(body.contactName ?? "").trim(),
+      contactEmail: String(body.contactEmail ?? user.email ?? "").trim(),
+      contactPhone: String(body.contactPhone ?? "").trim(),
+      catalogDescription: String(body.catalogDescription ?? "").trim(),
+      inviteToken: body.inviteToken ? String(body.inviteToken) : undefined,
+    });
+
+    await notifyVendorApplication({
+      contactName: vendor.contactName,
+      contactEmail: vendor.contactEmail,
+      businessName: vendor.businessName,
+    });
+
+    return Response.json({ vendor });
+  } catch (err) {
+    return apiErrorResponse(err);
+  }
+}

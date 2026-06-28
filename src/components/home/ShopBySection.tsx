@@ -13,7 +13,7 @@ const CATEGORY_ICONS = {
 
 export function ShopBySection() {
   return (
-    <section className="bg-kay-bg px-6 py-12 lg:px-10 lg:py-16">
+    <section className="bg-kay-bg px-4 py-12 lg:px-10 lg:py-16">
       <div className="mx-auto max-w-[1280px]">
         <h2 className="font-serif text-[28px] text-kay-fg">Shop by</h2>
 

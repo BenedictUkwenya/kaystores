@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { NewsletterForm } from "@/components/layout/NewsletterForm";
+import { FOOTER_SHOP_LINKS } from "@/lib/data/home";
 import {
-  FOOTER_ABOUT,
-  FOOTER_HELP,
-  FOOTER_SHOP_LINKS,
-} from "@/lib/data/home";
+  FOOTER_ABOUT_LINKS,
+  FOOTER_HELP_LINKS,
+  SITE_ROUTES,
+} from "@/lib/data/site-routes";
 import {
   IconFacebook,
   IconInstagram,
@@ -15,7 +16,7 @@ import {
 export function Footer() {
   return (
     <footer className="border-t border-kay-border bg-kay-bg">
-      <div className="mx-auto max-w-[1280px] px-6 py-14 lg:px-10 lg:py-16">
+      <div className="mx-auto max-w-[1280px] px-4 py-12 lg:px-10 lg:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           <div className="lg:col-span-1">
             <Logo size="sm" />
@@ -51,9 +52,9 @@ export function Footer() {
           <div>
             <h3 className="text-[13px] font-semibold tracking-wide text-kay-fg">Help</h3>
             <ul className="mt-4 space-y-2.5">
-              {FOOTER_HELP.map((item) => (
+              {Object.entries(FOOTER_HELP_LINKS).map(([item, href]) => (
                 <li key={item}>
-                  <Link href="#" className="text-[13px] text-kay-muted transition-colors hover:text-kay-fg">
+                  <Link href={href} className="text-[13px] text-kay-muted transition-colors hover:text-kay-fg">
                     {item}
                   </Link>
                 </li>
@@ -64,16 +65,16 @@ export function Footer() {
           <div>
             <h3 className="text-[13px] font-semibold tracking-wide text-kay-fg">About</h3>
             <ul className="mt-4 space-y-2.5">
-              {FOOTER_ABOUT.map((item) => (
+              {Object.entries(FOOTER_ABOUT_LINKS).map(([item, href]) => (
                 <li key={item}>
-                  <Link href="#" className="text-[13px] text-kay-muted transition-colors hover:text-kay-fg">
+                  <Link href={href} className="text-[13px] text-kay-muted transition-colors hover:text-kay-fg">
                     {item}
                   </Link>
                 </li>
               ))}
               <li>
                 <Link
-                  href="/concierge"
+                  href={SITE_ROUTES.concierge}
                   className="text-[13px] text-kay-muted transition-colors hover:text-kay-fg"
                 >
                   Inquire about Concierge Services
@@ -94,10 +95,10 @@ export function Footer() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-kay-border pt-8 text-[12px] text-kay-muted sm:flex-row">
           <p>© 2025 Kay Stores. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link href="#" className="transition-colors hover:text-kay-fg">
+            <Link href={SITE_ROUTES.privacy} className="transition-colors hover:text-kay-fg">
               Privacy Policy
             </Link>
-            <Link href="#" className="transition-colors hover:text-kay-fg">
+            <Link href={SITE_ROUTES.terms} className="transition-colors hover:text-kay-fg">
               Terms &amp; Conditions
             </Link>
           </div>

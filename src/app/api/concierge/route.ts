@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { createConciergeRequest } from "@/lib/concierge/store";
+import { createConciergeRequest } from "@/lib/concierge/repository";
+import { sendKayEmail } from "@/lib/email/send";
+import { getSiteUrl } from "@/lib/site";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = [
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
       attachmentNames.push(entry.name);
     }
 
-    const created = createConciergeRequest({
+    const created = await createConciergeRequest({
       productName,
       brand,
       budget,
@@ -64,6 +66,12 @@ export async function POST(request: Request) {
       contactEmail,
       contactPhone,
       attachmentNames,
+    });
+
+    void sendKayEmail({
+      type: "concierge",
+      appUrl: getSiteUrl(),
+      request: created,
     });
 
     return NextResponse.json({

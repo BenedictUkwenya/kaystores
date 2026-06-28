@@ -9,8 +9,10 @@ type OTPInputProps = {
   disabled?: boolean;
 };
 
+import { AUTH_OTP_LENGTH } from "@/lib/auth/otp";
+
 export function OTPInput({
-  length = 6,
+  length = AUTH_OTP_LENGTH,
   value,
   onChange,
   disabled,
@@ -47,7 +49,7 @@ export function OTPInput({
   }
 
   return (
-    <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
+    <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2" onPaste={handlePaste}>
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
@@ -62,7 +64,7 @@ export function OTPInput({
           onChange={(e) => updateDigit(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           aria-label={`Digit ${i + 1}`}
-          className="h-12 w-11 rounded-lg border border-kay-border bg-kay-input-bg text-center text-[18px] font-medium text-kay-fg outline-none transition-colors focus:border-kay-fg disabled:opacity-50 sm:h-14 sm:w-12"
+          className="h-12 w-10 rounded-lg border border-kay-border bg-kay-input-bg text-center text-[18px] font-medium text-kay-fg outline-none transition-colors focus:border-kay-fg disabled:opacity-50 sm:h-14 sm:w-11"
         />
       ))}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
@@ -9,6 +9,8 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/account";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,13 +49,13 @@ export function SignupForm() {
     }
 
     if (data.session) {
-      router.push("/gifts");
+      router.push(next);
       router.refresh();
       return;
     }
 
     router.push(
-      `/verify?email=${encodeURIComponent(email.trim())}&type=signup`,
+      `/verify?email=${encodeURIComponent(email.trim())}&type=signup&next=${encodeURIComponent(next)}`,
     );
   }
 
@@ -114,7 +116,9 @@ export function SignupForm() {
       </form>
 
       <div className="mt-4">
-        <GoogleSignInButton />
+        <Suspense fallback={null}>
+          <GoogleSignInButton />
+        </Suspense>
       </div>
 
       <AuthLinkRow

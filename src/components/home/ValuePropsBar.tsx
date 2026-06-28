@@ -3,7 +3,7 @@ import { ValueIcon } from "@/components/ui/Icons";
 
 export function ValuePropsBar() {
   return (
-    <section className="bg-kay-surface px-6 py-10 lg:px-10 lg:py-12">
+    <section className="bg-kay-surface px-4 py-10 lg:px-10 lg:py-12">
       <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-6">
         {VALUE_PROPS.map((prop) => (
           <div key={prop.title} className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:text-left lg:gap-4">
