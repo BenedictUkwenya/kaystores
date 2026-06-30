@@ -32,7 +32,11 @@ export default async function EditVendorProductPage({ params }: Props) {
       title={product.name}
       description={`Status: ${product.status ?? "draft"}`}
     >
-      <VendorProductForm product={product} canListAfterDark={vendor.canListAfterDark} />
+      <VendorProductForm
+        product={product}
+        vendorId={vendor.id}
+        canListAfterDark={vendor.canListAfterDark}
+      />
     </DashboardLayout>
   );
 }

@@ -57,11 +57,25 @@ export function ProductInfo({ product }: ProductInfoProps) {
       {product.in_stock ? (
         <p className="mt-4 flex items-center gap-2 text-[13px] text-kay-muted">
           <span className="h-2 w-2 rounded-full bg-green-600" />
-          In stock and ready to ship
+          {product.stock_quantity <= 5
+            ? `Only ${product.stock_quantity} left in stock`
+            : product.stock_quantity < 20
+              ? `${product.stock_quantity} in stock — order soon`
+              : "In stock and ready to ship"}
         </p>
       ) : (
         <p className="mt-4 text-[13px] text-kay-subtle">Out of stock</p>
       )}
+
+      {product.compare_at_price != null &&
+        product.compare_at_price > product.price && (
+          <p className="mt-2 text-[12px] font-medium text-kay-gold">
+            {Math.round(
+              (1 - product.price / product.compare_at_price) * 100,
+            )}
+            % off
+          </p>
+        )}
 
       <div className="mt-8 flex flex-wrap gap-3">
         <AddToCartButton

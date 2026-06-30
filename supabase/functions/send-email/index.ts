@@ -107,6 +107,15 @@ type Payload =
       rejectionReason?: string;
       withdrawalAmount?: number;
       withdrawalStatus?: string;
+    }
+  | {
+      type: "role_invite" | "role_upgraded";
+      appUrl: string;
+      recipientEmail: string;
+      recipientName?: string;
+      role: "admin" | "vendor";
+      inviteUrl?: string;
+      businessName?: string;
     };
 
 function naira(amount: number) {
@@ -410,6 +419,39 @@ function buildMessage(
         html,
         text: stripHtml(html),
         tags: [{ name: "category", value: "vendor_withdrawal" }],
+      };
+    }
+    case "role_invite": {
+      const { recipientEmail, role, inviteUrl, appUrl, businessName } = payload;
+      const roleLabel = role === "admin" ? "Kay admin" : "Kay vendor";
+      const html = layout(
+        `You're invited to join as ${roleLabel}`,
+        `<p style="color:#5c5c5c;line-height:1.6">You've been invited to join Kay Stores as <strong>${roleLabel}</strong>${businessName ? ` for <strong>${businessName}</strong>` : ""}.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${inviteUrl ?? `${appUrl}/signup`}">Accept invitation & register</a></p>`,
+      );
+      return {
+        to: [recipientEmail],
+        subject: `Invitation — ${roleLabel} access`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "role_invite" }],
+      };
+    }
+    case "role_upgraded": {
+      const { recipientEmail, recipientName, role, appUrl } = payload;
+      const roleLabel = role === "admin" ? "admin" : "vendor";
+      const portalUrl = role === "admin" ? `${appUrl}/admin` : `${appUrl}/vendor`;
+      const html = layout(
+        "Your access has been updated",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${recipientName ?? "there"}, your Kay Stores account now has <strong>${roleLabel}</strong> access.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${portalUrl}">Open ${roleLabel} portal</a></p>`,
+      );
+      return {
+        to: [recipientEmail],
+        subject: `You're now a Kay ${roleLabel}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "role_upgraded" }],
       };
     }
     default:

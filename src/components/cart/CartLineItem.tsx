@@ -22,6 +22,8 @@ export function CartLineItem({ item }: CartLineItemProps) {
     startCompareWithSlugs([item.slug], item.slug);
   }
 
+  const atMax = item.maxStock != null && item.quantity >= item.maxStock;
+
   return (
     <li className="flex gap-3 border-b border-kay-border-light py-4 last:border-b-0">
       <Link
@@ -87,8 +89,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
             <button
               type="button"
               onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+              disabled={atMax}
               aria-label="Increase quantity"
-              className="flex h-8 w-8 items-center justify-center text-kay-muted transition-colors hover:text-kay-fg"
+              className="flex h-8 w-8 items-center justify-center text-kay-muted transition-colors hover:text-kay-fg disabled:opacity-30"
             >
               <IconPlus />
             </button>

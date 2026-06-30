@@ -14,6 +14,7 @@ export type Product = {
   collections: string[];
   tags: string[];
   in_stock: boolean;
+  stock_quantity: number;
   created_at: string;
   vendor_id?: string | null;
   status?: string;
@@ -77,7 +78,16 @@ export function mapProductRow(row: Record<string, unknown>): Product {
       ? (row.collections as string[])
       : [],
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    in_stock: Boolean(row.in_stock ?? true),
+    stock_quantity:
+      row.stock_quantity != null
+        ? Number(row.stock_quantity)
+        : Boolean(row.in_stock ?? true)
+          ? 1
+          : 0,
+    in_stock:
+      row.stock_quantity != null
+        ? Number(row.stock_quantity) > 0
+        : Boolean(row.in_stock ?? true),
     created_at: String(row.created_at ?? new Date().toISOString()),
     vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
     status: row.status != null ? String(row.status) : undefined,

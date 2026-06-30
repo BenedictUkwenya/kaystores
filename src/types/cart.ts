@@ -8,6 +8,7 @@ export type CartItem = {
   price: number;
   image: string;
   quantity: number;
+  maxStock?: number;
   vendorId?: string | null;
   /** Gifting vs After Dark — drives MOV and curation fee % */
   segment: CatalogSegment;

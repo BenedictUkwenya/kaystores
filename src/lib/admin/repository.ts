@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { countAllAuthUsers } from "@/lib/admin/users";
 import { mapVendorRow } from "@/lib/auth/roles";
 import type { AdminOverview, Vendor, WithdrawalRequest } from "@/types/dashboard";
 import type { Product } from "@/types/product";
@@ -20,7 +21,6 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
     ordersRes,
     vendorsRes,
     productsRes,
-    reviewsRes,
     withdrawalsRes,
     conciergeRes,
   ] = await Promise.all([
@@ -30,10 +30,6 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
       .from("products")
       .select("id", { count: "exact", head: true })
       .eq("status", "live"),
-    db
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending_review"),
     db
       .from("withdrawal_requests")
       .select("id", { count: "exact", head: true })
@@ -55,15 +51,17 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
     .select("id", { count: "exact", head: true })
     .eq("status", "pending");
 
+  const totalUsers = await countAllAuthUsers();
+
   return {
     ordersToday: orders.length,
     gmvToday,
     pendingVendorApplications: pendingApps.count ?? 0,
-    pendingProductReviews: reviewsRes.count ?? 0,
     pendingWithdrawals: withdrawalsRes.count ?? 0,
     pendingConcierge: conciergeRes.count ?? 0,
     totalVendors: vendorsRes.count ?? 0,
     liveProducts: productsRes.count ?? 0,
+    totalUsers,
   };
 }
 

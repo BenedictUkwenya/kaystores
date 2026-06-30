@@ -11,6 +11,8 @@ export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/account";
+  const inviteToken = searchParams.get("invite");
+  const inviteRole = searchParams.get("role");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,7 +51,8 @@ export function SignupForm() {
     }
 
     if (data.session) {
-      router.push(next);
+      await fetch("/api/auth/redeem-invites", { method: "POST" });
+      router.push(inviteRole === "admin" ? "/admin" : next);
       router.refresh();
       return;
     }
@@ -62,10 +65,12 @@ export function SignupForm() {
   return (
     <div>
       <h1 className="font-serif text-[32px] text-kay-fg sm:text-[36px]">
-        Create an account
+        {inviteRole === "admin" ? "Join as admin" : "Create an account"}
       </h1>
       <p className="mt-2 text-[14px] text-kay-muted">
-        Let&apos;s get you started.
+        {inviteRole === "admin"
+          ? "Complete registration to access the Kay admin console."
+          : "Let's get you started."}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">

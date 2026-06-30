@@ -175,6 +175,7 @@ export function DashboardLayout({
 
 export const ADMIN_NAV: DashboardNavItem[] = [
   { href: "/admin", label: "Overview", exact: true },
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/vendors", label: "Vendors" },
   { href: "/admin/products", label: "Products" },

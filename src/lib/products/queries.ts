@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 import { FALLBACK_PRODUCTS } from "@/lib/data/products-fallback";
 import { isAfterDarkCatalogProduct } from "@/lib/after-dark/catalog";
+import { findSimilarProducts } from "@/lib/ai/similarity";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -248,14 +249,9 @@ export async function getRelatedProducts(
   product: Product,
   limit = 4,
 ): Promise<Product[]> {
-  const { products } = await getProducts({
-    filters: {
-      collections: product.collections.slice(0, 1),
-    },
-    pageSize: limit + 1,
-  });
-
-  return products.filter((p) => p.id !== product.id).slice(0, limit);
+  const { products: catalog } = await getProducts({ pageSize: 100 });
+  const { products } = await findSimilarProducts(product, catalog, limit);
+  return products;
 }
 
 export async function getDistinctBrands(): Promise<string[]> {

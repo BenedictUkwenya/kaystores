@@ -43,6 +43,7 @@ function productToCartItem(product: Product, quantity: number): CartItem {
     price: product.price,
     image: product.images[0] ?? "/images/kay-hero-luxury-box.png",
     quantity,
+    maxStock: product.stock_quantity,
     vendorId: product.vendor_id ?? null,
     segment: getProductSegment(product),
   };
@@ -77,17 +78,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback(
     (product: Product, quantity = 1, options?: { openDrawer?: boolean }) => {
-      if (!product.in_stock) return;
+      if (!product.in_stock || product.stock_quantity <= 0) return;
       setItems((prev) => {
         const existing = prev.find((i) => i.productId === product.id);
+        const maxQty = product.stock_quantity;
         if (existing) {
+          const nextQty = Math.min(existing.quantity + quantity, maxQty);
+          if (nextQty === existing.quantity) return prev;
           return prev.map((i) =>
-            i.productId === product.id
-              ? { ...i, quantity: i.quantity + quantity }
-              : i,
+            i.productId === product.id ? { ...i, quantity: nextQty } : i,
           );
         }
-        return [...prev, productToCartItem(product, quantity)];
+        return [...prev, productToCartItem(product, Math.min(quantity, maxQty))];
       });
       if (options?.openDrawer !== false) setIsOpen(true);
     },
@@ -101,9 +103,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity < 1) return;
     setItems((prev) =>
-      prev.map((i) =>
-        i.productId === productId ? { ...i, quantity } : i,
-      ),
+      prev.map((i) => {
+        if (i.productId !== productId) return i;
+        const cap = i.maxStock ?? quantity;
+        return { ...i, quantity: Math.min(quantity, cap) };
+      }),
     );
   }, []);
 

@@ -15,15 +15,19 @@ export function AdminInviteForm() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch("/api/admin/vendors/invite", {
+      const res = await fetch("/api/admin/users/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, businessName }),
+        body: JSON.stringify({ email, role: "vendor", businessName }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Invite failed");
-      const link = `${window.location.origin}/vendor/apply?token=${data.token}`;
-      setResult(link);
+
+      if (data.action === "upgraded") {
+        setResult("Existing account upgraded to vendor.");
+      } else {
+        setResult(data.inviteUrl ?? "Invite sent.");
+      }
     } catch (err) {
       setResult(err instanceof Error ? err.message : "Invite failed");
     } finally {

@@ -14,9 +14,12 @@ export default async function NewVendorProductPage() {
       nav={VENDOR_NAV}
       eyebrow="New listing"
       title="Add product"
-      description="Draft your listing and submit for Kay's quality review."
+      description="Add a product to your catalogue. Publish when you're ready — it goes live on Kay straight away."
     >
-      <VendorProductForm canListAfterDark={vendor.canListAfterDark} />
+      <VendorProductForm
+        vendorId={vendor.id}
+        canListAfterDark={vendor.canListAfterDark}
+      />
     </DashboardLayout>
   );
 }

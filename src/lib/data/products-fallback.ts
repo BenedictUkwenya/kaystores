@@ -21,6 +21,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["bestseller"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-01-15T00:00:00Z",
   },
   {
@@ -42,6 +43,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["new"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-01-20T00:00:00Z",
   },
   {
@@ -63,6 +65,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["bestseller"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-01-10T00:00:00Z",
   },
   {
@@ -84,6 +87,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["new"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-01T00:00:00Z",
   },
   {
@@ -105,6 +109,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: [],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-05T00:00:00Z",
   },
   {
@@ -126,6 +131,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["exclusive", "night_collection"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-10T00:00:00Z",
   },
   {
@@ -147,6 +153,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["corporate"],
     tags: [],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-12T00:00:00Z",
   },
   {
@@ -168,6 +175,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["luxury"],
     tags: ["new"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-14T00:00:00Z",
   },
   {
@@ -189,6 +197,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["night_collection", "exclusive"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-18T00:00:00Z",
   },
   {
@@ -210,6 +219,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["bestseller", "night_collection", "exclusive"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-20T00:00:00Z",
   },
   {
@@ -231,6 +241,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["bestseller", "night_collection"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-20T00:00:00Z",
   },
   {
@@ -252,6 +263,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["night_collection"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-21T00:00:00Z",
   },
   {
@@ -273,6 +285,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["exclusive", "night_collection"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-21T00:00:00Z",
   },
   {
@@ -294,6 +307,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     collections: ["after-dark"],
     tags: ["night_collection"],
     in_stock: true,
+    stock_quantity: 99,
     created_at: "2026-02-22T00:00:00Z",
   },
 ];

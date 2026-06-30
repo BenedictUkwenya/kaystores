@@ -17,22 +17,25 @@ function pruneStaleAuthCookies(
   }
 }
 
-async function fetchUserRole(
+async function fetchUserProfileMeta(
   userId: string,
-): Promise<"customer" | "vendor" | "admin" | null> {
+): Promise<{ role: "customer" | "vendor" | "admin" | null; accountStatus: string | null }> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const { url } = getSupabaseConfig();
-  if (!serviceKey || !url) return null;
+  if (!serviceKey || !url) return { role: null, accountStatus: null };
 
   const admin = createSupabaseClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data } = await admin
     .from("profiles")
-    .select("role")
+    .select("role, account_status")
     .eq("id", userId)
     .maybeSingle();
-  return (data?.role as "customer" | "vendor" | "admin") ?? null;
+  return {
+    role: (data?.role as "customer" | "vendor" | "admin") ?? null,
+    accountStatus: (data?.account_status as string) ?? null,
+  };
 }
 
 export async function updateSession(request: NextRequest) {
@@ -80,15 +83,28 @@ export async function updateSession(request: NextRequest) {
   const isAdminRoute = pathname.startsWith("/admin");
   const isVendorPortal =
     pathname.startsWith("/vendor") && !pathname.startsWith("/vendor/apply");
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/verify") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+  const isSuspendedPage = pathname === "/account-suspended";
 
-  if (isAdminRoute || isVendorPortal) {
-    if (!user) {
+  if (user && !isAuthPage) {
+    const { role, accountStatus } = await fetchUserProfileMeta(user.id);
+
+    if (accountStatus === "blocked") {
       const login = new URL("/login", request.url);
-      login.searchParams.set("next", pathname);
-      return NextResponse.redirect(login);
+      login.searchParams.set("error", "account_blocked");
+      const response = NextResponse.redirect(login);
+      response.cookies.delete("sb-access-token");
+      return response;
     }
 
-    const role = await fetchUserRole(user.id);
+    if (accountStatus === "suspended" && !isSuspendedPage) {
+      return NextResponse.redirect(new URL("/account-suspended", request.url));
+    }
 
     if (isAdminRoute && role !== "admin") {
       return NextResponse.redirect(new URL("/account", request.url));
@@ -96,6 +112,12 @@ export async function updateSession(request: NextRequest) {
 
     if (isVendorPortal && role !== "vendor" && role !== "admin") {
       return NextResponse.redirect(new URL("/vendor/apply", request.url));
+    }
+  } else if (isAdminRoute || isVendorPortal) {
+    if (!user) {
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", pathname);
+      return NextResponse.redirect(login);
     }
   }
 

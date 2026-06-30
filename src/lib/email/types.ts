@@ -49,8 +49,19 @@ export type VendorEmailPayload = {
   withdrawalStatus?: string;
 };
 
+export type RoleEmailPayload = {
+  type: "role_invite" | "role_upgraded";
+  appUrl: string;
+  recipientEmail: string;
+  recipientName?: string;
+  role: "admin" | "vendor";
+  inviteUrl?: string;
+  businessName?: string;
+};
+
 export type KayEmailPayload =
   | OrderEmailPayload
   | ConciergeEmailPayload
   | ContactEmailPayload
-  | VendorEmailPayload;
+  | VendorEmailPayload
+  | RoleEmailPayload;

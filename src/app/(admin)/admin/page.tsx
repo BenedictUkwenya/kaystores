@@ -18,14 +18,14 @@ export default async function AdminOverviewPage() {
       nav={ADMIN_NAV}
       eyebrow="Platform control"
       title="Overview"
-      description="Monitor orders, vendors, moderation queues, and payouts from one place."
+      description="Monitor orders, vendors, catalogue, and payouts from one place."
       badge="Admin"
     >
       <DashboardStatRow
         stats={[
           { label: "Orders today", value: String(stats.ordersToday), accent: true },
-          { label: "GMV today", value: formatNaira(stats.gmvToday) },
-          { label: "Pending reviews", value: String(stats.pendingProductReviews) },
+          { label: "Total users", value: String(stats.totalUsers) },
+          { label: "Live products", value: String(stats.liveProducts) },
           { label: "Pending payouts", value: String(stats.pendingWithdrawals) },
         ]}
       />
@@ -61,10 +61,16 @@ export default async function AdminOverviewPage() {
         <p className="text-[13px] font-medium text-sky-950">Quick actions</p>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-3">
           <Link
-            href="/admin/products/review"
+            href="/admin/users"
             className="rounded-full border border-sky-300 px-4 py-2 text-center text-[12px] font-medium text-sky-900 hover:bg-sky-100 sm:text-left"
           >
-            Review products
+            Manage users
+          </Link>
+          <Link
+            href="/admin/products"
+            className="rounded-full border border-sky-300 px-4 py-2 text-center text-[12px] font-medium text-sky-900 hover:bg-sky-100 sm:text-left"
+          >
+            View catalogue
           </Link>
           <Link
             href="/admin/vendors/invites"

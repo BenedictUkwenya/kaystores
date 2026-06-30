@@ -217,16 +217,7 @@ export function Header() {
                 </li>
               );
             })}
-            <li>
-              <Link
-                href="/account"
-                onClick={() => setMenuOpen(false)}
-                className="text-[15px] text-kay-fg"
-              >
-                Account
-              </Link>
-            </li>
-            <li className="md:hidden">
+            <li className="sm:hidden">
               <HeaderPortalLink className="flex flex-wrap gap-2 pt-1" />
             </li>
             <li>

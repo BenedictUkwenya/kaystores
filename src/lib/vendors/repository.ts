@@ -6,6 +6,13 @@ import { getProductSegment } from "@/lib/pricing/segment";
 import type { Product } from "@/types/product";
 import { mapProductRow } from "@/types/product";
 import type { OrderItem } from "@/types/order";
+import {
+  formatDuplicateSlugError,
+  isDuplicateSlugError,
+} from "@/lib/products/slug-availability";
+import { slugifyProductName } from "@/lib/products/slug";
+import { sanitizePlacementArrays } from "@/lib/shop/taxonomy";
+import { scheduleProductEmbeddingRefresh } from "@/lib/ai/embeddings";
 
 export async function submitVendorApplication(input: {
   userId: string;
@@ -108,8 +115,18 @@ export type VendorProductInput = {
   collections?: string[];
   tags?: string[];
   inStock?: boolean;
+  stockQuantity?: number;
+  publish?: boolean;
   segment?: "gifting" | "after_dark";
 };
+
+function mapProductWriteError(error: { message?: string; code?: string }, slug: string): Error {
+  const message = error.message ?? "Save failed";
+  if (error.code === "23505" && isDuplicateSlugError(message)) {
+    return new Error(formatDuplicateSlugError(slugifyProductName(slug)));
+  }
+  return new Error(message);
+}
 
 function deriveSegment(input: VendorProductInput): "gifting" | "after_dark" {
   if (input.segment) return input.segment;
@@ -125,6 +142,15 @@ export async function createVendorProduct(
 ): Promise<Product> {
   const supabase = await createClient();
   const segment = deriveSegment(input);
+  const stockQuantity = Math.max(0, Math.floor(input.stockQuantity ?? 0));
+  const inStock = stockQuantity > 0;
+  const publish = Boolean(input.publish);
+  const status = publish ? "live" : "draft";
+  const placement = sanitizePlacementArrays({
+    occasions: input.occasions,
+    recipients: input.recipients,
+    collections: input.collections,
+  });
 
   const { data, error } = await supabase
     .from("products")
@@ -132,26 +158,32 @@ export async function createVendorProduct(
       vendor_id: vendorId,
       sku: input.sku,
       name: input.name,
-      slug: input.slug,
+      slug: slugifyProductName(input.slug),
       description: input.description,
       brand: input.brand,
       price: input.price,
       compare_at_price: input.compareAtPrice ?? null,
       images: input.images,
       specs: input.specs ?? {},
-      occasions: input.occasions ?? [],
-      recipients: input.recipients ?? [],
-      collections: input.collections ?? [],
-      tags: input.tags ?? [],
-      in_stock: input.inStock ?? true,
-      status: "draft",
+      occasions: placement.occasions,
+      recipients: placement.recipients,
+      collections: placement.collections,
+      tags: [],
+      in_stock: inStock,
+      stock_quantity: stockQuantity,
+      status,
       segment,
+      ...(publish
+        ? { reviewed_at: new Date().toISOString(), rejection_reason: null }
+        : {}),
     })
     .select("*")
     .single();
 
-  if (error) throw new Error(error.message);
-  return mapProductRow(data);
+  if (error) throw mapProductWriteError(error, input.slug);
+  const product = mapProductRow(data);
+  if (publish) scheduleProductEmbeddingRefresh(product.id);
+  return product;
 }
 
 export async function updateVendorProduct(
@@ -162,7 +194,7 @@ export async function updateVendorProduct(
   const supabase = await createClient();
   const payload: Record<string, unknown> = {};
   if (input.name != null) payload.name = input.name;
-  if (input.slug != null) payload.slug = input.slug;
+  if (input.slug != null) payload.slug = slugifyProductName(input.slug);
   if (input.description != null) payload.description = input.description;
   if (input.brand != null) payload.brand = input.brand;
   if (input.price != null) payload.price = input.price;
@@ -170,12 +202,29 @@ export async function updateVendorProduct(
     payload.compare_at_price = input.compareAtPrice;
   if (input.images != null) payload.images = input.images;
   if (input.specs != null) payload.specs = input.specs;
-  if (input.occasions != null) payload.occasions = input.occasions;
-  if (input.recipients != null) payload.recipients = input.recipients;
-  if (input.collections != null) payload.collections = input.collections;
-  if (input.tags != null) payload.tags = input.tags;
-  if (input.inStock != null) payload.in_stock = input.inStock;
+  if (input.occasions != null || input.recipients != null || input.collections != null) {
+    const placement = sanitizePlacementArrays({
+      occasions: input.occasions,
+      recipients: input.recipients,
+      collections: input.collections,
+    });
+    payload.occasions = placement.occasions;
+    payload.recipients = placement.recipients;
+    payload.collections = placement.collections;
+  }
+  if (input.stockQuantity != null) {
+    const stockQuantity = Math.max(0, Math.floor(input.stockQuantity));
+    payload.stock_quantity = stockQuantity;
+    payload.in_stock = stockQuantity > 0;
+  } else if (input.inStock != null) {
+    payload.in_stock = input.inStock;
+  }
   if (input.segment != null) payload.segment = input.segment;
+  if (input.publish) {
+    payload.status = "live";
+    payload.rejection_reason = null;
+    payload.reviewed_at = new Date().toISOString();
+  }
 
   const { data, error } = await supabase
     .from("products")
@@ -185,11 +234,15 @@ export async function updateVendorProduct(
     .select("*")
     .single();
 
-  if (error) throw new Error(error.message);
-  return mapProductRow(data);
+  if (error) throw mapProductWriteError(error, input.slug ?? "");
+  const product = mapProductRow(data);
+  if (input.publish || product.status === "live") {
+    scheduleProductEmbeddingRefresh(product.id);
+  }
+  return product;
 }
 
-export async function submitProductForReview(
+export async function publishVendorProduct(
   productId: string,
   vendorId: string,
 ): Promise<void> {
@@ -197,14 +250,19 @@ export async function submitProductForReview(
   const { error } = await supabase
     .from("products")
     .update({
-      status: "pending_review",
-      submitted_at: new Date().toISOString(),
+      status: "live",
+      rejection_reason: null,
+      reviewed_at: new Date().toISOString(),
     })
     .eq("id", productId)
     .eq("vendor_id", vendorId)
-    .in("status", ["draft", "rejected"]);
+    .in("status", ["draft", "rejected", "pending_review"]);
   if (error) throw new Error(error.message);
+  scheduleProductEmbeddingRefresh(productId);
 }
+
+/** @deprecated Use publishVendorProduct */
+export const submitProductForReview = publishVendorProduct;
 
 function mapVendorOrderItem(
   row: Record<string, unknown>,

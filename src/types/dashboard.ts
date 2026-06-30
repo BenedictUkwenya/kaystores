@@ -1,11 +1,27 @@
 export type UserRole = "customer" | "vendor" | "admin";
 
+export type AccountStatus = "active" | "suspended" | "blocked";
+
 export type Profile = {
   id: string;
   role: UserRole;
   fullName: string | null;
   phone: string | null;
+  accountStatus?: AccountStatus;
   createdAt: string;
+};
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  fullName: string | null;
+  phone: string | null;
+  role: UserRole;
+  accountStatus: AccountStatus;
+  statusReason: string | null;
+  createdAt: string;
+  vendorStatus?: VendorStatus | null;
+  businessName?: string | null;
 };
 
 export type VendorStatus = "pending" | "approved" | "suspended" | "rejected";
@@ -101,9 +117,9 @@ export type AdminOverview = {
   ordersToday: number;
   gmvToday: number;
   pendingVendorApplications: number;
-  pendingProductReviews: number;
   pendingWithdrawals: number;
   pendingConcierge: number;
   totalVendors: number;
   liveProducts: number;
+  totalUsers: number;
 };

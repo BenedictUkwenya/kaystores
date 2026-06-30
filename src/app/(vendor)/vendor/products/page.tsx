@@ -7,6 +7,7 @@ import {
 } from "@/components/dashboard/DashboardLayout";
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { formatPlacementSummary, hasAnyPlacement } from "@/lib/shop/taxonomy";
 import { formatNaira } from "@/lib/data/home";
 import type { Product } from "@/types/product";
 
@@ -20,7 +21,7 @@ export default async function VendorProductsPage() {
       nav={VENDOR_NAV}
       eyebrow="Catalogue"
       title="Your products"
-      description="Create listings, submit for Kay review, and manage stock."
+      description="Create listings and manage stock. Published products go live on Kay immediately."
     >
       <div className="mb-6 flex justify-end">
         <Link
@@ -40,17 +41,41 @@ export default async function VendorProductsPage() {
             key: "name",
             header: "Product",
             render: (p) => (
-              <Link href={`/vendor/products/${p.id}/edit`} className="hover:text-kay-gold">
-                {p.name}
-              </Link>
+              <div>
+                <Link
+                  href={`/vendor/products/${p.id}/edit`}
+                  className="hover:text-kay-gold"
+                >
+                  {p.name}
+                </Link>
+                {!hasAnyPlacement(p) && p.status === "live" && (
+                  <p className="mt-0.5 text-[11px] text-amber-700">
+                    Not in any category yet — edit to add shop placement
+                  </p>
+                )}
+              </div>
             ),
           },
-          { key: "status", header: "Status", render: (p) => <StatusBadge status={p.status ?? "draft"} /> },
+          {
+            key: "status",
+            header: "Status",
+            render: (p) => <StatusBadge status={p.status ?? "draft"} />,
+          },
+          {
+            key: "placement",
+            header: "Shop categories",
+            render: (p) => (
+              <span className="text-[12px] text-kay-muted">
+                {formatPlacementSummary(p)}
+              </span>
+            ),
+          },
           { key: "price", header: "Price", render: (p) => formatNaira(p.price) },
           {
             key: "stock",
             header: "Stock",
-            render: (p) => (p.in_stock ? "In stock" : "Out of stock"),
+            render: (p) =>
+              p.stock_quantity > 0 ? `${p.stock_quantity} units` : "Out of stock",
           },
         ]}
       />

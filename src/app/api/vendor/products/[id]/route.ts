@@ -1,4 +1,5 @@
 import { apiErrorResponse, requireVendor } from "@/lib/auth/roles";
+import { prepareVendorProductInput } from "@/lib/products/vendor-placement";
 import {
   updateVendorProduct,
   type VendorProductInput,
@@ -41,7 +42,18 @@ export async function PATCH(request: Request, { params }: Ctx) {
       );
     }
 
-    const product = await updateVendorProduct(id, vendor.id, body);
+    if (body.images && body.images.length > 3) {
+      return Response.json(
+        { error: "Maximum 3 product images allowed." },
+        { status: 400 },
+      );
+    }
+
+    const product = await updateVendorProduct(
+      id,
+      vendor.id,
+      prepareVendorProductInput(body as VendorProductInput),
+    );
     return Response.json({ product });
   } catch (err) {
     return apiErrorResponse(err);

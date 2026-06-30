@@ -1,6 +1,8 @@
 import type { Product } from "@/types/product";
 import { getProducts } from "@/lib/products/queries";
 import { parsePrompt, type ParsedPrompt } from "@/lib/ai/parse-prompt";
+import { rankProductsForQuery } from "@/lib/ai/similarity";
+import type { SimilarityMode } from "@/lib/ai/similarity";
 
 const RESULT_LIMIT = 5;
 
@@ -71,7 +73,7 @@ function buildMessage(query: string, products: Product[], afterDark: boolean) {
 export type SuggestResult = {
   products: Product[];
   message: string;
-  mode: "mock";
+  mode: SimilarityMode;
 };
 
 export async function suggestProducts(
@@ -83,30 +85,36 @@ export async function suggestProducts(
     return {
       products: [],
       message: "Tell us who the gift is for and we'll suggest something special.",
-      mode: "mock",
+      mode: "metadata",
     };
   }
 
   const parsed = parsePrompt(trimmed);
   const { products: catalog } = await getProducts({ pageSize: 100 });
+  const inStock = catalog.filter((p) => p.in_stock);
 
-  const scored = catalog
-    .map((product) => ({
-      product,
-      score: scoreProduct(product, parsed, afterDark),
-    }))
-    .sort((a, b) => b.score - a.score);
+  const { products: ranked, mode } = await rankProductsForQuery(
+    trimmed,
+    inStock,
+    (product) => scoreProduct(product, parsed, afterDark),
+    RESULT_LIMIT,
+  );
 
-  const withSignal = scored.filter((s) => s.score > 0);
-  let picks =
-    withSignal.length > 0
-      ? withSignal.slice(0, RESULT_LIMIT).map((s) => s.product)
-      : catalog
-          .filter((p) => p.in_stock)
-          .slice(0, RESULT_LIMIT);
+  let picks = ranked;
+  if (picks.length === 0) {
+    picks = inStock
+      .map((product) => ({
+        product,
+        score: scoreProduct(product, parsed, afterDark),
+      }))
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, RESULT_LIMIT)
+      .map((s) => s.product);
+  }
 
-  if (afterDark) {
-    const nightBoost = [...picks].sort((a, b) => {
+  if (afterDark && picks.length > 0) {
+    picks = [...picks].sort((a, b) => {
       const aNight =
         (a.tags.includes("exclusive") ? 2 : 0) +
         (a.tags.includes("night_collection") ? 1 : 0);
@@ -115,12 +123,11 @@ export async function suggestProducts(
         (b.tags.includes("night_collection") ? 1 : 0);
       return bNight - aNight;
     });
-    picks = nightBoost;
   }
 
   return {
     products: picks,
     message: buildMessage(trimmed, picks, afterDark),
-    mode: "mock",
+    mode: picks.length > 0 ? mode : "metadata",
   };
 }

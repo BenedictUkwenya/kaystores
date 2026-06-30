@@ -4,6 +4,7 @@ import { createOrder } from "@/lib/orders/store";
 import { validateOrderPricing } from "@/lib/pricing/validate";
 import { notifyOrderEmails } from "@/lib/email/send";
 import { getSiteUrl } from "@/lib/site";
+import { reserveStockForOrder, restoreStockForOrder } from "@/lib/products/stock";
 import {
   createVendorOrderItemsFromOrder,
   fetchProductVendorMap,
@@ -66,6 +67,11 @@ export async function POST(request: Request) {
       phone: body.buyer.phone.trim(),
     };
 
+    const stockCheck = await reserveStockForOrder(body.items);
+    if (!stockCheck.ok) {
+      return NextResponse.json({ error: stockCheck.error }, { status: 400 });
+    }
+
     let userId: string | undefined;
     try {
       const supabase = await createClient();
@@ -77,17 +83,24 @@ export async function POST(request: Request) {
       // Guest checkout — no session
     }
 
-    const order = await createOrder(body, { userId });
+    let order;
+    try {
+      order = await createOrder(body, { userId });
 
-    const productIds = body.items.map((i) => i.productId);
-    const vendorMap = await fetchProductVendorMap(productIds);
-    const itemsWithVendor = body.items.map((item) => ({
-      ...item,
-      vendorId: item.vendorId ?? vendorMap.get(item.productId)?.vendorId ?? null,
-    }));
-    await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap);
+      const productIds = body.items.map((i) => i.productId);
+      const vendorMap = await fetchProductVendorMap(productIds);
+      const itemsWithVendor = body.items.map((item) => ({
+        ...item,
+        vendorId: item.vendorId ?? vendorMap.get(item.productId)?.vendorId ?? null,
+      }));
+      await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap);
 
-    await notifyOrderEmails(order, getSiteUrl());
+      await notifyOrderEmails(order, getSiteUrl());
+    } catch (err) {
+      await restoreStockForOrder(body.items);
+      throw err;
+    }
+
     return NextResponse.json(order);
   } catch {
     return NextResponse.json(

@@ -1,4 +1,5 @@
 import { apiErrorResponse, requireVendor } from "@/lib/auth/roles";
+import { prepareVendorProductInput } from "@/lib/products/vendor-placement";
 import {
   createVendorProduct,
   fetchVendorProducts,
@@ -27,7 +28,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const product = await createVendorProduct(vendor.id, body);
+    if (body.images && body.images.length > 3) {
+      return Response.json(
+        { error: "Maximum 3 product images allowed." },
+        { status: 400 },
+      );
+    }
+
+    const product = await createVendorProduct(
+      vendor.id,
+      prepareVendorProductInput(body),
+    );
     return Response.json({ product });
   } catch (err) {
     return apiErrorResponse(err);

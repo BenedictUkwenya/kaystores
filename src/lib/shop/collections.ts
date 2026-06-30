@@ -1,4 +1,13 @@
 import type { ProductFilters } from "@/types/product";
+import {
+  COLLECTIONS,
+  OCCASIONS,
+  RECIPIENTS,
+  type OccasionSlug,
+  type RecipientSlug,
+} from "@/lib/shop/taxonomy";
+
+export { OCCASIONS, RECIPIENTS, COLLECTIONS } from "@/lib/shop/taxonomy";
 
 export type CollectionConfig = {
   slug: string;
@@ -8,34 +17,9 @@ export type CollectionConfig = {
   filters: ProductFilters;
 };
 
-export const OCCASIONS = [
-  { slug: "birthday", label: "Birthday" },
-  { slug: "anniversary", label: "Anniversary" },
-  { slug: "wedding", label: "Wedding" },
-  { slug: "graduation", label: "Graduation" },
-  { slug: "new-baby", label: "New Baby" },
-  { slug: "thank-you", label: "Thank You" },
-] as const;
+export const CATEGORY_SLUGS = RECIPIENTS.map((r) => r.slug);
 
-export const RECIPIENTS = [
-  { slug: "for-her", label: "For Her" },
-  { slug: "for-him", label: "For Him" },
-  { slug: "for-parents", label: "For Parents" },
-  { slug: "for-friends", label: "For Friends" },
-  { slug: "for-kids", label: "For Kids" },
-  { slug: "corporate-gifts", label: "Corporate Gifts" },
-] as const;
-
-export const CATEGORY_SLUGS = [
-  "for-her",
-  "for-him",
-  "for-parents",
-  "for-friends",
-  "for-kids",
-  "corporate-gifts",
-] as const;
-
-export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
+export type CategorySlug = RecipientSlug;
 
 const categoryMeta: Record<
   CategorySlug,
@@ -70,7 +54,8 @@ const categoryMeta: Record<
 export const MAIN_CATALOG: CollectionConfig = {
   slug: "gifts",
   title: "All Gifts",
-  description: "Discover our full collection of luxury gifts, beautifully curated for every occasion.",
+  description:
+    "Discover our full collection of luxury gifts, beautifully curated for every occasion.",
   breadcrumbs: [
     { label: "Home", href: "/" },
     { label: "Gifts", href: "/gifts" },
@@ -81,23 +66,25 @@ export const MAIN_CATALOG: CollectionConfig = {
 export const COLLECTION_PAGES: Record<string, CollectionConfig> = {
   "luxury-collection": {
     slug: "luxury-collection",
-    title: "Luxury Collection",
-    description: "Our finest selection of premium gifts for those who appreciate the exceptional.",
+    title: COLLECTIONS[0].label,
+    description:
+      "Our finest selection of premium gifts for those who appreciate the exceptional.",
     breadcrumbs: [
       { label: "Home", href: "/" },
       { label: "Gifts", href: "/gifts" },
-      { label: "Luxury Collection", href: "/gifts/luxury-collection" },
+      { label: COLLECTIONS[0].label, href: COLLECTIONS[0].href },
     ],
     filters: { collections: ["luxury"] },
   },
   "corporate-gifting": {
     slug: "corporate-gifting",
-    title: "Corporate Gifting",
-    description: "Elevate your client relationships with bespoke corporate gift solutions.",
+    title: COLLECTIONS[1].label,
+    description:
+      "Elevate your client relationships with bespoke corporate gift solutions.",
     breadcrumbs: [
       { label: "Home", href: "/" },
       { label: "Gifts", href: "/gifts" },
-      { label: "Corporate Gifting", href: "/gifts/corporate-gifting" },
+      { label: COLLECTIONS[1].label, href: COLLECTIONS[1].href },
     ],
     filters: { collections: ["corporate"] },
   },
@@ -132,7 +119,7 @@ export function getOccasionConfig(slug: string): CollectionConfig | null {
       { label: "By Occasion", href: "/gifts" },
       { label: occasion.label, href: `/gifts/occasion/${slug}` },
     ],
-    filters: { occasions: [slug] },
+    filters: { occasions: [slug as OccasionSlug] },
   };
 }
 
@@ -149,16 +136,12 @@ export function getRecipientConfig(slug: string): CollectionConfig | null {
       { label: "By Recipient", href: "/gifts" },
       { label: recipient.label, href: `/gifts/recipient/${slug}` },
     ],
-    filters: { recipients: [slug] },
+    filters: { recipients: [slug as RecipientSlug] },
   };
 }
 
 export function getCollectionBySlug(slug: string): CollectionConfig | null {
-  return (
-    COLLECTION_PAGES[slug] ??
-    getCategoryConfig(slug) ??
-    null
-  );
+  return COLLECTION_PAGES[slug] ?? getCategoryConfig(slug) ?? null;
 }
 
 export function getSearchConfig(query: string): CollectionConfig {
@@ -195,6 +178,6 @@ export const NAV_DROPDOWN_LINKS = {
 } as const;
 
 export const NAV_STATIC_LINKS = {
-  "Luxury Collection": "/gifts/luxury-collection",
-  "Corporate Gifting": "/gifts/corporate-gifting",
+  "Luxury Collection": COLLECTIONS[0].href,
+  "Corporate Gifting": COLLECTIONS[1].href,
 } as const;
