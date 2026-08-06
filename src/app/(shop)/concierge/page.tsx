@@ -1,8 +1,36 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getSupabaseConfig } from "@/lib/supabase/env";
 import { ConciergeForm } from "@/components/concierge/ConciergeForm";
 import { ConciergeSidebar } from "@/components/concierge/ConciergeSidebar";
 
-export default function ConciergePage() {
+export default async function ConciergePage() {
+  let defaultContact: { name?: string; email?: string; phone?: string } | undefined;
+
+  if (getSupabaseConfig().isConfigured) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      defaultContact = {
+        name:
+          (profile?.full_name as string | undefined) ||
+          (user.user_metadata?.full_name as string | undefined) ||
+          undefined,
+        email: user.email ?? undefined,
+        phone: (profile?.phone as string | undefined) || undefined,
+      };
+    }
+  }
+
   return (
     <div className="concierge-page mx-auto max-w-[1140px] px-4 py-6 sm:px-10 lg:px-12 lg:py-10">
       <nav className="flex flex-wrap items-center gap-1.5 text-[12px] text-kay-subtle">
@@ -25,7 +53,7 @@ export default function ConciergePage() {
       </header>
 
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <ConciergeForm />
+        <ConciergeForm defaultContact={defaultContact} />
         <ConciergeSidebar />
       </div>
     </div>

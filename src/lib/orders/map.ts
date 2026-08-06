@@ -28,6 +28,9 @@ export type OrderRow = {
   tracking_carrier: string | null;
   tracking_number: string | null;
   tracking_url: string | null;
+  payment_status?: string | null;
+  payment_reference?: string | null;
+  paid_at?: string | null;
   created_at: string;
 };
 
@@ -70,6 +73,9 @@ export function mapOrderRow(row: OrderRow): Order {
     handoverStatus: row.handover_status as Order["handoverStatus"],
     recipientAddress: row.recipient_address ?? undefined,
     tracking: mapTracking(row),
+    paymentStatus: (row.payment_status ?? "unpaid") as Order["paymentStatus"],
+    paymentReference: row.payment_reference ?? undefined,
+    paidAt: row.paid_at ?? undefined,
     createdAt: row.created_at,
   };
 }

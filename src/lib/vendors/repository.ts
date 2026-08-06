@@ -13,6 +13,7 @@ import {
 import { slugifyProductName } from "@/lib/products/slug";
 import { sanitizePlacementArrays } from "@/lib/shop/taxonomy";
 import { scheduleProductEmbeddingRefresh } from "@/lib/ai/embeddings";
+import { isValidNin, normalizeNin } from "@/lib/vendor/nin";
 
 export async function submitVendorApplication(input: {
   userId: string;
@@ -21,9 +22,51 @@ export async function submitVendorApplication(input: {
   contactEmail: string;
   contactPhone: string;
   catalogDescription: string;
+  nin?: string;
   inviteToken?: string;
 }): Promise<Vendor> {
   const supabase = await createClient();
+  const admin = createAdminClient();
+  if (!admin) throw new Error("Application failed");
+
+  const nin = input.nin ? normalizeNin(input.nin) : "";
+  const now = new Date().toISOString();
+  const dbAdmin = admin;
+
+  async function approveInviteVendor(
+    vendorId: string,
+    invitedBy: string | null,
+  ): Promise<Vendor> {
+    const { data, error } = await dbAdmin
+      .from("vendors")
+      .update({
+        user_id: input.userId,
+        business_name: input.businessName,
+        contact_name: input.contactName,
+        contact_email: input.contactEmail,
+        contact_phone: input.contactPhone,
+        catalog_description: input.catalogDescription,
+        status: "approved",
+        onboarding_source: "invite",
+        invite_token: null,
+        nin: nin || null,
+        approved_at: now,
+        approved_by: invitedBy,
+        updated_at: now,
+      })
+      .eq("id", vendorId)
+      .select("*")
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? "Application failed");
+
+    await dbAdmin
+      .from("profiles")
+      .update({ role: "vendor", updated_at: now })
+      .eq("id", input.userId);
+
+    return mapVendorRow(data);
+  }
 
   const { data: existing } = await supabase
     .from("vendors")
@@ -31,43 +74,84 @@ export async function submitVendorApplication(input: {
     .eq("user_id", input.userId)
     .maybeSingle();
 
-  if (existing) {
-    if (existing.status === "approved") {
-      throw new Error("You are already an approved vendor.");
-    }
-    if (existing.status === "pending") {
-      throw new Error("Your application is already under review.");
-    }
-  }
-
+  let invitedByToken: Record<string, unknown> | null = null;
   if (input.inviteToken) {
-    const admin = createAdminClient();
-    if (!admin) throw new Error("Invite validation failed");
-
-    const { data: invited } = await admin
+    const { data } = await admin
       .from("vendors")
       .select("*")
       .eq("invite_token", input.inviteToken)
       .maybeSingle();
+    invitedByToken = data;
+  }
 
-    if (invited) {
-      const { data, error } = await admin
-        .from("vendors")
-        .update({
-          user_id: input.userId,
-          business_name: input.businessName,
-          contact_name: input.contactName,
-          contact_email: input.contactEmail,
-          contact_phone: input.contactPhone,
-          catalog_description: input.catalogDescription,
-          status: "pending",
-          invite_token: null,
-        })
-        .eq("id", invited.id)
-        .select("*")
-        .single();
-      if (error || !data) throw new Error(error?.message ?? "Application failed");
-      return mapVendorRow(data);
+  const isInvitePath =
+    Boolean(input.inviteToken?.trim()) ||
+    Boolean(invitedByToken) ||
+    (existing?.onboarding_source === "invite" &&
+      existing.status !== "approved");
+
+  if (!isInvitePath && !isValidNin(nin)) {
+    throw new Error("Enter a valid 11-digit NIN.");
+  }
+
+  if (existing) {
+    if (existing.status === "approved") {
+      throw new Error("You are already an approved vendor.");
+    }
+    if (existing.status === "pending" && existing.onboarding_source !== "invite") {
+      throw new Error("Your application is already under review.");
+    }
+
+    if (isInvitePath) {
+      return approveInviteVendor(
+        existing.id,
+        existing.invited_by ? String(existing.invited_by) : null,
+      );
+    }
+
+    const { data, error } = await admin
+      .from("vendors")
+      .update({
+        business_name: input.businessName,
+        contact_name: input.contactName,
+        contact_email: input.contactEmail,
+        contact_phone: input.contactPhone,
+        catalog_description: input.catalogDescription,
+        nin,
+        status: "pending",
+        onboarding_source: "self_apply",
+        invite_token: null,
+      })
+      .eq("user_id", input.userId)
+      .select("*")
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? "Application failed");
+    return mapVendorRow(data);
+  }
+
+  if (invitedByToken) {
+    return approveInviteVendor(
+      String(invitedByToken.id),
+      invitedByToken.invited_by
+        ? String(invitedByToken.invited_by)
+        : null,
+    );
+  }
+
+  if (input.inviteToken) {
+    const { data: byUser } = await admin
+      .from("vendors")
+      .select("*")
+      .eq("user_id", input.userId)
+      .eq("onboarding_source", "invite")
+      .maybeSingle();
+
+    if (byUser && byUser.status !== "approved") {
+      return approveInviteVendor(
+        byUser.id,
+        byUser.invited_by ? String(byUser.invited_by) : null,
+      );
     }
   }
 
@@ -80,7 +164,9 @@ export async function submitVendorApplication(input: {
       contact_email: input.contactEmail,
       contact_phone: input.contactPhone,
       catalog_description: input.catalogDescription,
+      nin,
       status: "pending",
+      onboarding_source: "self_apply",
     })
     .select("*")
     .single();

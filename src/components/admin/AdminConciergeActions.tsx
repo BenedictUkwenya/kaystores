@@ -38,10 +38,13 @@ export function AdminConciergeActions({ id, status, adminNotes }: Props) {
       <Textarea label="Internal notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <Button type="button" size="sm" disabled={loading || status === "in_progress"} onClick={() => update("in_progress")}>
-          In progress
+          Mark in progress
         </Button>
         <Button type="button" size="sm" disabled={loading || status === "completed"} onClick={() => update("completed")}>
           Complete
+        </Button>
+        <Button type="button" size="sm" variant="secondary" disabled={loading || status === "closed"} onClick={() => update("closed")}>
+          Close
         </Button>
       </div>
     </div>

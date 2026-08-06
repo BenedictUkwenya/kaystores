@@ -55,6 +55,10 @@ function VerifyFormInner() {
       return;
     }
 
+    await fetch("/api/auth/redeem-invites", { method: "POST" }).catch(
+      () => null,
+    );
+
     if (type === "recovery") {
       router.push("/reset-password");
     } else {

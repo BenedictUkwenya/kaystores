@@ -13,16 +13,28 @@ import {
   discreetItemLabel,
   isDiscreetOrder,
 } from "@/lib/after-dark/checkout-privacy";
+import { OrderPaymentSection } from "@/components/payments/OrderPaymentSection";
+import { PaymentReturnVerifier } from "@/components/payments/FlutterwavePayButton";
+import { buildTxRef } from "@/lib/payments/config";
 import { IconLock } from "@/components/ui/Icons";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string; tx_ref?: string; status?: string }>;
 };
 
-export default async function OrderConfirmationPage({ params }: PageProps) {
+export default async function OrderConfirmationPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const query = await searchParams;
   const order = await getOrder(id);
   if (!order) notFound();
+
+  const paid = order.paymentStatus === "paid";
+  const txRef =
+    query.tx_ref ?? (query.payment === "return" ? buildTxRef("order", id) : null);
 
   const pricing = order.pricing;
   const discreet = isDiscreetOrder(order.items);
@@ -54,10 +66,16 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
             discreet ? "text-ad-amber/90" : "text-kay-gold"
           }`}
         >
-          {discreet ? DISCREET_CONFIRMATION_EYEBROW : "Order confirmed"}
+          {discreet ? DISCREET_CONFIRMATION_EYEBROW : paid ? "Order confirmed" : "Complete payment"}
         </p>
         <h1 className="mt-2 font-serif text-[32px] text-kay-fg sm:text-[36px]">
-          {discreet ? "Your private order is secured" : "Thank you"}
+          {discreet
+            ? paid
+              ? "Your private order is secured"
+              : "Complete your private order"
+            : paid
+              ? "Thank you"
+              : "Almost there"}
         </h1>
         <p className="mt-3 text-[14px] text-kay-muted">
           {discreet ? "Private reference" : "Order"}{" "}
@@ -76,6 +94,9 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
       <div className="mt-8">
         <OrderTrackingTimeline order={order} />
       </div>
+
+      {txRef && !paid && <PaymentReturnVerifier txRef={txRef} />}
+      <OrderPaymentSection order={order} />
 
       <div className="mt-6 space-y-6 rounded-lg border border-kay-border-light bg-kay-surface-elevated/60 p-5 sm:p-6">
         <div>
@@ -153,7 +174,7 @@ export default async function OrderConfirmationPage({ params }: PageProps) {
               <dd>{formatNaira(pricing.tax)}</dd>
             </div>
             <div className="flex justify-between border-t border-kay-border-light pt-3 text-[16px] font-semibold text-kay-fg">
-              <dt>Total paid</dt>
+              <dt>{paid ? "Total paid" : "Total due"}</dt>
               <dd>{formatNaira(pricing.grandTotal)}</dd>
             </div>
           </dl>

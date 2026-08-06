@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import type { OrderSummary } from "@/types/order";
+import type { ClientConciergeStatus } from "@/types/concierge";
 import { formatNaira } from "@/lib/data/home";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { AccountOrders } from "@/components/account/AccountOrders";
+import { AccountConciergeRequests } from "@/components/account/AccountConciergeRequests";
 import {
   formatMemberSince,
   getInitials,
@@ -18,15 +20,22 @@ import {
 type Props = {
   user: User;
   orders: OrderSummary[];
+  conciergeRequests: ClientConciergeStatus[];
   onSignOut: () => void;
 };
 
 const SERVICES = [
   {
     href: "/concierge",
-    label: "Concierge",
+    label: "New request",
     description: "Source rare & bespoke pieces",
     icon: IconDiamond,
+  },
+  {
+    href: "/concierge/status",
+    label: "Track concierge",
+    description: "Reference + email lookup",
+    icon: IconShield,
   },
   {
     href: "/track-order",
@@ -42,7 +51,12 @@ const SERVICES = [
   },
 ] as const;
 
-export function AccountDashboard({ user, orders, onSignOut }: Props) {
+export function AccountDashboard({
+  user,
+  orders,
+  conciergeRequests,
+  onSignOut,
+}: Props) {
   const name =
     (user.user_metadata?.full_name as string | undefined) ??
     user.email?.split("@")[0] ??
@@ -101,6 +115,8 @@ export function AccountDashboard({ user, orders, onSignOut }: Props) {
               <StatCell label="Status" value="Active" accent />
             </div>
           </section>
+
+          <AccountConciergeRequests requests={conciergeRequests} />
 
           <AccountOrders orders={orders} />
         </div>

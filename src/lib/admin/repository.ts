@@ -49,7 +49,8 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
   const pendingApps = await db
     .from("vendors")
     .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .eq("onboarding_source", "self_apply");
 
   const totalUsers = await countAllAuthUsers();
 
@@ -65,10 +66,16 @@ export async function fetchAdminOverview(): Promise<AdminOverview> {
   };
 }
 
-export async function fetchAllVendors(status?: string): Promise<Vendor[]> {
+export async function fetchAllVendors(
+  status?: string,
+  options?: { onboardingSource?: "invite" | "self_apply" },
+): Promise<Vendor[]> {
   const db = admin();
   let q = db.from("vendors").select("*").order("created_at", { ascending: false });
   if (status) q = q.eq("status", status);
+  if (options?.onboardingSource) {
+    q = q.eq("onboarding_source", options.onboardingSource);
+  }
   const { data, error } = await q;
   if (error) throw new Error(error.message);
   return (data ?? []).map(mapVendorRow);

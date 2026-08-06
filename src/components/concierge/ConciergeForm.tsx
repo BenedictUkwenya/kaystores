@@ -4,6 +4,10 @@ import { useRef, useState, type ComponentType } from "react";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import {
+  formatIntegerInput,
+  parseIntegerInput,
+} from "@/lib/data/home";
+import {
   IconArrowRight,
   IconInfo,
   IconUpload,
@@ -31,23 +35,32 @@ function SectionTitle({
   );
 }
 
-export function ConciergeForm() {
+export function ConciergeForm({
+  defaultContact,
+}: {
+  defaultContact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState<{ referenceNumber: string } | null>(
-    null,
-  );
+  const [success, setSuccess] = useState<{
+    id: string;
+    referenceNumber: string;
+  } | null>(null);
 
   const [form, setForm] = useState({
     productName: "",
     brand: "",
     budget: "",
     description: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
+    contactName: defaultContact?.name ?? "",
+    contactEmail: defaultContact?.email ?? "",
+    contactPhone: defaultContact?.phone ?? "",
   });
 
   function handleFiles(selected: FileList | null) {
@@ -77,10 +90,18 @@ export function ConciergeForm() {
       return;
     }
 
+    const budget = parseIntegerInput(form.budget);
+    if (budget < 1) {
+      setError("Please enter a valid target budget.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const body = new FormData();
-      Object.entries(form).forEach(([key, value]) => body.append(key, value));
+      Object.entries(form).forEach(([key, value]) => {
+        body.append(key, key === "budget" ? String(budget) : value);
+      });
       files.forEach((file) => body.append("attachments", file));
 
       const res = await fetch("/api/concierge", {
@@ -94,7 +115,7 @@ export function ConciergeForm() {
       }
 
       const data = await res.json();
-      setSuccess({ referenceNumber: data.referenceNumber });
+      setSuccess({ id: data.id, referenceNumber: data.referenceNumber });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -122,6 +143,12 @@ export function ConciergeForm() {
             {success.referenceNumber}
           </span>
         </p>
+        <a
+          href={`/concierge/status/${success.id}`}
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-full border border-kay-border px-6 text-[13px] font-medium text-kay-fg transition-colors hover:border-kay-fg hover:bg-kay-surface"
+        >
+          Track your request
+        </a>
       </div>
     );
   }
@@ -153,11 +180,13 @@ export function ConciergeForm() {
             <Input
               variant="checkout"
               label="Target budget (₦)"
-              type="number"
-              min={1}
+              type="text"
+              inputMode="numeric"
               value={form.budget}
-              onChange={(e) => setForm({ ...form, budget: e.target.value })}
-              placeholder="500000"
+              onChange={(e) =>
+                setForm({ ...form, budget: formatIntegerInput(e.target.value) })
+              }
+              placeholder="500,000"
               required
             />
             <div className="sm:col-span-2">

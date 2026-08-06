@@ -53,6 +53,10 @@ export type WithdrawalStatus =
   | "paid"
   | "rejected";
 
+export type VendorOnboardingSource = "invite" | "self_apply";
+
+export type VendorInviteMode = "instant" | "profile";
+
 export type Vendor = {
   id: string;
   userId: string;
@@ -61,6 +65,8 @@ export type Vendor = {
   contactEmail: string;
   contactPhone: string;
   catalogDescription: string;
+  nin: string | null;
+  onboardingSource: VendorOnboardingSource;
   status: VendorStatus;
   canListAfterDark: boolean;
   bankName: string | null;

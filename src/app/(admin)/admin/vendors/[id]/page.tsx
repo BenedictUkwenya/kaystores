@@ -40,6 +40,16 @@ export default async function AdminVendorDetailPage({ params }: Props) {
             <dd className="text-kay-fg">{vendor.contactPhone || "—"}</dd>
           </div>
           <div>
+            <dt className="text-kay-subtle">NIN</dt>
+            <dd className="font-mono text-kay-fg">{vendor.nin || "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-kay-subtle">Onboarding</dt>
+            <dd className="text-kay-fg capitalize">
+              {vendor.onboardingSource.replace(/_/g, " ")}
+            </dd>
+          </div>
+          <div>
             <dt className="text-kay-subtle">After Dark trusted</dt>
             <dd className="text-kay-fg">{vendor.canListAfterDark ? "Yes" : "No"}</dd>
           </div>

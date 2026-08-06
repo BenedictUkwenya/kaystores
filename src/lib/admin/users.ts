@@ -233,6 +233,8 @@ export async function promoteUserToVendor(
       .update({
         status: "approved",
         business_name: name,
+        onboarding_source: "invite",
+        invite_token: null,
         approved_at: new Date().toISOString(),
         approved_by: adminUserId,
       })
@@ -245,6 +247,7 @@ export async function promoteUserToVendor(
       contact_name: name,
       contact_email: email,
       status: "approved",
+      onboarding_source: "invite",
       approved_at: new Date().toISOString(),
       approved_by: adminUserId,
     });
@@ -284,6 +287,7 @@ export async function inviteUserByRole(input: {
   email: string;
   role: "admin" | "vendor";
   businessName?: string;
+  inviteMode?: "instant" | "profile";
   invitedBy: string;
 }): Promise<InviteResult> {
   const db = admin();
@@ -319,9 +323,14 @@ export async function inviteUserByRole(input: {
   }
 
   const token = crypto.randomUUID();
+  const inviteMode =
+    input.role === "vendor"
+      ? (input.inviteMode === "instant" ? "instant" : "profile")
+      : undefined;
+  const businessName = input.businessName ?? email.split("@")[0];
   const metadata =
     input.role === "vendor"
-      ? { business_name: input.businessName ?? email.split("@")[0] }
+      ? { business_name: businessName, inviteMode }
       : {};
 
   const { error: inviteErr } = await db.from("role_invites").insert({
@@ -337,7 +346,7 @@ export async function inviteUserByRole(input: {
   const inviteUrl =
     input.role === "admin"
       ? `${getSiteUrl()}/signup?invite=${token}&role=admin`
-      : `${getSiteUrl()}/vendor/apply?token=${token}`;
+      : `${getSiteUrl()}/signup?invite=${token}&role=vendor&mode=${inviteMode}`;
 
   await sendKayEmail({
     type: "role_invite",
@@ -351,9 +360,10 @@ export async function inviteUserByRole(input: {
   if (input.role === "vendor") {
     await createVendorInvitePlaceholder(
       email,
-      input.businessName ?? email.split("@")[0],
+      businessName,
       token,
       input.invitedBy,
+      inviteMode ?? "profile",
     );
   }
 
@@ -365,6 +375,7 @@ async function createVendorInvitePlaceholder(
   businessName: string,
   token: string,
   invitedBy: string,
+  inviteMode: "instant" | "profile",
 ) {
   const db = admin();
 
@@ -390,15 +401,34 @@ async function createVendorInvitePlaceholder(
     .eq("user_id", userId)
     .maybeSingle();
 
+  const base = {
+    invite_token: inviteMode === "instant" ? null : token,
+    invited_by: invitedBy,
+    business_name: businessName,
+    onboarding_source: "invite" as const,
+  };
+
   if (existingVendor) {
     await db
       .from("vendors")
       .update({
-        invite_token: token,
-        invited_by: invitedBy,
-        business_name: businessName,
+        ...base,
+        ...(inviteMode === "instant"
+          ? {
+              status: "approved",
+              approved_at: new Date().toISOString(),
+              approved_by: invitedBy,
+            }
+          : { status: "pending" }),
       })
       .eq("id", existingVendor.id);
+
+    if (inviteMode === "instant") {
+      await db
+        .from("profiles")
+        .update({ role: "vendor", updated_at: new Date().toISOString() })
+        .eq("id", userId);
+    }
     return;
   }
 
@@ -407,10 +437,24 @@ async function createVendorInvitePlaceholder(
     business_name: businessName,
     contact_name: businessName,
     contact_email: email,
-    status: "pending",
-    invite_token: token,
+    status: inviteMode === "instant" ? "approved" : "pending",
+    onboarding_source: "invite",
+    invite_token: inviteMode === "instant" ? null : token,
     invited_by: invitedBy,
+    ...(inviteMode === "instant"
+      ? {
+          approved_at: new Date().toISOString(),
+          approved_by: invitedBy,
+        }
+      : {}),
   });
+
+  if (inviteMode === "instant") {
+    await db
+      .from("profiles")
+      .update({ role: "vendor", updated_at: new Date().toISOString() })
+      .eq("id", userId);
+  }
 }
 
 export async function redeemInvitesForUser(

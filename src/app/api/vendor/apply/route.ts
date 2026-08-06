@@ -1,6 +1,9 @@
 import { apiErrorResponse, getSessionUser } from "@/lib/auth/roles";
 import { submitVendorApplication } from "@/lib/vendors/repository";
-import { notifyVendorApplication } from "@/lib/email/vendor";
+import {
+  notifyVendorApplication,
+  notifyVendorApproved,
+} from "@/lib/email/vendor";
 
 export async function POST(request: Request) {
   try {
@@ -17,14 +20,23 @@ export async function POST(request: Request) {
       contactEmail: String(body.contactEmail ?? user.email ?? "").trim(),
       contactPhone: String(body.contactPhone ?? "").trim(),
       catalogDescription: String(body.catalogDescription ?? "").trim(),
+      nin: body.nin ? String(body.nin) : undefined,
       inviteToken: body.inviteToken ? String(body.inviteToken) : undefined,
     });
 
-    await notifyVendorApplication({
-      contactName: vendor.contactName,
-      contactEmail: vendor.contactEmail,
-      businessName: vendor.businessName,
-    });
+    if (vendor.status === "approved") {
+      void notifyVendorApproved({
+        contactName: vendor.contactName,
+        contactEmail: vendor.contactEmail,
+        businessName: vendor.businessName,
+      });
+    } else {
+      void notifyVendorApplication({
+        contactName: vendor.contactName,
+        contactEmail: vendor.contactEmail,
+        businessName: vendor.businessName,
+      });
+    }
 
     return Response.json({ vendor });
   } catch (err) {

@@ -6,7 +6,7 @@ import {
   fetchVendorById,
 } from "@/lib/admin/repository";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notifyVendorApproved } from "@/lib/email/vendor";
+import { notifyVendorApproved, notifyVendorRejected } from "@/lib/email/vendor";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -33,6 +33,16 @@ export async function PATCH(request: Request, { params }: Ctx) {
         break;
       case "reject":
         await rejectVendor(id);
+        {
+          const vendor = await fetchVendorById(id);
+          if (vendor) {
+            await notifyVendorRejected({
+              contactName: vendor.contactName,
+              contactEmail: vendor.contactEmail,
+              businessName: vendor.businessName,
+            });
+          }
+        }
         break;
       case "suspend":
         await suspendVendor(id);

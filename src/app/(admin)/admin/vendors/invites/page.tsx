@@ -14,7 +14,7 @@ export default async function AdminVendorInvitesPage() {
       nav={ADMIN_NAV}
       eyebrow="Onboarding"
       title="Invite vendor"
-      description="Generate a secure apply link for a curated partner."
+      description="Invite a curated partner. Choose instant portal access or a short profile (both auto-approved — no KYC queue)."
       badge="Admin"
     >
       <AdminInviteForm />

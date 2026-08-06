@@ -42,6 +42,10 @@ export function LoginForm() {
       return;
     }
 
+    await fetch("/api/auth/redeem-invites", { method: "POST" }).catch(
+      () => null,
+    );
+
     router.push(next);
     router.refresh();
   }

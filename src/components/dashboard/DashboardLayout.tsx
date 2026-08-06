@@ -4,11 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import type { UserRole } from "@/types/dashboard";
+import type { DashboardNavAttention } from "@/lib/dashboard/nav-attention";
+import {
+  NavAttentionDot,
+  useDashboardNavAttention,
+} from "@/components/dashboard/DashboardNavAttention";
 
 export type DashboardNavItem = {
   href: string;
   label: string;
   exact?: boolean;
+  attentionLabel?: string;
 };
 
 type Props = {
@@ -24,9 +30,11 @@ type Props = {
 function DashboardNavPills({
   nav,
   pathname,
+  attention,
 }: {
   nav: DashboardNavItem[];
   pathname: string;
+  attention: DashboardNavAttention;
 }) {
   return (
     <nav
@@ -37,17 +45,23 @@ function DashboardNavPills({
         const active = item.exact
           ? pathname === item.href
           : pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const needsAttention = attention[item.href];
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`shrink-0 snap-start rounded-full border px-4 py-2 text-[12px] font-medium transition-colors ${
+            className={`inline-flex shrink-0 snap-start items-center rounded-full border px-4 py-2 text-[12px] font-medium transition-colors ${
               active
                 ? "border-kay-fg bg-kay-fg text-kay-accent-fg"
                 : "border-kay-border bg-kay-surface-elevated text-kay-muted hover:border-kay-fg/40 hover:text-kay-fg"
             }`}
           >
             {item.label}
+            {needsAttention && (
+              <NavAttentionDot
+                label={item.attentionLabel ?? `${item.label} needs attention`}
+              />
+            )}
           </Link>
         );
       })}
@@ -58,9 +72,11 @@ function DashboardNavPills({
 function DashboardSidebar({
   nav,
   pathname,
+  attention,
 }: {
   nav: DashboardNavItem[];
   pathname: string;
+  attention: DashboardNavAttention;
 }) {
   return (
     <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
@@ -71,17 +87,23 @@ function DashboardSidebar({
               ? pathname === item.href
               : pathname === item.href ||
                 pathname.startsWith(`${item.href}/`);
+            const needsAttention = attention[item.href];
             return (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`block rounded-xl px-4 py-2.5 text-[13px] font-medium transition-colors ${
+                  className={`flex items-center rounded-xl px-4 py-2.5 text-[13px] font-medium transition-colors ${
                     active
                       ? "bg-kay-surface text-kay-fg"
                       : "text-kay-muted hover:bg-kay-surface/60 hover:text-kay-fg"
                   }`}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {needsAttention && (
+                    <NavAttentionDot
+                      label={item.attentionLabel ?? `${item.label} needs attention`}
+                    />
+                  )}
                 </Link>
               </li>
             );
@@ -113,6 +135,7 @@ export function DashboardLayout({
   badge,
 }: Props) {
   const pathname = usePathname();
+  const attention = useDashboardNavAttention();
   const homeHref = role === "admin" ? "/admin" : "/vendor";
   const roleLabel =
     role === "admin" ? "Admin console" : role === "vendor" ? "Vendor portal" : "Dashboard";
@@ -161,11 +184,11 @@ export function DashboardLayout({
         </header>
 
         <div className="sticky top-[60px] z-30 -mx-4 mt-6 border-b border-kay-border-light/80 bg-kay-bg/95 px-4 py-3 backdrop-blur-sm lg:hidden">
-          <DashboardNavPills nav={nav} pathname={pathname} />
+          <DashboardNavPills nav={nav} pathname={pathname} attention={attention} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:mt-10 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
-          <DashboardSidebar nav={nav} pathname={pathname} />
+          <DashboardSidebar nav={nav} pathname={pathname} attention={attention} />
           <div className="min-w-0">{children}</div>
         </div>
       </div>
@@ -176,17 +199,34 @@ export function DashboardLayout({
 export const ADMIN_NAV: DashboardNavItem[] = [
   { href: "/admin", label: "Overview", exact: true },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/orders", label: "Orders" },
+  {
+    href: "/admin/orders",
+    label: "Orders",
+    attentionLabel: "Open orders need attention",
+  },
   { href: "/admin/vendors", label: "Vendors" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/payouts", label: "Payouts" },
-  { href: "/admin/concierge", label: "Concierge" },
+  {
+    href: "/admin/concierge",
+    label: "Concierge",
+    attentionLabel: "Concierge requests need attention",
+  },
 ];
 
 export const VENDOR_NAV: DashboardNavItem[] = [
   { href: "/vendor", label: "Overview", exact: true },
   { href: "/vendor/products", label: "Products" },
-  { href: "/vendor/orders", label: "Orders" },
+  {
+    href: "/vendor/orders",
+    label: "Orders",
+    attentionLabel: "Open orders need fulfilment",
+  },
+  {
+    href: "/vendor/concierge",
+    label: "Concierge",
+    attentionLabel: "Concierge requests need your response",
+  },
   { href: "/vendor/wallet", label: "Wallet" },
   { href: "/vendor/settings", label: "Settings" },
 ];

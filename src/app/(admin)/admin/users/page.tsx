@@ -17,15 +17,14 @@ export default async function AdminUsersPage() {
       nav={ADMIN_NAV}
       eyebrow="People"
       title="Members"
-      description="Every account on Kay — roles, access, and invitations in one place."
+      description="Filter, search, and manage every Kay account."
       badge="Admin"
     >
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-10">
+      <div className="space-y-8">
         <AdminUsersList users={users} currentAdminId={ctx.userId} />
 
-        <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <AdminRoleInviteForm />
-
           <div className="rounded-2xl border border-kay-border-light bg-kay-surface/80 p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
               Guidance
@@ -36,7 +35,7 @@ export default async function AdminUsersPage() {
               <li>Known emails upgrade on the spot — no invite required.</li>
             </ul>
           </div>
-        </aside>
+        </div>
       </div>
     </DashboardLayout>
   );

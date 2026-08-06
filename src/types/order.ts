@@ -49,6 +49,8 @@ export type OrderStatus =
   | "shipped"
   | "delivered";
 
+export type PaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
+
 export type OrderTracking = {
   carrier?: string;
   number?: string;
@@ -72,6 +74,9 @@ export type Order = {
   handoverStatus: "not_required" | "pending" | "completed";
   recipientAddress?: AddressDetails;
   tracking?: OrderTracking;
+  paymentStatus?: PaymentStatus;
+  paymentReference?: string | null;
+  paidAt?: string | null;
   createdAt: string;
 };
 

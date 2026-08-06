@@ -16,6 +16,12 @@ export async function POST(request: Request) {
       email,
       role,
       businessName: body.businessName ? String(body.businessName) : undefined,
+      inviteMode:
+        body.inviteMode === "instant"
+          ? "instant"
+          : body.inviteMode === "profile"
+            ? "profile"
+            : undefined,
       invitedBy: ctx.userId,
     });
 

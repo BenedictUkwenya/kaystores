@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createOrder } from "@/lib/orders/store";
 import { validateOrderPricing } from "@/lib/pricing/validate";
-import { notifyOrderEmails } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
 import { reserveStockForOrder, restoreStockForOrder } from "@/lib/products/stock";
 import {
   createVendorOrderItemsFromOrder,
@@ -94,8 +92,6 @@ export async function POST(request: Request) {
         vendorId: item.vendorId ?? vendorMap.get(item.productId)?.vendorId ?? null,
       }));
       await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap);
-
-      await notifyOrderEmails(order, getSiteUrl());
     } catch (err) {
       await restoreStockForOrder(body.items);
       throw err;

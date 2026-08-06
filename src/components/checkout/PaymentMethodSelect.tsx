@@ -31,7 +31,7 @@ export function PaymentMethodSelect({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[15px] font-semibold text-kay-fg">
-                Credit or Debit Card
+                Card payment
               </span>
               <span className="flex gap-1 text-[10px] font-bold tracking-wide text-kay-subtle">
                 <span className="rounded border border-kay-border px-1.5 py-0.5">
@@ -42,48 +42,9 @@ export function PaymentMethodSelect({
                 </span>
               </span>
             </div>
-
-            {value === "card" && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-[12px] font-medium text-kay-muted">
-                    Card Number
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="1234 5678 9012 3456"
-                    disabled
-                    className="h-11 w-full rounded-lg border border-kay-border bg-kay-surface px-3.5 text-[14px] text-kay-subtle"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[12px] font-medium text-kay-muted">
-                    Expiry Date
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="MM / YY"
-                    disabled
-                    className="h-11 w-full rounded-lg border border-kay-border bg-kay-surface px-3.5 text-[14px] text-kay-subtle"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[12px] font-medium text-kay-muted">
-                    CVV
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="123"
-                    disabled
-                    className="h-11 w-full rounded-lg border border-kay-border bg-kay-surface px-3.5 text-[14px] text-kay-subtle"
-                  />
-                </div>
-                <p className="sm:col-span-2 text-[11px] text-kay-subtle">
-                  Payment processing coming soon — your order will be confirmed
-                  on submission.
-                </p>
-              </div>
-            )}
+            <p className="mt-1 text-[12px] text-kay-muted">
+              Pay securely via Flutterwave after you place your order.
+            </p>
           </div>
         </div>
       </label>
@@ -106,14 +67,14 @@ export function PaymentMethodSelect({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[15px] font-semibold text-kay-fg">
-                Bank Transfer
+                Bank transfer
               </span>
               <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-medium text-sky-700">
-                Secure
+                Flutterwave
               </span>
             </div>
             <p className="mt-1 text-[12px] text-kay-muted">
-              Pay via transfer — details sent after order confirmation.
+              Transfer or USSD options on the Flutterwave checkout page.
             </p>
           </div>
         </div>

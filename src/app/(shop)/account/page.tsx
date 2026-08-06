@@ -4,11 +4,18 @@ import {
   fetchOrdersForAccount,
   isSupabaseOrdersEnabled,
 } from "@/lib/orders/repository";
+import { fetchConciergeRequestsForAccount } from "@/lib/concierge/repository";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 
 export default async function AccountPage() {
   if (!getSupabaseConfig().isConfigured) {
-    return <AccountPanel initialUser={null} initialOrders={[]} />;
+    return (
+      <AccountPanel
+        initialUser={null}
+        initialOrders={[]}
+        initialConciergeRequests={[]}
+      />
+    );
   }
 
   const supabase = await createClient();
@@ -19,5 +26,18 @@ export default async function AccountPage() {
   const orders =
     user && isSupabaseOrdersEnabled() ? await fetchOrdersForAccount() : [];
 
-  return <AccountPanel initialUser={user} initialOrders={orders} />;
+  const conciergeRequests = user
+    ? await fetchConciergeRequestsForAccount({
+        userId: user.id,
+        email: user.email,
+      })
+    : [];
+
+  return (
+    <AccountPanel
+      initialUser={user}
+      initialOrders={orders}
+      initialConciergeRequests={conciergeRequests}
+    />
+  );
 }

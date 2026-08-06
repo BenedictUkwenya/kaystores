@@ -94,9 +94,14 @@ type Payload =
       type:
         | "vendor_application_received"
         | "vendor_approved"
+        | "vendor_application_rejected"
         | "vendor_product_approved"
         | "vendor_product_rejected"
-        | "vendor_withdrawal_update";
+        | "vendor_withdrawal_update"
+        | "vendor_concierge_assigned"
+        | "vendor_new_order"
+        | "concierge_offer_won"
+        | "concierge_offer_lost";
       appUrl: string;
       vendor: {
         contactName: string;
@@ -104,9 +109,18 @@ type Payload =
         businessName: string;
       };
       productName?: string;
+      orderNumber?: string;
+      lineSummary?: string;
       rejectionReason?: string;
       withdrawalAmount?: number;
       withdrawalStatus?: string;
+      request?: {
+        referenceNumber: string;
+        productName: string;
+        brand: string;
+        budget: number;
+        description: string;
+      };
     }
   | {
       type: "role_invite" | "role_upgraded";
@@ -116,10 +130,43 @@ type Payload =
       role: "admin" | "vendor";
       inviteUrl?: string;
       businessName?: string;
+    }
+  | {
+      type:
+        | "concierge_offers_ready"
+        | "concierge_recommendation_ready"
+        | "concierge_offer_selected_client"
+        | "concierge_offer_won"
+        | "concierge_offer_lost"
+        | "concierge_admin_alert";
+      appUrl: string;
+      recipientEmail?: string;
+      recipientName?: string;
+      alertTitle?: string;
+      alertDetail?: string;
+      vendor?: {
+        contactName: string;
+        contactEmail: string;
+        businessName: string;
+      };
+      request: {
+        referenceNumber: string;
+        productName: string;
+        brand?: string;
+        budget?: number;
+        description?: string;
+        vendorBusinessName?: string;
+        quotedPrice?: number;
+        statusUrl?: string;
+      };
     };
 
 function naira(amount: number) {
   return `₦${amount.toLocaleString("en-NG")}`;
+}
+
+function defaultReplyTo(): string | undefined {
+  return Deno.env.get("KAY_REPLY_TO_EMAIL") ?? Deno.env.get("KAY_TEAM_EMAIL") ?? undefined;
 }
 
 function layout(title: string, body: string) {
@@ -376,6 +423,22 @@ function buildMessage(
         tags: [{ name: "category", value: "vendor_approved" }],
       };
     }
+    case "vendor_application_rejected": {
+      const { vendor, appUrl } = payload;
+      const html = layout(
+        "Vendor application update",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, thank you for applying to sell on Kay with <strong>${vendor.businessName}</strong>.</p>
+        <p style="color:#5c5c5c;line-height:1.6">We're not moving forward with this application at the moment. You're welcome to re-apply later if your catalogue or fit changes.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/apply">Apply again</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: "Update on your Kay vendor application",
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "vendor_application_rejected" }],
+      };
+    }
     case "vendor_product_approved": {
       const { vendor, productName, appUrl } = payload;
       const html = layout(
@@ -419,6 +482,149 @@ function buildMessage(
         html,
         text: stripHtml(html),
         tags: [{ name: "category", value: "vendor_withdrawal" }],
+      };
+    }
+    case "vendor_concierge_assigned": {
+      const { vendor, request, appUrl } = payload;
+      if (!request) throw new Error("Concierge request details required");
+      const brandLine = request.brand
+        ? `<p style="color:#5c5c5c;line-height:1.6">Brand: <strong>${request.brand}</strong></p>`
+        : "";
+      const html = layout(
+        "Concierge sourcing request",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, Kay has a client looking for <strong>${request.productName}</strong> (${request.referenceNumber}).</p>
+        ${brandLine}
+        <p style="color:#5c5c5c;line-height:1.6">Client budget: <strong>${naira(request.budget)}</strong></p>
+        <p style="color:#5c5c5c;line-height:1.6">${request.description || "No additional details."}</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/concierge">Review in your vendor portal</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `Concierge request — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "vendor_concierge" }],
+      };
+    }
+    case "vendor_new_order": {
+      const { vendor, appUrl, orderNumber, lineSummary } = payload;
+      const html = layout(
+        "New paid order",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, payment is confirmed for order <strong>${orderNumber}</strong>.</p>
+        <p style="color:#5c5c5c;line-height:1.6">${lineSummary || "Your catalogue items are included in this order."}</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/orders">Open vendor orders</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `New order — ${orderNumber}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "vendor_new_order" }],
+      };
+    }
+    case "concierge_recommendation_ready": {
+      const { recipientEmail, recipientName, request, appUrl } = payload;
+      if (!recipientEmail) return null;
+      const html = layout(
+        "Your curated recommendation is ready",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${recipientName ?? "there"}, Kay has selected an option for <strong>${request.productName}</strong> (${request.referenceNumber}).</p>
+        <p style="color:#5c5c5c;font-size:13px">Review the recommendation — accept, ask for changes, or cancel from your status page.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${request.statusUrl ?? `${appUrl}/concierge/status`}">View recommendation</a></p>`,
+      );
+      return {
+        to: [recipientEmail],
+        subject: `Recommendation ready — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "concierge_recommendation_ready" }],
+      };
+    }
+    case "concierge_offers_ready": {
+      const { recipientEmail, recipientName, request, appUrl } = payload;
+      if (!recipientEmail) return null;
+      const html = layout(
+        "Offers ready for your request",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${recipientName ?? "there"}, vendors have submitted offers for <strong>${request.productName}</strong> (${request.referenceNumber}).</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${request.statusUrl ?? `${appUrl}/concierge/status`}">Compare offers and choose your partner</a></p>`,
+      );
+      return {
+        to: [recipientEmail],
+        subject: `Offers ready — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "concierge_offers_ready" }],
+      };
+    }
+    case "concierge_offer_selected_client": {
+      const { recipientEmail, recipientName, request } = payload;
+      if (!recipientEmail) return null;
+      const html = layout(
+        "Offer confirmed",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${recipientName ?? "there"}, you accepted Kay's recommendation for <strong>${request.productName}</strong> at <strong>${naira(request.quotedPrice ?? 0)}</strong>.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${request.statusUrl}">View request status</a></p>`,
+      );
+      return {
+        to: [recipientEmail],
+        subject: `Offer confirmed — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "concierge_offer_selected" }],
+      };
+    }
+    case "concierge_offer_won": {
+      const { vendor, request, appUrl } = payload;
+      if (!vendor || !request) return null;
+      const html = layout(
+        "You won this sourcing job",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, the client selected your offer for <strong>${request.productName}</strong> (${request.referenceNumber}).</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/concierge">Open vendor portal to fulfil</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `Client selected your offer — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "concierge_offer_won" }],
+      };
+    }
+    case "concierge_offer_lost": {
+      const { vendor, request } = payload;
+      if (!vendor || !request) return null;
+      const html = layout(
+        "Update on sourcing request",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, the client chose another partner for <strong>${request.productName}</strong> (${request.referenceNumber}). Thank you for responding.</p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `Request update — ${request.productName}`,
+        html,
+        text: stripHtml(html),
+        tags: [{ name: "category", value: "concierge_offer_lost" }],
+      };
+    }
+    case "concierge_admin_alert": {
+      const { request, appUrl, alertTitle, alertDetail } = payload;
+      const teamEmail = Deno.env.get("KAY_TEAM_EMAIL");
+      if (!teamEmail) return null;
+      const detailBlock = alertDetail
+        ? `<p style="color:#5c5c5c;line-height:1.6;white-space:pre-wrap">${alertDetail}</p>`
+        : "";
+      const html = layout(
+        alertTitle ?? "Concierge needs attention",
+        `<p style="color:#5c5c5c;line-height:1.6"><strong>${request.productName}</strong> (${request.referenceNumber})</p>
+        ${request.brand ? `<p style="color:#5c5c5c">Brand: ${request.brand} · Budget: ${naira(request.budget ?? 0)}</p>` : ""}
+        ${detailBlock}
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/admin/concierge">Open admin concierge</a></p>`,
+      );
+      return {
+        to: [teamEmail],
+        subject: `[Concierge] ${alertTitle ?? "Action needed"} — ${request.referenceNumber}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "concierge_admin_alert" }],
       };
     }
     case "role_invite": {
@@ -549,7 +755,8 @@ Deno.serve(async (req) => {
             `<p style="color:#5c5c5c"><strong>${request.productName}</strong> (${request.brand || "No brand"})<br/>
             Budget: ${naira(request.budget)}<br/>
             ${request.contactName} — ${request.contactEmail} · ${request.contactPhone}</p>
-            <p style="color:#5c5c5c">${request.description}</p>`,
+            <p style="color:#5c5c5c">${request.description}</p>
+            <p style="color:#5c5c5c;font-size:13px"><a href="${payload.appUrl}/admin/concierge">Review in admin concierge</a></p>`,
           );
         const team = await sendResend({
           from,
@@ -557,6 +764,8 @@ Deno.serve(async (req) => {
           subject: `[Concierge] ${request.referenceNumber} — ${request.productName}`,
           html: teamHtml,
           text: stripHtml(teamHtml),
+          replyTo: defaultReplyTo(),
+          tags: [{ name: "category", value: "concierge_team" }],
         });
         if (team.id) results.push(team.id);
       }

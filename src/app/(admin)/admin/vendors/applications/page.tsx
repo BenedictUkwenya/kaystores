@@ -10,7 +10,9 @@ import type { Vendor } from "@/types/dashboard";
 
 export default async function AdminVendorApplicationsPage() {
   await requireAdmin();
-  const vendors = await fetchAllVendors("pending");
+  const vendors = await fetchAllVendors("pending", {
+    onboardingSource: "self_apply",
+  });
 
   return (
     <DashboardLayout
@@ -18,7 +20,7 @@ export default async function AdminVendorApplicationsPage() {
       nav={ADMIN_NAV}
       eyebrow="Queue"
       title="Vendor applications"
-      description="Review and approve new vendor partners."
+      description="Review self-applied partners (NIN + KYC). Invited vendors are auto-approved and do not appear here."
       badge="Admin"
     >
       <ul className="space-y-4">
@@ -33,6 +35,11 @@ export default async function AdminVendorApplicationsPage() {
                 <p className="mt-1 text-[13px] text-kay-muted">
                   {v.contactName} · {v.contactEmail} · {v.contactPhone}
                 </p>
+                {v.nin && (
+                  <p className="mt-1 text-[13px] text-kay-fg">
+                    NIN: <span className="font-mono tracking-wide">{v.nin}</span>
+                  </p>
+                )}
                 <p className="mt-3 text-[13px] leading-relaxed text-kay-muted">
                   {v.catalogDescription}
                 </p>

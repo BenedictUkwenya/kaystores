@@ -7,10 +7,12 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { AccountGuestView } from "@/components/account/AccountGuestView";
 import type { OrderSummary } from "@/types/order";
+import type { ClientConciergeStatus } from "@/types/concierge";
 
 type Props = {
   initialUser: User | null;
   initialOrders: OrderSummary[];
+  initialConciergeRequests: ClientConciergeStatus[];
 };
 
 function AccountSkeleton() {
@@ -27,10 +29,17 @@ function AccountSkeleton() {
   );
 }
 
-export function AccountPanel({ initialUser, initialOrders }: Props) {
+export function AccountPanel({
+  initialUser,
+  initialOrders,
+  initialConciergeRequests,
+}: Props) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser);
   const [orders, setOrders] = useState<OrderSummary[]>(initialOrders);
+  const [conciergeRequests, setConciergeRequests] = useState<
+    ClientConciergeStatus[]
+  >(initialConciergeRequests);
   const [loading, setLoading] = useState(!initialUser && !initialOrders.length);
 
   useEffect(() => {
@@ -55,6 +64,7 @@ export function AccountPanel({ initialUser, initialOrders }: Props) {
       setUser(session?.user ?? null);
       if (!session?.user) {
         setOrders([]);
+        setConciergeRequests([]);
       }
     });
 
@@ -62,13 +72,22 @@ export function AccountPanel({ initialUser, initialOrders }: Props) {
   }, [initialUser]);
 
   useEffect(() => {
-    if (!user || initialOrders.length > 0) return;
+    if (!user) return;
 
-    fetch("/api/orders/mine")
-      .then((res) => (res.ok ? res.json() : { orders: [] }))
-      .then((data) => setOrders(data.orders ?? []))
-      .catch(() => {});
-  }, [user, initialOrders.length]);
+    if (initialOrders.length === 0) {
+      fetch("/api/orders/mine")
+        .then((res) => (res.ok ? res.json() : { orders: [] }))
+        .then((data) => setOrders(data.orders ?? []))
+        .catch(() => {});
+    }
+
+    if (initialConciergeRequests.length === 0) {
+      fetch("/api/concierge/mine")
+        .then((res) => (res.ok ? res.json() : { requests: [] }))
+        .then((data) => setConciergeRequests(data.requests ?? []))
+        .catch(() => {});
+    }
+  }, [user, initialOrders.length, initialConciergeRequests.length]);
 
   async function handleSignOut() {
     const supabase = createBrowserSupabase();
@@ -90,6 +109,7 @@ export function AccountPanel({ initialUser, initialOrders }: Props) {
     <AccountDashboard
       user={user}
       orders={orders}
+      conciergeRequests={conciergeRequests}
       onSignOut={handleSignOut}
     />
   );

@@ -25,6 +25,18 @@ export async function notifyVendorApproved(vendor: {
   });
 }
 
+export async function notifyVendorRejected(vendor: {
+  contactName: string;
+  contactEmail: string;
+  businessName: string;
+}) {
+  await sendKayEmail({
+    type: "vendor_application_rejected",
+    appUrl: getSiteUrl(),
+    vendor,
+  });
+}
+
 export async function notifyProductReview(
   vendor: { contactName: string; contactEmail: string; businessName: string },
   productName: string,

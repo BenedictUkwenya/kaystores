@@ -151,6 +151,18 @@ export function CheckoutForm({
       const order = await res.json();
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
       clearCart();
+
+      const payRes = await fetch("/api/payments/flutterwave/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "order", id: order.id, email: buyer.email }),
+      });
+      const payData = await payRes.json();
+      if (payRes.ok && payData.link) {
+        window.location.href = payData.link;
+        return;
+      }
+
       router.replace(`/order/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

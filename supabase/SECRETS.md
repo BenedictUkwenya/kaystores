@@ -29,6 +29,9 @@ supabase secrets set KAY_TEAM_EMAIL=team@yourdomain.com
 | `RESEND_API_KEY` | Resend API key (never commit) |
 | `RESEND_FROM_EMAIL` | Verified sender on your Resend domain |
 | `KAY_TEAM_EMAIL` | Internal alerts (new orders, concierge, contact) |
+| `KAY_REPLY_TO_EMAIL` | Optional reply address (defaults to `KAY_TEAM_EMAIL`) |
+
+**Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — verify your domain in Resend (SPF, DKIM, DMARC) and stop using `onboarding@resend.dev` in production.
 
 Swap these when you move to the Kay Stores domain — only secrets change, not app code.
 
@@ -87,7 +90,10 @@ If you prefer not to use the hook, configure **Project Settings → Auth → SMT
 | Sign up / password reset | 8-digit code via Resend (`send-auth-email` hook) |
 | Order placed | Buyer confirmation + team alert + handover link (if gift) |
 | Handover completed | Team alert |
-| Concierge submitted | Submitter confirmation + team alert |
+| Concierge submitted | Submitter confirmation + team alert (+ link to admin concierge) |
+| Concierge offers ready / client revision | Team admin alert |
+| Concierge dispatched to vendors | Each assigned vendor |
+| Shop order paid | Buyer + team + each vendor on the order |
 | Contact form | Team alert |
 
 Orders persist to `public.orders` when Supabase is configured; in-memory fallback remains for local dev without DB.

@@ -11,6 +11,7 @@ export const SITE_ROUTES = {
   privacy: "/privacy",
   terms: "/terms",
   concierge: "/concierge",
+  conciergeStatus: "/concierge/status",
   afterDark: "/after-dark",
 } as const;
 

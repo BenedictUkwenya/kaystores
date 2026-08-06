@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-06-28
+**Last updated:** 2026-08-06
 
 
 
@@ -36,7 +36,7 @@
 
 
 
-> **Note:** Run migrations `001`–`004` and `seed.sql`. Email via Resend → see `supabase/SECRETS.md`.
+> **Note:** Run migrations `001`–`004` and `seed.sql`. Vendor onboarding needs `023_vendor_onboarding.sql`. Email via Resend → see `supabase/SECRETS.md`.
 
 
 
@@ -170,6 +170,16 @@
 
 - [x] Automated email to internal team on concierge submission
 
+- [x] **Admin → vendor concierge dispatch** (send to all or selected vendors; vendor portal to respond with availability & quote)
+
+- [x] **Client request status tracking** (`/concierge/status` — reference + email lookup, timeline view)
+
+- [x] **Concierge admin-curated offers** — vendors quote internally; admin presents one recommendation; client accepts, requests revision, or cancels
+
+- [x] **Post-selection fulfilment** — winning vendor sourcing → Kay hub; losers notified; admin release client contact when ready
+
+- [x] **Admin concierge queues** — filter tabs (dispatch, quotes, present, awaiting client, fulfilment, closed), pagination, stale highlighting
+
 
 
 ---
@@ -236,7 +246,9 @@
 
 - [x] Email notifications (concierge, order updates, recipient link)
 
-- [ ] Payment integration
+- [x] **Flutterwave payments** — shop checkout + concierge pay-after-selection; webhook at `/api/webhooks/flutterwave`
+
+- [x] **Vendor invite vs self-apply** — Kay invites choose instant access or profile-first (both auto-approved); self-apply collects NIN and stays pending admin review
 
 - [ ] Inventory sync
 
@@ -264,15 +276,15 @@
 
 | AI engine         | 4    | 6     |
 
-| About & concierge | 3    | 3     |
+| About & concierge | 9    | 9     |
 
 | Help & legal      | 10   | 11    |
 
-| Backend           | 4    | 6     |
+| Backend           | 5    | 6     |
 
 
 
-**Overall:** 60 / 66 checklist items complete
+**Overall:** 67 / 72 checklist items complete
 
 
 
@@ -292,7 +304,7 @@
 
 | Comparison feature | Done | Full page + PDP + cart |
 
-| Special requests (Concierge) | Done | Form + Supabase + Resend via Edge Function |
+| Special requests (Concierge) | Done | Full flow: dispatch → vendor offers with photos → client picks → fulfilment |
 
 | Privacy / John Doe (After Dark) | Partial | 18+ gate, `/after-dark`; encrypted aliases TBD |
 

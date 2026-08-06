@@ -28,6 +28,9 @@ export function mapVendorRow(row: Record<string, unknown>): Vendor {
     contactEmail: String(row.contact_email),
     contactPhone: String(row.contact_phone ?? ""),
     catalogDescription: String(row.catalog_description ?? ""),
+    nin: row.nin != null ? String(row.nin) : null,
+    onboardingSource:
+      row.onboarding_source === "invite" ? "invite" : "self_apply",
     status: row.status as Vendor["status"],
     canListAfterDark: Boolean(row.can_list_after_dark),
     bankName: row.bank_name != null ? String(row.bank_name) : null,

@@ -22,6 +22,17 @@ const STATUS_STYLES: Record<string, string> = {
   processing: "border-sky-200 bg-sky-50 text-sky-900",
   unpaid: "border-amber-200 bg-amber-50 text-amber-900",
   confirmed: "border-kay-gold/30 bg-kay-gold-light/40 text-kay-fg",
+  with_vendors: "border-violet-200 bg-violet-50 text-violet-900",
+  offers_ready: "border-violet-200 bg-violet-50 text-violet-900",
+  client_reviewing: "border-amber-200 bg-amber-50 text-amber-900",
+  revision_requested: "border-amber-200 bg-amber-50 text-amber-900",
+  vendor_selected: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  in_fulfilment: "border-sky-200 bg-sky-50 text-sky-900",
+  in_progress: "border-sky-200 bg-sky-50 text-sky-900",
+  has_product: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  no_product: "border-kay-border bg-kay-surface text-kay-muted",
+  need_more_info: "border-amber-200 bg-amber-50 text-amber-900",
+  closed: "border-kay-border bg-kay-surface text-kay-muted",
 };
 
 type Props = {

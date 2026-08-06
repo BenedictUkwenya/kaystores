@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import {
+  clearVendorApplyDraft,
+  readVendorApplyDraft,
+  submitVendorApplicationRequest,
+} from "@/lib/vendor/apply-draft";
+import { isValidNin } from "@/lib/vendor/nin";
 
 export function VendorApplyForm() {
   const router = useRouter();
@@ -17,31 +23,97 @@ export function VendorApplyForm() {
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [catalogDescription, setCatalogDescription] = useState("");
+  const [nin, setNin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<"pending" | "approved" | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      await fetch("/api/auth/redeem-invites", { method: "POST" }).catch(
+        () => null,
+      );
+
+      const draft = readVendorApplyDraft();
+      if (!draft) {
+        if (!cancelled) setBootstrapping(false);
+        return;
+      }
+
+      setBusinessName(draft.businessName);
+      setContactName(draft.contactName);
+      setContactEmail(draft.contactEmail);
+      setContactPhone(draft.contactPhone);
+      setCatalogDescription(draft.catalogDescription);
+      if (draft.nin) setNin(draft.nin);
+
+      try {
+        const result = await submitVendorApplicationRequest({
+          ...draft,
+          inviteToken: inviteToken || draft.inviteToken,
+        });
+        if (!cancelled) {
+          clearVendorApplyDraft();
+          if (result.status === "approved") {
+            router.replace("/vendor");
+            router.refresh();
+            return;
+          }
+          setSuccess("pending");
+          router.refresh();
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Sign in and submit your application below.",
+          );
+        }
+      } finally {
+        if (!cancelled) setBootstrapping(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteToken, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!inviteToken && !isValidNin(nin)) {
+      setError("Enter a valid 11-digit NIN.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await fetch("/api/vendor/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessName,
-          contactName,
-          contactEmail,
-          contactPhone,
-          catalogDescription,
-          inviteToken: inviteToken || undefined,
-        }),
+      await fetch("/api/auth/redeem-invites", { method: "POST" }).catch(
+        () => null,
+      );
+      const result = await submitVendorApplicationRequest({
+        businessName,
+        contactName,
+        contactEmail,
+        contactPhone,
+        catalogDescription,
+        nin: inviteToken ? undefined : nin,
+        inviteToken: inviteToken || undefined,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Application failed");
-      setSuccess(true);
+      clearVendorApplyDraft();
+      if (result.status === "approved") {
+        router.replace("/vendor");
+        router.refresh();
+        return;
+      }
+      setSuccess("pending");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Application failed");
@@ -50,13 +122,21 @@ export function VendorApplyForm() {
     }
   }
 
-  if (success) {
+  if (bootstrapping) {
+    return (
+      <p className="text-[14px] text-kay-muted">
+        Completing your vendor application…
+      </p>
+    );
+  }
+
+  if (success === "pending") {
     return (
       <div className="rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-8 text-center shadow-[var(--kay-card-shadow)]">
         <p className="font-serif text-[28px] text-kay-fg">Application received</p>
         <p className="mt-3 text-[14px] text-kay-muted">
           Our team will review your application within 1–2 business days. You will
-          receive an email when approved.
+          receive an email when approved or if we need to pass for now.
         </p>
         <Link
           href="/account"
@@ -75,7 +155,21 @@ export function VendorApplyForm() {
     >
       {inviteToken && (
         <p className="rounded-lg border border-kay-gold/30 bg-kay-gold-light/40 px-4 py-3 text-[13px] text-kay-fg">
-          You were invited to join Kay&apos;s vendor network. Complete your application below.
+          You were invited by Kay. Complete this short profile and you&apos;ll be
+          approved automatically — no KYC queue.
+        </p>
+      )}
+
+      {!inviteToken && (
+        <p className="rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[13px] text-kay-muted">
+          New here?{" "}
+          <Link
+            href="/signup?intent=vendor"
+            className="font-medium text-kay-gold hover:underline"
+          >
+            Sign up and apply in one step
+          </Link>
+          . Self-applications require NIN and Kay review.
         </p>
       )}
 
@@ -106,6 +200,19 @@ export function VendorApplyForm() {
         onChange={(e) => setContactPhone(e.target.value)}
         required
       />
+      {!inviteToken && (
+        <Input
+          label="NIN"
+          inputMode="numeric"
+          autoComplete="off"
+          value={nin}
+          onChange={(e) =>
+            setNin(e.target.value.replace(/\D/g, "").slice(0, 11))
+          }
+          placeholder="11-digit National Identification Number"
+          required
+        />
+      )}
       <Textarea
         label="Catalog description"
         value={catalogDescription}
@@ -122,7 +229,11 @@ export function VendorApplyForm() {
       )}
 
       <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-        {loading ? "Submitting…" : "Submit application"}
+        {loading
+          ? "Submitting…"
+          : inviteToken
+            ? "Complete profile & enter portal"
+            : "Submit application"}
       </Button>
     </form>
   );

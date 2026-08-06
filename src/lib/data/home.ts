@@ -109,3 +109,16 @@ export const FOOTER_SHOP_LINKS: Record<string, string> = {
 export function formatNaira(amount: number) {
   return `₦${amount.toLocaleString("en-NG")}`;
 }
+
+/** Format digits for currency-style inputs (e.g. 1000000 → 1,000,000). */
+export function formatIntegerInput(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("en-NG");
+}
+
+/** Parse a formatted integer input back to a number. */
+export function parseIntegerInput(value: string): number {
+  const digits = value.replace(/\D/g, "");
+  return digits ? Number(digits) : 0;
+}

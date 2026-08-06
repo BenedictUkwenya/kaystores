@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { getSessionUser } from "@/lib/auth/roles";
 import { createConciergeRequest } from "@/lib/concierge/repository";
 import { sendKayEmail } from "@/lib/email/send";
 import { getSiteUrl } from "@/lib/site";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "application/pdf",
-];
+import { uploadConciergeAttachments } from "@/lib/storage/concierge-attachments";
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +12,9 @@ export async function POST(request: Request) {
 
     const productName = String(formData.get("productName") ?? "").trim();
     const brand = String(formData.get("brand") ?? "").trim();
-    const budget = Number(formData.get("budget"));
+    const budget = Number(
+      String(formData.get("budget") ?? "").replace(/[^\d]/g, ""),
+    );
     const description = String(formData.get("description") ?? "").trim();
     const contactName = String(formData.get("contactName") ?? "").trim();
     const contactEmail = String(formData.get("contactEmail") ?? "").trim();
@@ -37,36 +34,30 @@ export async function POST(request: Request) {
       );
     }
 
-    const attachmentNames: string[] = [];
-    const files = formData.getAll("attachments");
+    const files = formData
+      .getAll("attachments")
+      .filter((entry): entry is File => entry instanceof File && entry.size > 0);
 
-    for (const entry of files) {
-      if (!(entry instanceof File) || entry.size === 0) continue;
-      if (entry.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: `${entry.name} exceeds the 10MB limit.` },
-          { status: 400 },
-        );
-      }
-      if (entry.type && !ALLOWED_TYPES.includes(entry.type)) {
-        return NextResponse.json(
-          { error: `${entry.name} must be PNG, JPG, or PDF.` },
-          { status: 400 },
-        );
-      }
-      attachmentNames.push(entry.name);
-    }
+    const requestId = randomUUID();
+    const attachments = await uploadConciergeAttachments(requestId, files);
 
-    const created = await createConciergeRequest({
-      productName,
-      brand,
-      budget,
-      description,
-      contactName,
-      contactEmail,
-      contactPhone,
-      attachmentNames,
-    });
+    const user = await getSessionUser();
+
+    const created = await createConciergeRequest(
+      {
+        id: requestId,
+        productName,
+        brand,
+        budget,
+        description,
+        contactName,
+        contactEmail,
+        contactPhone,
+        attachmentNames: attachments.map((item) => item.name),
+        attachments,
+      },
+      user?.id,
+    );
 
     void sendKayEmail({
       type: "concierge",
@@ -78,10 +69,9 @@ export async function POST(request: Request) {
       id: created.id,
       referenceNumber: created.referenceNumber,
     });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to submit request." },
-      { status: 500 },
-    );
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to submit request.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

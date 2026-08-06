@@ -46,8 +46,14 @@ export function ConciergeSidebar() {
       <div className="concierge-card rounded-xl border border-kay-border-light px-4 py-4 shadow-sm">
         <h3 className="text-[13px] font-semibold text-kay-fg">Request status</h3>
         <p className="mt-2 text-[12px] leading-relaxed text-kay-muted">
-          Submit a request to begin. We&apos;ll email you updates at each stage.
+          Track an existing request with your reference number and email.
         </p>
+        <a
+          href="/concierge/status"
+          className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-lg border border-kay-border text-[13px] font-medium text-kay-fg transition-colors hover:border-kay-fg hover:bg-kay-surface"
+        >
+          Track request
+        </a>
       </div>
 
       <div className="concierge-card rounded-xl border border-kay-border-light px-4 py-4 shadow-sm">
