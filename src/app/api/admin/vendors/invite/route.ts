@@ -1,4 +1,4 @@
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth/roles";
 import { createVendorInvite } from "@/lib/admin/repository";
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     });
     return Response.json({
       ...result,
-      applyUrl: `${getSiteUrl()}/vendor/apply?token=${result.token}`,
+      applyUrl: `${getEmailSiteUrl()}/vendor/apply?token=${result.token}`,
     });
   } catch (err) {
     return apiErrorResponse(err);

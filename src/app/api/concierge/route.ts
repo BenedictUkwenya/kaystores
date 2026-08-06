@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getSessionUser } from "@/lib/auth/roles";
 import { createConciergeRequest } from "@/lib/concierge/repository";
 import { sendKayEmail } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 import { uploadConciergeAttachments } from "@/lib/storage/concierge-attachments";
 
 export async function POST(request: Request) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     void sendKayEmail({
       type: "concierge",
-      appUrl: getSiteUrl(),
+      appUrl: getEmailSiteUrl(),
       request: created,
     });
 

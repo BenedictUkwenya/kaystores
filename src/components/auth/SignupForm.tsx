@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
@@ -26,6 +26,8 @@ export function SignupForm() {
     searchParams.get("mode") === "instant" ? "instant" : "profile";
 
   const isVendorInvite = Boolean(inviteToken && inviteRole === "vendor");
+  const isAdminInvite = Boolean(inviteToken && inviteRole === "admin");
+  const isRoleInvite = isVendorInvite || isAdminInvite;
   const isInstantInvite = isVendorInvite && inviteMode === "instant";
   const isProfileInvite = isVendorInvite && inviteMode === "profile";
 
@@ -39,6 +41,8 @@ export function SignupForm() {
   );
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailLocked, setEmailLocked] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(isRoleInvite);
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -55,12 +59,63 @@ export function SignupForm() {
     intent === "vendor" && inviteRole !== "admin" && !isVendorInvite;
   const showVendorFields = isSelfVendorSignup || isProfileInvite;
 
+  useEffect(() => {
+    if (!inviteToken) {
+      setInviteLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setInviteLoading(true);
+
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/auth/invite-preview?token=${encodeURIComponent(inviteToken)}`,
+        );
+        const data = (await res.json()) as {
+          email?: string;
+          businessName?: string;
+          error?: string;
+        };
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(data.error ?? "This invitation is invalid or expired.");
+          setInviteLoading(false);
+          return;
+        }
+        if (data.email) {
+          setEmail(data.email);
+          setEmailLocked(true);
+        }
+        if (data.businessName) {
+          setBusinessName((prev) => prev || data.businessName!);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Could not load invitation details.");
+        }
+      } finally {
+        if (!cancelled) setInviteLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteToken]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (isRoleInvite && !emailLocked) {
+      setError("Invitation details are still loading. Try again in a moment.");
       return;
     }
 
@@ -84,7 +139,7 @@ export function SignupForm() {
       return;
     }
 
-    const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
     const { data, error: authError } = await supabase.auth.signUp({
       email: normalizedEmail,
@@ -198,11 +253,11 @@ export function SignupForm() {
         : "Create an account";
 
   const subtitle = inviteRole === "admin"
-    ? "Complete registration to access the Kay admin console."
+    ? "Choose a name and password for your admin account."
     : isInstantInvite
-      ? "Enter your name, email, and password. Kay has already verified you — you'll go straight into the vendor portal."
+      ? "Choose a name and password. Kay has already verified you — you'll go straight into the vendor portal."
       : isProfileInvite
-        ? "Create your account and complete a short business profile. You'll be approved automatically."
+        ? "Choose a name and password, then complete a short business profile. You'll be approved automatically."
         : isSelfVendorSignup
           ? "Create your account and submit your vendor application. Kay reviews every partner, including NIN verification."
           : "Shop gifts, track orders, and manage your Kay account.";
@@ -251,16 +306,31 @@ export function SignupForm() {
           placeholder="Enter your full name"
           required
         />
-        <Input
-          variant="checkout"
-          label="Email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter email address"
-          required
-        />
+        {emailLocked ? (
+          <div>
+            <p className="mb-1.5 text-[12px] font-medium text-kay-muted">Email</p>
+            <p className="rounded-lg border border-kay-border-light bg-kay-surface px-3.5 py-3 text-[14px] text-kay-fg">
+              {email}
+            </p>
+            <p className="mt-1.5 text-[12px] text-kay-subtle">
+              From your Kay invitation — this can&apos;t be changed.
+            </p>
+          </div>
+        ) : (
+          <Input
+            variant="checkout"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={
+              inviteLoading ? "Loading invitation…" : "Enter email address"
+            }
+            required
+            disabled={inviteLoading}
+          />
+        )}
         <Input
           variant="checkout"
           label="Password"
@@ -325,7 +395,7 @@ export function SignupForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || inviteLoading || (isRoleInvite && !emailLocked)}
           className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-lg bg-kay-accent text-[14px] font-medium text-kay-accent-fg transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading
@@ -342,11 +412,13 @@ export function SignupForm() {
         </button>
       </form>
 
-      <div className="mt-4">
-        <Suspense fallback={null}>
-          <GoogleSignInButton />
-        </Suspense>
-      </div>
+      {!isRoleInvite && (
+        <div className="mt-4">
+          <Suspense fallback={null}>
+            <GoogleSignInButton />
+          </Suspense>
+        </div>
+      )}
 
       <AuthLinkRow
         left={{ text: "Already have an account?", href: "/login", linkText: "Sign in" }}

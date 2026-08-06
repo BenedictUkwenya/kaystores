@@ -9,13 +9,24 @@ type AuthEmailPayload = {
   };
 };
 
-function layout(title: string, body: string) {
+function siteUrl(): string {
+  const fromEnv = Deno.env.get("PUBLIC_SITE_URL")?.replace(/\/$/, "");
+  if (fromEnv && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(fromEnv)) {
+    return fromEnv;
+  }
+  return "https://kaystores.vercel.app";
+}
+
+function layout(title: string, body: string, opts?: { omitExpiry?: boolean }) {
+  const expiry = opts?.omitExpiry
+    ? ""
+    : `<p style="margin-top:28px;font-size:11px;color:#8a8a8a">This code expires in 1 hour. If you didn't request this, you can ignore this email.</p>`;
   return `<!DOCTYPE html><html><body style="font-family:Georgia,serif;background:#f9f7f2;margin:0;padding:32px 16px">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #eceae4;border-radius:12px;padding:32px">
     <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#b89a6a">Kay Stores</p>
     <h1 style="margin:0 0 20px;font-size:22px;font-weight:400;color:#000">${title}</h1>
     ${body}
-    <p style="margin-top:28px;font-size:11px;color:#8a8a8a">This code expires in 1 hour. If you didn't request this, you can ignore this email.</p>
+    ${expiry}
     <p style="margin-top:8px;font-size:11px;color:#8a8a8a">Kay Stores · Luxury gifting</p>
   </div></body></html>`;
 }
@@ -25,6 +36,7 @@ function messageForAction(
   token: string,
 ): { subject: string; html: string } {
   const code = `<p style="margin:24px 0;font-size:32px;letter-spacing:0.35em;font-weight:600;color:#000;text-align:center">${token}</p>`;
+  const signupUrl = `${siteUrl()}/signup`;
 
   switch (action) {
     case "signup":
@@ -60,11 +72,18 @@ function messageForAction(
         ),
       };
     case "invite":
+      // Vendor/admin invites use send-email (role_invite) with a personal signup URL.
+      // If this auth hook still fires, give a usable live-site button — not a dead OTP.
       return {
-        subject: "You're invited to Kay",
+        subject: "You're invited to Kay Stores",
         html: layout(
-          "Accept your invitation",
-          `<p style="color:#5c5c5c;line-height:1.6">Enter this code to accept your invitation:</p>${code}`,
+          "Complete your Kay registration",
+          `<p style="color:#5c5c5c;line-height:1.6">Create your account on Kay Stores with your name and password. If you received a separate invitation with a personal link, use that instead.</p>
+          <p style="margin:24px 0 12px">
+            <a href="${signupUrl}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;padding:14px 22px;border-radius:999px">Create your account</a>
+          </p>
+          <p style="color:#5c5c5c;font-size:12px;line-height:1.5;word-break:break-all">Or open: <a href="${signupUrl}" style="color:#b89a6a;text-decoration:underline">${signupUrl}</a></p>`,
+          { omitExpiry: true },
         ),
       };
     default:

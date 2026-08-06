@@ -54,7 +54,7 @@ export function AdminRoleInviteForm() {
           variant: "success",
           title: "Invite sent",
           message:
-            "We've emailed the invitation. If it doesn't arrive, share the link below.",
+            "They get an email titled “Invitation — Kay admin access” with a button to register. Copy the link below if needed — it opens the live site.",
           inviteUrl: data.inviteUrl,
         });
       }

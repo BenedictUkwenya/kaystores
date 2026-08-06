@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
 import type { AccountStatus, AdminUser, UserRole } from "@/types/dashboard";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 import { sendKayEmail } from "@/lib/email/send";
 
 function admin() {
@@ -299,7 +299,7 @@ export async function inviteUserByRole(input: {
       await upgradeUserToAdmin(existing.id, input.invitedBy);
       await sendKayEmail({
         type: "role_upgraded",
-        appUrl: getSiteUrl(),
+        appUrl: getEmailSiteUrl(),
         recipientEmail: email,
         recipientName: existing.user_metadata?.full_name as string | undefined,
         role: "admin",
@@ -314,7 +314,7 @@ export async function inviteUserByRole(input: {
     );
     await sendKayEmail({
       type: "role_upgraded",
-      appUrl: getSiteUrl(),
+      appUrl: getEmailSiteUrl(),
       recipientEmail: email,
       recipientName: existing.user_metadata?.full_name as string | undefined,
       role: "vendor",
@@ -343,118 +343,30 @@ export async function inviteUserByRole(input: {
 
   if (inviteErr) throw new Error(inviteErr.message);
 
+  const siteUrl = getEmailSiteUrl();
   const inviteUrl =
     input.role === "admin"
-      ? `${getSiteUrl()}/signup?invite=${token}&role=admin`
-      : `${getSiteUrl()}/signup?invite=${token}&role=vendor&mode=${inviteMode}`;
+      ? `${siteUrl}/signup?invite=${token}&role=admin`
+      : `${siteUrl}/signup?invite=${token}&role=vendor&mode=${inviteMode}`;
 
-  await sendKayEmail({
+  // Only our Resend role_invite email — never auth.admin.inviteUserByEmail.
+  // That API sends an OTP "Accept your invitation" mail with no signup link,
+  // and pre-creates an auth user so signUp on the invite URL fails.
+  // Vendor rows are created when they register via redeem_role_invites_for_user.
+  const emailResult = await sendKayEmail({
     type: "role_invite",
-    appUrl: getSiteUrl(),
+    appUrl: siteUrl,
     recipientEmail: email,
     role: input.role,
     inviteUrl,
     businessName: input.businessName,
   });
 
-  if (input.role === "vendor") {
-    await createVendorInvitePlaceholder(
-      email,
-      businessName,
-      token,
-      input.invitedBy,
-      inviteMode ?? "profile",
-    );
+  if (!emailResult.ok && !emailResult.skipped) {
+    console.error("[invite] role_invite email failed:", emailResult.error);
   }
 
   return { action: "invited", token, inviteUrl, email, role: input.role };
-}
-
-async function createVendorInvitePlaceholder(
-  email: string,
-  businessName: string,
-  token: string,
-  invitedBy: string,
-  inviteMode: "instant" | "profile",
-) {
-  const db = admin();
-
-  try {
-    await db.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: businessName },
-    });
-  } catch {
-    // User may already exist in auth without a profile row
-  }
-
-  const existing = await findUserByEmail(email);
-  const userId = existing?.id;
-  if (!userId) return;
-
-  await db
-    .from("profiles")
-    .upsert({ id: userId, role: "customer" }, { onConflict: "id" });
-
-  const { data: existingVendor } = await db
-    .from("vendors")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  const base = {
-    invite_token: inviteMode === "instant" ? null : token,
-    invited_by: invitedBy,
-    business_name: businessName,
-    onboarding_source: "invite" as const,
-  };
-
-  if (existingVendor) {
-    await db
-      .from("vendors")
-      .update({
-        ...base,
-        ...(inviteMode === "instant"
-          ? {
-              status: "approved",
-              approved_at: new Date().toISOString(),
-              approved_by: invitedBy,
-            }
-          : { status: "pending" }),
-      })
-      .eq("id", existingVendor.id);
-
-    if (inviteMode === "instant") {
-      await db
-        .from("profiles")
-        .update({ role: "vendor", updated_at: new Date().toISOString() })
-        .eq("id", userId);
-    }
-    return;
-  }
-
-  await db.from("vendors").insert({
-    user_id: userId,
-    business_name: businessName,
-    contact_name: businessName,
-    contact_email: email,
-    status: inviteMode === "instant" ? "approved" : "pending",
-    onboarding_source: "invite",
-    invite_token: inviteMode === "instant" ? null : token,
-    invited_by: invitedBy,
-    ...(inviteMode === "instant"
-      ? {
-          approved_at: new Date().toISOString(),
-          approved_by: invitedBy,
-        }
-      : {}),
-  });
-
-  if (inviteMode === "instant") {
-    await db
-      .from("profiles")
-      .update({ role: "vendor", updated_at: new Date().toISOString() })
-      .eq("id", userId);
-  }
 }
 
 export async function redeemInvitesForUser(

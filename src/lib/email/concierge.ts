@@ -1,5 +1,4 @@
-import { sendKayEmail } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 import type { ConciergeRequest } from "@/types/concierge";
 
 export async function notifyConciergeAssigned(
@@ -12,7 +11,7 @@ export async function notifyConciergeAssigned(
 ) {
   await sendKayEmail({
     type: "vendor_concierge_assigned",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
     request: {
       referenceNumber: request.referenceNumber,
@@ -25,29 +24,31 @@ export async function notifyConciergeAssigned(
 }
 
 export async function notifyConciergeRecommendationReady(request: ConciergeRequest) {
+  const siteUrl = getEmailSiteUrl();
   await sendKayEmail({
     type: "concierge_recommendation_ready",
-    appUrl: getSiteUrl(),
+    appUrl: siteUrl,
     recipientEmail: request.contactEmail,
     recipientName: request.contactName,
     request: {
       referenceNumber: request.referenceNumber,
       productName: request.productName,
-      statusUrl: `${getSiteUrl()}/concierge/status/${request.id}`,
+      statusUrl: `${siteUrl}/concierge/status/${request.id}`,
     },
   });
 }
 
 export async function notifyConciergeOffersReady(request: ConciergeRequest) {
+  const siteUrl = getEmailSiteUrl();
   await sendKayEmail({
     type: "concierge_offers_ready",
-    appUrl: getSiteUrl(),
+    appUrl: siteUrl,
     recipientEmail: request.contactEmail,
     recipientName: request.contactName,
     request: {
       referenceNumber: request.referenceNumber,
       productName: request.productName,
-      statusUrl: `${getSiteUrl()}/concierge/status/${request.id}`,
+      statusUrl: `${siteUrl}/concierge/status/${request.id}`,
     },
   });
 }
@@ -56,9 +57,10 @@ export async function notifyConciergeOfferSelectedClient(
   request: ConciergeRequest,
   offer: { vendorBusinessName: string; quotedPrice: number },
 ) {
+  const siteUrl = getEmailSiteUrl();
   await sendKayEmail({
     type: "concierge_offer_selected_client",
-    appUrl: getSiteUrl(),
+    appUrl: siteUrl,
     recipientEmail: request.contactEmail,
     recipientName: request.contactName,
     request: {
@@ -66,7 +68,7 @@ export async function notifyConciergeOfferSelectedClient(
       productName: request.productName,
       vendorBusinessName: offer.vendorBusinessName,
       quotedPrice: offer.quotedPrice,
-      statusUrl: `${getSiteUrl()}/concierge/status/${request.id}`,
+      statusUrl: `${siteUrl}/concierge/status/${request.id}`,
     },
   });
 }
@@ -81,7 +83,7 @@ export async function notifyConciergeOfferWon(
 ) {
   await sendKayEmail({
     type: "concierge_offer_won",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
     request: {
       referenceNumber: request.referenceNumber,
@@ -100,7 +102,7 @@ export async function notifyConciergeOfferLost(
 ) {
   await sendKayEmail({
     type: "concierge_offer_lost",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
     request: {
       referenceNumber: request.referenceNumber,
@@ -116,7 +118,7 @@ export async function notifyConciergeAdminAlert(
 ) {
   await sendKayEmail({
     type: "concierge_admin_alert",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     alertTitle,
     alertDetail,
     request: {

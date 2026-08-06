@@ -1,5 +1,5 @@
 import { sendKayEmail } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 
 export async function notifyVendorApplication(vendor: {
   contactName: string;
@@ -8,7 +8,7 @@ export async function notifyVendorApplication(vendor: {
 }) {
   await sendKayEmail({
     type: "vendor_application_received",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
   });
 }
@@ -20,7 +20,7 @@ export async function notifyVendorApproved(vendor: {
 }) {
   await sendKayEmail({
     type: "vendor_approved",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
   });
 }
@@ -32,7 +32,7 @@ export async function notifyVendorRejected(vendor: {
 }) {
   await sendKayEmail({
     type: "vendor_application_rejected",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
   });
 }
@@ -45,7 +45,7 @@ export async function notifyProductReview(
 ) {
   await sendKayEmail({
     type: approved ? "vendor_product_approved" : "vendor_product_rejected",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
     productName,
     rejectionReason,
@@ -59,7 +59,7 @@ export async function notifyWithdrawalUpdate(
 ) {
   await sendKayEmail({
     type: "vendor_withdrawal_update",
-    appUrl: getSiteUrl(),
+    appUrl: getEmailSiteUrl(),
     vendor,
     withdrawalAmount: amount,
     withdrawalStatus: status,

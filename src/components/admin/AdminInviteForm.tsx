@@ -53,7 +53,7 @@ export function AdminInviteForm() {
           variant: "success",
           title: "Invite sent",
           message:
-            "We've emailed the invitation. If it doesn't arrive, share the link below.",
+            "They get an email titled “Invitation — Kay vendor access” with a button to register (name, password, and details). Copy the link below if email is slow or lands in spam — it opens the live site.",
           inviteUrl: data.inviteUrl,
         });
         setEmail("");

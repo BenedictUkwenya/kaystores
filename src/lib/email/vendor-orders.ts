@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendKayEmail } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 
 function admin() {
   const client = createAdminClient();
@@ -73,7 +73,7 @@ export async function notifyVendorsForPaidOrder(orderId: string): Promise<void> 
   for (const { vendor, lines } of byVendor.values()) {
     void sendKayEmail({
       type: "vendor_new_order",
-      appUrl: getSiteUrl(),
+      appUrl: getEmailSiteUrl(),
       vendor,
       orderNumber: String(order.order_number),
       lineSummary: lines.join(", "),

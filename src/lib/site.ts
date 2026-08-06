@@ -11,6 +11,9 @@ export const siteConfig = {
 const LOCAL_APP_URL =
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
+/** Production fallback when local env would otherwise leak into emails. */
+const PRODUCTION_SITE_URL = "https://kaystores.vercel.app";
+
 /** Absolute site URL for metadata, OG tags, and auth redirects. */
 export function getSiteUrl(): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
@@ -34,6 +37,24 @@ export function getSiteUrl(): string {
   }
 
   return "http://localhost:3000";
+}
+
+/**
+ * Site URL for transactional emails. Never returns localhost — Gmail/Outlook
+ * often strip or hide localhost links, and invites must open the live app.
+ */
+export function getEmailSiteUrl(): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+
+  if (appUrl && !LOCAL_APP_URL.test(appUrl)) {
+    return appUrl;
+  }
+
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+
+  return PRODUCTION_SITE_URL;
 }
 
 export function absoluteUrl(path = ""): string {

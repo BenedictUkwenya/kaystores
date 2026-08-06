@@ -33,6 +33,17 @@ supabase secrets set KAY_TEAM_EMAIL=team@yourdomain.com
 
 **Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — verify your domain in Resend (SPF, DKIM, DMARC) and stop using `onboarding@resend.dev` in production.
 
+**Invite / email links:** Admin invites send **only** the `role_invite` email (via `send-email`) with a live signup URL like `/signup?invite=…&role=vendor`. Do **not** use Supabase `inviteUserByEmail` for vendors — that triggers the auth OTP mail (`You're invited to Kay`) with nowhere useful to enter the code.
+
+The app builds invite URLs with `getEmailSiteUrl()` so they never point at `localhost` (falls back to `https://kaystores.vercel.app`). Set `NEXT_PUBLIC_APP_URL` to the live URL on Vercel. Optional Edge secret `PUBLIC_SITE_URL` is used if the auth hook’s invite template still fires.
+
+After changing email Edge Functions, redeploy:
+
+```bash
+supabase functions deploy send-email --no-verify-jwt
+supabase functions deploy send-auth-email --no-verify-jwt
+```
+
 Swap these when you move to the Kay Stores domain — only secrets change, not app code.
 
 ## 3. Deploy Edge Functions
@@ -79,7 +90,9 @@ If you prefer not to use the hook, configure **Project Settings → Auth → SMT
 | `NEXT_PUBLIC_SUPABASE_URL` | Public Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server reads with RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only: invoke Edge Functions (not Resend) |
-| `NEXT_PUBLIC_APP_URL` | Site links in emails (passed to function in body) |
+| `NEXT_PUBLIC_APP_URL` | Live site URL for invite/email links (not localhost in production) |
+
+Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fallback for the auth-hook invite template.
 
 **Not in `.env`:** `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `KAY_TEAM_EMAIL`, `SEND_EMAIL_HOOK_SECRET`
 

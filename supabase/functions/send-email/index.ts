@@ -179,6 +179,14 @@ function layout(title: string, body: string) {
   </div></body></html>`;
 }
 
+/** Visible email CTA — plain grey links often disappear in dark mode / spam views. */
+function ctaButton(href: string, label: string) {
+  return `<p style="margin:24px 0 12px">
+  <a href="${href}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;padding:14px 22px;border-radius:999px">${label}</a>
+</p>
+<p style="color:#5c5c5c;font-size:12px;line-height:1.5;word-break:break-all">Or open this link:<br/><a href="${href}" style="color:#b89a6a;text-decoration:underline">${href}</a></p>`;
+}
+
 function buildMessage(
   payload: Payload,
 ): {
@@ -630,16 +638,17 @@ function buildMessage(
     case "role_invite": {
       const { recipientEmail, role, inviteUrl, appUrl, businessName } = payload;
       const roleLabel = role === "admin" ? "Kay admin" : "Kay vendor";
+      const href = inviteUrl || `${appUrl}/signup`;
       const html = layout(
         `You're invited to join as ${roleLabel}`,
         `<p style="color:#5c5c5c;line-height:1.6">You've been invited to join Kay Stores as <strong>${roleLabel}</strong>${businessName ? ` for <strong>${businessName}</strong>` : ""}.</p>
-        <p style="color:#5c5c5c;font-size:13px"><a href="${inviteUrl ?? `${appUrl}/signup`}">Accept invitation & register</a></p>`,
+        ${ctaButton(href, "Accept invitation & register")}`,
       );
       return {
         to: [recipientEmail],
         subject: `Invitation — ${roleLabel} access`,
         html,
-        text: stripHtml(html),
+        text: `You're invited to join Kay Stores as ${roleLabel}${businessName ? ` for ${businessName}` : ""}.\n\nAccept here: ${href}\n`,
         tags: [{ name: "category", value: "role_invite" }],
       };
     }
@@ -650,13 +659,13 @@ function buildMessage(
       const html = layout(
         "Your access has been updated",
         `<p style="color:#5c5c5c;line-height:1.6">Hi ${recipientName ?? "there"}, your Kay Stores account now has <strong>${roleLabel}</strong> access.</p>
-        <p style="color:#5c5c5c;font-size:13px"><a href="${portalUrl}">Open ${roleLabel} portal</a></p>`,
+        ${ctaButton(portalUrl, `Open ${roleLabel} portal`)}`,
       );
       return {
         to: [recipientEmail],
         subject: `You're now a Kay ${roleLabel}`,
         html,
-        text: stripHtml(html),
+        text: `Your Kay Stores account now has ${roleLabel} access.\n\nOpen portal: ${portalUrl}\n`,
         tags: [{ name: "category", value: "role_upgraded" }],
       };
     }
