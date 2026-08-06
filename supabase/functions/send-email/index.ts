@@ -130,6 +130,7 @@ type Payload =
       role: "admin" | "vendor";
       inviteUrl?: string;
       businessName?: string;
+      reminder?: boolean;
     }
   | {
       type:
@@ -636,19 +637,25 @@ function buildMessage(
       };
     }
     case "role_invite": {
-      const { recipientEmail, role, inviteUrl, appUrl, businessName } = payload;
+      const { recipientEmail, role, inviteUrl, appUrl, businessName, reminder } =
+        payload;
       const roleLabel = role === "admin" ? "Kay admin" : "Kay vendor";
       const href = inviteUrl || `${appUrl}/signup`;
-      const html = layout(
-        `You're invited to join as ${roleLabel}`,
-        `<p style="color:#5c5c5c;line-height:1.6">You've been invited to join Kay Stores as <strong>${roleLabel}</strong>${businessName ? ` for <strong>${businessName}</strong>` : ""}.</p>
-        ${ctaButton(href, "Accept invitation & register")}`,
-      );
+      const title = reminder
+        ? `Reminder: join as ${roleLabel}`
+        : `You're invited to join as ${roleLabel}`;
+      const intro = reminder
+        ? `<p style="color:#5c5c5c;line-height:1.6">Just a reminder — you've been invited to join Kay Stores as <strong>${roleLabel}</strong>${businessName ? ` for <strong>${businessName}</strong>` : ""}. Use the button below to finish registering.</p>`
+        : `<p style="color:#5c5c5c;line-height:1.6">You've been invited to join Kay Stores as <strong>${roleLabel}</strong>${businessName ? ` for <strong>${businessName}</strong>` : ""}.</p>`;
+      const html = layout(title, `${intro}${ctaButton(href, "Accept invitation & register")}`);
       return {
         to: [recipientEmail],
-        subject: `Invitation — ${roleLabel} access`,
+        subject: reminder
+          ? `Reminder — ${roleLabel} invitation`
+          : `Invitation — ${roleLabel} access`,
         html,
-        text: `You're invited to join Kay Stores as ${roleLabel}${businessName ? ` for ${businessName}` : ""}.\n\nAccept here: ${href}\n`,
+        text: `${reminder ? "Reminder: " : ""}You're invited to join Kay Stores as ${roleLabel}${businessName ? ` for ${businessName}` : ""}.\n\nAccept here: ${href}\n`,
+        replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "role_invite" }],
       };
     }
@@ -666,6 +673,7 @@ function buildMessage(
         subject: `You're now a Kay ${roleLabel}`,
         html,
         text: `Your Kay Stores account now has ${roleLabel} access.\n\nOpen portal: ${portalUrl}\n`,
+        replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "role_upgraded" }],
       };
     }

@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth/roles";
-import { fetchAllUsers } from "@/lib/admin/users";
+import { fetchAllUsers, fetchPendingRoleInvites } from "@/lib/admin/users";
 import {
   ADMIN_NAV,
   DashboardLayout,
@@ -9,7 +9,10 @@ import { AdminRoleInviteForm } from "@/components/admin/AdminRoleInviteForm";
 
 export default async function AdminUsersPage() {
   const ctx = await requireAdmin();
-  const users = await fetchAllUsers();
+  const [users, pendingInvites] = await Promise.all([
+    fetchAllUsers(),
+    fetchPendingRoleInvites(),
+  ]);
 
   return (
     <DashboardLayout
@@ -17,11 +20,15 @@ export default async function AdminUsersPage() {
       nav={ADMIN_NAV}
       eyebrow="People"
       title="Members"
-      description="Filter, search, and manage every Kay account."
+      description="Filter, search, and manage every Kay account — including open invitations."
       badge="Admin"
     >
       <div className="space-y-8">
-        <AdminUsersList users={users} currentAdminId={ctx.userId} />
+        <AdminUsersList
+          users={users}
+          pendingInvites={pendingInvites}
+          currentAdminId={ctx.userId}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           <AdminRoleInviteForm />
@@ -33,6 +40,10 @@ export default async function AdminUsersPage() {
               <li>Suspend pauses access without deleting the account.</li>
               <li>Block signs the member out immediately.</li>
               <li>Known emails upgrade on the spot — no invite required.</li>
+              <li>
+                Use the Invited tab to remind people who haven&apos;t registered
+                yet, or copy their signup link.
+              </li>
             </ul>
           </div>
         </div>

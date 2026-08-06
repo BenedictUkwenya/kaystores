@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
-import type { AccountStatus, AdminUser, UserRole } from "@/types/dashboard";
+import type { AccountStatus, AdminUser, PendingRoleInvite, UserRole } from "@/types/dashboard";
 import { getEmailSiteUrl } from "@/lib/site";
 import { sendKayEmail } from "@/lib/email/send";
 
@@ -159,6 +159,108 @@ export async function fetchAllUsers(): Promise<AdminUser[]> {
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
+}
+
+function buildInviteUrl(
+  token: string,
+  role: "admin" | "vendor",
+  inviteMode: "instant" | "profile" | null,
+): string {
+  const siteUrl = getEmailSiteUrl();
+  if (role === "admin") {
+    return `${siteUrl}/signup?invite=${token}&role=admin`;
+  }
+  return `${siteUrl}/signup?invite=${token}&role=vendor&mode=${inviteMode === "instant" ? "instant" : "profile"}`;
+}
+
+export async function fetchPendingRoleInvites(): Promise<PendingRoleInvite[]> {
+  const db = admin();
+  const { data, error } = await db
+    .from("role_invites")
+    .select("id, email, invite_role, token, metadata, created_at")
+    .is("accepted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    const role = row.invite_role === "admin" ? "admin" : "vendor";
+    const metadata = (row.metadata ?? {}) as {
+      inviteMode?: string;
+      business_name?: string;
+    };
+    const inviteMode =
+      role === "vendor"
+        ? metadata.inviteMode === "instant"
+          ? "instant"
+          : "profile"
+        : null;
+    const token = String(row.token);
+
+    return {
+      id: String(row.id),
+      email: String(row.email).toLowerCase(),
+      role,
+      inviteMode,
+      businessName: metadata.business_name
+        ? String(metadata.business_name)
+        : null,
+      token,
+      inviteUrl: buildInviteUrl(token, role, inviteMode),
+      invitedAt: String(row.created_at),
+    };
+  });
+}
+
+export async function resendRoleInviteReminder(inviteId: string): Promise<{
+  email: string;
+  inviteUrl: string;
+}> {
+  const db = admin();
+  const { data, error } = await db
+    .from("role_invites")
+    .select("id, email, invite_role, token, metadata, accepted_at")
+    .eq("id", inviteId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data || data.accepted_at) {
+    throw new Error("This invitation is no longer pending.");
+  }
+
+  const role = data.invite_role === "admin" ? "admin" : "vendor";
+  const metadata = (data.metadata ?? {}) as {
+    inviteMode?: string;
+    business_name?: string;
+  };
+  const inviteMode =
+    role === "vendor"
+      ? metadata.inviteMode === "instant"
+        ? "instant"
+        : "profile"
+      : null;
+  const token = String(data.token);
+  const email = String(data.email).toLowerCase();
+  const siteUrl = getEmailSiteUrl();
+  const inviteUrl = buildInviteUrl(token, role, inviteMode);
+
+  const emailResult = await sendKayEmail({
+    type: "role_invite",
+    appUrl: siteUrl,
+    recipientEmail: email,
+    role,
+    inviteUrl,
+    businessName: metadata.business_name
+      ? String(metadata.business_name)
+      : undefined,
+    reminder: true,
+  });
+
+  if (!emailResult.ok && !emailResult.skipped) {
+    throw new Error(emailResult.error || "Failed to send reminder email.");
+  }
+
+  return { email, inviteUrl };
 }
 
 export async function updateUserAccountStatus(

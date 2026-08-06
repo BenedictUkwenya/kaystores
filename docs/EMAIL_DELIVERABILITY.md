@@ -12,7 +12,16 @@ supabase secrets set KAY_TEAM_EMAIL="ops@yourdomain.com"
 supabase secrets set KAY_REPLY_TO_EMAIL="hello@yourdomain.com"
 ```
 
-Redeploy the edge function after changing secrets:
+**Do not use `noreply@` / `no-reply@`.** Resend’s insights flag it (“Don't use no-reply”), and Gmail/Outlook treat one-way From addresses as less trustworthy. Prefer `hello@`, `support@`, or `team@` on your verified domain, and set `KAY_REPLY_TO_EMAIL` to an inbox someone actually reads.
+
+Example for `stkindustries.com`:
+
+```bash
+supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@stkindustries.com>"
+supabase secrets set KAY_REPLY_TO_EMAIL="hello@stkindustries.com"
+```
+
+Redeploy the edge functions after changing secrets:
 
 ```bash
 supabase functions deploy send-email --no-verify-jwt
@@ -44,6 +53,7 @@ Start with `p=none` while testing. Move to `p=quarantine` or `p=reject` once del
 | Custom verified domain | Builds sender reputation; avoids shared `resend.dev` pools |
 | SPF + DKIM verified in Resend | Proves you authorised the mail server |
 | Consistent **From** name (`Kay Stores`) | Reduces “unknown sender” flags |
+| **No** `noreply@` / `no-reply@` in From | Resend + inbox providers prefer a replyable sender |
 | **Reply-To** set (`KAY_REPLY_TO_EMAIL`) | Real inbox for replies; better trust signals |
 | `KAY_TEAM_EMAIL` set | Admin concierge alerts actually send |
 | Plain-text part included | Already sent by edge function; helps filters |

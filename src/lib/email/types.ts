@@ -69,6 +69,8 @@ export type RoleEmailPayload = {
   role: "admin" | "vendor";
   inviteUrl?: string;
   businessName?: string;
+  /** When true, email subject/body reads as a reminder. */
+  reminder?: boolean;
 };
 
 export type ConciergeOfferEmailPayload = {

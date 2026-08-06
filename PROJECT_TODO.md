@@ -250,6 +250,8 @@
 
 - [x] **Vendor invite vs self-apply** — Kay invites choose instant access or profile-first (both auto-approved); self-apply collects NIN and stays pending admin review
 
+- [x] **Pending invites tab** — Members → Invited lists open role invites with reminder email + copy link
+
 - [ ] Inventory sync
 
 
@@ -280,11 +282,11 @@
 
 | Help & legal      | 10   | 11    |
 
-| Backend           | 5    | 6     |
+| Backend           | 6    | 7     |
 
 
 
-**Overall:** 67 / 72 checklist items complete
+**Overall:** 68 / 73 checklist items complete
 
 
 

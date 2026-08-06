@@ -26,7 +26,9 @@ export function LoginForm() {
 
     const supabase = createBrowserSupabase();
     if (!supabase) {
-      setError("Auth is not configured. Add Supabase keys to .env.local");
+      setError(
+        "Auth is not configured on this deployment. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel (Production), then redeploy.",
+      );
       setLoading(false);
       return;
     }
@@ -37,7 +39,10 @@ export function LoginForm() {
     });
 
     if (authError) {
-      setError(authError.message);
+      const message = authError.message.includes("Unexpected token")
+        ? "Could not reach Supabase Auth. Check that NEXT_PUBLIC_SUPABASE_URL on Vercel is your project URL (https://….supabase.co), not the Vercel site URL, then redeploy."
+        : authError.message;
+      setError(message);
       setLoading(false);
       return;
     }

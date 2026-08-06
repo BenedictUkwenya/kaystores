@@ -20,16 +20,18 @@ In the Supabase SQL Editor, run (in order):
 
 ```bash
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx
-supabase secrets set RESEND_FROM_EMAIL="Your Name <noreply@yourdomain.com>"
+# Never use noreply@ / no-reply@ — Resend flags it and inboxes trust you less.
+supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@yourdomain.com>"
 supabase secrets set KAY_TEAM_EMAIL=team@yourdomain.com
+supabase secrets set KAY_REPLY_TO_EMAIL=hello@yourdomain.com
 ```
 
 | Secret | Purpose |
 |--------|---------|
 | `RESEND_API_KEY` | Resend API key (never commit) |
-| `RESEND_FROM_EMAIL` | Verified sender on your Resend domain |
+| `RESEND_FROM_EMAIL` | Verified sender — use `hello@`, `support@`, or `team@` on your domain (**not** `noreply@`) |
 | `KAY_TEAM_EMAIL` | Internal alerts (new orders, concierge, contact) |
-| `KAY_REPLY_TO_EMAIL` | Optional reply address (defaults to `KAY_TEAM_EMAIL`) |
+| `KAY_REPLY_TO_EMAIL` | Inbox that receives replies (defaults to `KAY_TEAM_EMAIL`) |
 
 **Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — verify your domain in Resend (SPF, DKIM, DMARC) and stop using `onboarding@resend.dev` in production.
 

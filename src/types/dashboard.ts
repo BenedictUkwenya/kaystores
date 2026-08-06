@@ -24,6 +24,18 @@ export type AdminUser = {
   businessName?: string | null;
 };
 
+/** Open role invite that has not been accepted yet. */
+export type PendingRoleInvite = {
+  id: string;
+  email: string;
+  role: "admin" | "vendor";
+  inviteMode: "instant" | "profile" | null;
+  businessName: string | null;
+  token: string;
+  inviteUrl: string;
+  invitedAt: string;
+};
+
 export type VendorStatus = "pending" | "approved" | "suspended" | "rejected";
 
 export type ProductStatus =

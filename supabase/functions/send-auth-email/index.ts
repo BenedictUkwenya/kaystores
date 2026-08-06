@@ -102,11 +102,20 @@ async function sendResend(
   to: string,
   subject: string,
   html: string,
+  replyTo?: string,
 ): Promise<{ error?: string }> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     return { error: "RESEND_API_KEY not configured" };
   }
+
+  const body: Record<string, unknown> = {
+    from,
+    to: [to],
+    subject,
+    html,
+  };
+  if (replyTo) body.reply_to = replyTo;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -114,7 +123,7 @@ async function sendResend(
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -155,6 +164,8 @@ Deno.serve(async (req) => {
 
   const from =
     Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+  const replyTo =
+    Deno.env.get("KAY_REPLY_TO_EMAIL") ?? Deno.env.get("KAY_TEAM_EMAIL") ?? undefined;
   const { subject, html } = messageForAction(
     verified.email_data.email_action_type,
     verified.email_data.token,
@@ -165,6 +176,7 @@ Deno.serve(async (req) => {
     verified.user.email,
     subject,
     html,
+    replyTo,
   );
 
   if (result.error) {

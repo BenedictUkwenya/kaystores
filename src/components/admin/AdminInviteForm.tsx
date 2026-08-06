@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { AdminInviteResultDialog } from "@/components/admin/AdminInviteResultDialog";
@@ -15,6 +16,7 @@ type ResultState = {
 } | null;
 
 export function AdminInviteForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [inviteMode, setInviteMode] = useState<InviteMode>("profile");
@@ -59,6 +61,7 @@ export function AdminInviteForm() {
         setEmail("");
         setBusinessName("");
       }
+      router.refresh();
     } catch (err) {
       setResult({
         variant: "error",
