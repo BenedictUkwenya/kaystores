@@ -1,3 +1,4 @@
+import { sendKayEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
 import type { ConciergeRequest } from "@/types/concierge";
 
