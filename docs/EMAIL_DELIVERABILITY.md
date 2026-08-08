@@ -4,44 +4,39 @@ Kay sends mail through **Resend**. If messages go to spam, it is almost always a
 
 ## 1. Use your own domain (required for production)
 
-Do **not** rely on `onboarding@resend.dev` in production. In Supabase secrets set:
+Do **not** rely on `onboarding@resend.dev` in production. Kay’s verified Resend domain is **`shoponkay.com`**. In Supabase secrets set:
 
 ```bash
-supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@yourdomain.com>"
-supabase secrets set KAY_TEAM_EMAIL="ops@yourdomain.com"
-supabase secrets set KAY_REPLY_TO_EMAIL="hello@yourdomain.com"
+supabase secrets set RESEND_API_KEY=re_xxxxxxxx
+supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@shoponkay.com>"
+supabase secrets set KAY_TEAM_EMAIL="hello@shoponkay.com"
+supabase secrets set KAY_REPLY_TO_EMAIL="hello@shoponkay.com"
 ```
 
-**Do not use `noreply@` / `no-reply@`.** Resend’s insights flag it (“Don't use no-reply”), and Gmail/Outlook treat one-way From addresses as less trustworthy. Prefer `hello@`, `support@`, or `team@` on your verified domain, and set `KAY_REPLY_TO_EMAIL` to an inbox someone actually reads.
-
-Example for `stkindustries.com`:
-
-```bash
-supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@stkindustries.com>"
-supabase secrets set KAY_REPLY_TO_EMAIL="hello@stkindustries.com"
-```
+**Do not use `noreply@` / `no-reply@`.** Resend’s insights flag it (“Don't use no-reply”), and Gmail/Outlook treat one-way From addresses as less trustworthy. Prefer `hello@`, `support@`, or `team@` on `shoponkay.com`, and set `KAY_REPLY_TO_EMAIL` to an inbox someone actually reads.
 
 Redeploy the edge functions after changing secrets:
 
 ```bash
 supabase functions deploy send-email --no-verify-jwt
+supabase functions deploy send-auth-email --no-verify-jwt
 ```
 
 ## 2. Verify the domain in Resend
 
-1. [Resend Dashboard](https://resend.com/domains) → **Add domain** (e.g. `kaystores.com`).
+1. [Resend Dashboard](https://resend.com/domains) → **Add domain** (`shoponkay.com`).
 2. Add the DNS records Resend shows you (usually **SPF**, **DKIM**, and optionally **DMARC**).
-3. Wait until Resend shows **Verified** (can take up to 48 hours).
-4. Use only addresses on that domain in `RESEND_FROM_EMAIL`.
+3. Wait until Resend shows **Verified**.
+4. Use only addresses on that domain in `RESEND_FROM_EMAIL` (e.g. `hello@shoponkay.com`).
 
 Without verified SPF + DKIM, Gmail/Outlook will often mark mail as spam.
 
 ## 3. DMARC (recommended)
 
-Add a TXT record at `_dmarc.yourdomain.com`:
+Add a TXT record at `_dmarc.shoponkay.com`:
 
 ```text
-v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com
+v=DMARC1; p=none; rua=mailto:hello@shoponkay.com
 ```
 
 Start with `p=none` while testing. Move to `p=quarantine` or `p=reject` once deliverability is stable.
@@ -68,7 +63,7 @@ Start with `p=none` while testing. Move to `p=quarantine` or `p=reject` once del
 
 ## 6. Auth emails (signup codes)
 
-Auth OTP uses the **`send-auth-email`** hook. Configure the same verified domain for Supabase Auth SMTP **or** keep the hook — both should use `@yourdomain.com`, not `@resend.dev`.
+Auth OTP uses the **`send-auth-email`** hook. Configure the same verified domain for Supabase Auth SMTP **or** keep the hook — both should use `@shoponkay.com`, not `@resend.dev`.
 
 ## 7. What Kay already sends
 

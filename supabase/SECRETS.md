@@ -21,19 +21,20 @@ In the Supabase SQL Editor, run (in order):
 ```bash
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx
 # Never use noreply@ / no-reply@ — Resend flags it and inboxes trust you less.
-supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@yourdomain.com>"
-supabase secrets set KAY_TEAM_EMAIL=team@yourdomain.com
-supabase secrets set KAY_REPLY_TO_EMAIL=hello@yourdomain.com
+# Production domain (verified in Resend): shoponkay.com
+supabase secrets set RESEND_FROM_EMAIL="Kay Stores <hello@shoponkay.com>"
+supabase secrets set KAY_TEAM_EMAIL=hello@shoponkay.com
+supabase secrets set KAY_REPLY_TO_EMAIL=hello@shoponkay.com
 ```
 
 | Secret | Purpose |
 |--------|---------|
 | `RESEND_API_KEY` | Resend API key (never commit) |
-| `RESEND_FROM_EMAIL` | Verified sender — use `hello@`, `support@`, or `team@` on your domain (**not** `noreply@`) |
+| `RESEND_FROM_EMAIL` | Verified sender on **shoponkay.com** — use `hello@`, `support@`, or `team@` (**not** `noreply@`) |
 | `KAY_TEAM_EMAIL` | Internal alerts (new orders, concierge, contact) |
 | `KAY_REPLY_TO_EMAIL` | Inbox that receives replies (defaults to `KAY_TEAM_EMAIL`) |
 
-**Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — verify your domain in Resend (SPF, DKIM, DMARC) and stop using `onboarding@resend.dev` in production.
+**Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — domain must be **Verified** in Resend (Kay uses `shoponkay.com`).
 
 **Invite / email links:** Admin invites send **only** the `role_invite` email (via `send-email`) with a live signup URL like `/signup?invite=…&role=vendor`. Do **not** use Supabase `inviteUserByEmail` for vendors — that triggers the auth OTP mail (`You're invited to Kay`) with nowhere useful to enter the code.
 
@@ -46,7 +47,7 @@ supabase functions deploy send-email --no-verify-jwt
 supabase functions deploy send-auth-email --no-verify-jwt
 ```
 
-Swap these when you move to the Kay Stores domain — only secrets change, not app code.
+Swap these when you change the Kay mail domain — only secrets change, not app code. Current production From domain: **shoponkay.com**.
 
 ## 3. Deploy Edge Functions
 
