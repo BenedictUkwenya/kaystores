@@ -28,8 +28,7 @@ export default function TrackOrderPage() {
         <TrackOrderForm />
         <ContentProse>
           <p className="mt-6 text-[13px]">
-            Gift orders with address collection will show a secure handover link
-            for your recipient. Questions?{" "}
+            Questions about an order?{" "}
             <Link href="/contact" className="text-kay-gold hover:underline">
               Contact us
             </Link>

@@ -59,7 +59,6 @@ export function CheckoutForm({
   const [recipientWhatsApp, setRecipientWhatsApp] = useState("");
   const [giftNote, setGiftNote] = useState("");
   const [anonymous, setAnonymous] = useState(false);
-  const [addressUnknown, setAddressUnknown] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState(emptyAddress);
 
   const fullName = `${firstName} ${lastName}`.trim();
@@ -102,10 +101,9 @@ export function CheckoutForm({
         return;
       }
       if (
-        !addressUnknown &&
-        (!recipientAddress.line1 ||
-          !recipientAddress.city ||
-          !recipientAddress.state)
+        !recipientAddress.line1 ||
+        !recipientAddress.city ||
+        !recipientAddress.state
       ) {
         setError("Please complete the recipient's delivery address.");
         return;
@@ -134,10 +132,8 @@ export function CheckoutForm({
                   recipientWhatsApp: recipientWhatsApp || undefined,
                   note: giftNote,
                   anonymous,
-                  addressUnknown,
-                  recipientAddress: addressUnknown
-                    ? undefined
-                    : recipientAddress,
+                  addressUnknown: false,
+                  recipientAddress,
                 }
               : undefined,
         }),
@@ -408,75 +404,59 @@ export function CheckoutForm({
                     onChange={(e) => setRecipientWhatsApp(e.target.value)}
                   />
 
-                  <div className="sm:col-span-2">
-                    <Toggle
-                      label="I don't know their address"
-                      description={
-                        isPrivateCheckout
-                          ? "We'll email a secure, product-free link for their address."
-                          : "We'll email them a secure Kay link to share delivery details."
-                      }
-                      checked={addressUnknown}
-                      onChange={setAddressUnknown}
-                    />
-                  </div>
-
-                  {!addressUnknown && (
-                    <>
-                      <Input
-                        variant="checkout"
-                        label={
+                  <Input
+                    variant="checkout"
+                    label={
                       isPrivateCheckout
                         ? "Discrete delivery address"
-                        : "Shipping Address"
+                        : "Shipping address"
                     }
-                        value={recipientAddress.line1}
-                        onChange={(e) =>
-                          setRecipientAddress({
-                            ...recipientAddress,
-                            line1: e.target.value,
-                          })
-                        }
-                        className="sm:col-span-2"
-                        required
-                      />
-                      <Input
-                        variant="checkout"
-                        label="City"
-                        value={recipientAddress.city}
-                        onChange={(e) =>
-                          setRecipientAddress({
-                            ...recipientAddress,
-                            city: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                      <Input
-                        variant="checkout"
-                        label="Postal Code"
-                        value={recipientAddress.postalCode}
-                        onChange={(e) =>
-                          setRecipientAddress({
-                            ...recipientAddress,
-                            postalCode: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        variant="checkout"
-                        label="State"
-                        value={recipientAddress.state}
-                        onChange={(e) =>
-                          setRecipientAddress({
-                            ...recipientAddress,
-                            state: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </>
-                  )}
+                    value={recipientAddress.line1}
+                    onChange={(e) =>
+                      setRecipientAddress({
+                        ...recipientAddress,
+                        line1: e.target.value,
+                      })
+                    }
+                    className="sm:col-span-2"
+                    hint="Required — Kay delivers to the address you provide."
+                    required
+                  />
+                  <Input
+                    variant="checkout"
+                    label="City"
+                    value={recipientAddress.city}
+                    onChange={(e) =>
+                      setRecipientAddress({
+                        ...recipientAddress,
+                        city: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                  <Input
+                    variant="checkout"
+                    label="Postal Code"
+                    value={recipientAddress.postalCode}
+                    onChange={(e) =>
+                      setRecipientAddress({
+                        ...recipientAddress,
+                        postalCode: e.target.value,
+                      })
+                    }
+                  />
+                  <Input
+                    variant="checkout"
+                    label="State"
+                    value={recipientAddress.state}
+                    onChange={(e) =>
+                      setRecipientAddress({
+                        ...recipientAddress,
+                        state: e.target.value,
+                      })
+                    }
+                    required
+                  />
 
                   <div className="sm:col-span-2">
                     <Textarea

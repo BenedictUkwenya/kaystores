@@ -9,6 +9,7 @@ import {
 import { useCart } from "@/providers/CartProvider";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
+import { Logo } from "@/components/brand/Logo";
 import { IconBag, IconSearch, IconX } from "@/components/ui/Icons";
 
 export function AfterDarkHeader() {
@@ -18,12 +19,14 @@ export function AfterDarkHeader() {
   return (
     <header className="ad-header-glow sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
       <div className="mx-auto flex h-[64px] max-w-[1280px] items-center justify-between gap-2 px-4 sm:px-6 lg:px-10">
-        <Link
+        <Logo
           href={AFTER_DARK_ROUTES.home}
-          className="min-w-0 shrink font-serif text-[16px] tracking-[0.08em] text-ad-amber transition-opacity hover:opacity-80 sm:text-[20px]"
-        >
-          KAY<span className="text-white/90">AFTERDARK</span>
-        </Link>
+          variant="dark"
+          size="md"
+          label="Kay After Dark — Home"
+          tagline="After Dark"
+          className="min-w-0"
+        />
 
         <nav
           className="hidden items-center gap-8 lg:flex"

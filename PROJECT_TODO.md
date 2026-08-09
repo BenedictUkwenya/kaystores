@@ -130,7 +130,8 @@
 
 - [x] Gift flow: **Anonymous** toggle (strip buyer data from labels/slips)
 
-- [x] **Recipient address collection page** (secure branded link — Digital Handover)
+- [x] **Recipient address required at gift checkout** (no “address unknown” / sender must provide delivery address)
+- [x] **Recipient address collection page** (legacy Digital Handover — kept for older pending links only)
 
 - [x] Order confirmation / thank-you page
 

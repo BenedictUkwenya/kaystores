@@ -2,6 +2,7 @@
 
 /* ─── Kay Stores — Light (Standard) ─── */
 :root {
+  color-scheme: light;
   --kay-bg: #f9f7f2;
   --kay-fg: #000000;
   --kay-muted: #5c5c5c;
@@ -24,6 +25,7 @@
 
 /* ─── Kay After Dark ─── */
 [data-theme="after-dark"] {
+  color-scheme: dark;
   --kay-bg: #0a0a0a;
   --kay-fg: #ededed;
   --kay-muted: #a3a3a3;
@@ -36,6 +38,8 @@
   --kay-surface-elevated: #1a1a1a;
   --kay-beta: #c4a882;
   --kay-beta-bg: #2a2418;
+  --kay-gold: #c4a574;
+  --kay-gold-light: #2a2418;
   --kay-compare-highlight: #2a2418;
   --kay-input-bg: #1a1a1a;
   --kay-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -113,6 +117,7 @@ h6 {
   height: 100%;
   object-fit: contain;
   object-position: left center;
+  transition: opacity 0.45s ease;
 }
 
 .kay-logo--light {
@@ -123,16 +128,71 @@ h6 {
   opacity: 0;
 }
 
-[data-theme="after-dark"] .kay-logo--light {
+[data-theme="after-dark"] .kay-logo--light,
+.kay-logo-root--dark .kay-logo--light {
   opacity: 0;
 }
 
-[data-theme="after-dark"] .kay-logo--dark {
+[data-theme="after-dark"] .kay-logo--dark,
+.kay-logo-root--dark .kay-logo--dark {
   opacity: 1;
+}
+
+.kay-logo-root--light .kay-logo--light {
+  opacity: 1;
+}
+
+.kay-logo-root--light .kay-logo--dark {
+  opacity: 0;
+}
+
+.hero-image {
+  transition: filter 0.55s ease;
 }
 
 [data-theme="after-dark"] .hero-image {
   filter: brightness(0.72) saturate(0.85);
+}
+
+/* Smooth theme crossfade (View Transitions API) */
+@supports (view-transition-name: root) {
+  html {
+    view-transition-name: root;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Fallback when View Transitions aren't available */
+html.theme-switching body,
+html.theme-switching header,
+html.theme-switching main,
+html.theme-switching footer {
+  transition:
+    background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.45s ease,
+    border-color 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kay-logo,
+  .hero-image,
+  html.theme-switching body,
+  html.theme-switching header,
+  html.theme-switching main,
+  html.theme-switching footer,
+  .kay-ad-strip {
+    transition: none !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }
 
 /* —— Splash — cinematic brand intro (always black / gold) —— */

@@ -65,7 +65,7 @@ export function HeaderPortalLink({
   const pillClass =
     variant === "dark"
       ? "inline-flex h-9 shrink-0 items-center rounded-full border border-ad-amber/40 bg-ad-amber/10 px-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ad-amber transition-colors hover:border-ad-amber hover:bg-ad-amber/20"
-      : "inline-flex h-9 shrink-0 items-center rounded-full border border-kay-gold/35 bg-kay-gold-light/50 px-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-kay-gold transition-colors hover:border-kay-gold hover:bg-kay-gold-light/80";
+      : "inline-flex h-9 shrink-0 items-center rounded-full border border-kay-gold/45 bg-kay-gold-light px-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f5632] transition-colors hover:border-kay-gold hover:bg-[#e0d4c0]";
 
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>

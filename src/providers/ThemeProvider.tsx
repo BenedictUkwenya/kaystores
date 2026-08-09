@@ -21,31 +21,68 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = "kay-theme";
 
+function applyThemeAttr(theme: Theme) {
+  if (theme === "after-dark") {
+    document.documentElement.setAttribute("data-theme", "after-dark");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
+function withThemeTransition(apply: () => void) {
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => { finished: Promise<void> };
+  };
+
+  document.documentElement.classList.add("theme-switching");
+
+  if (typeof doc.startViewTransition === "function") {
+    const transition = doc.startViewTransition(apply);
+    transition.finished.finally(() => {
+      document.documentElement.classList.remove("theme-switching");
+    });
+    return;
+  }
+
+  apply();
+  window.setTimeout(() => {
+    document.documentElement.classList.remove("theme-switching");
+  }, 500);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("standard");
+  const [theme, setThemeState] = useState<Theme>("standard");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (stored === "after-dark") {
-      setTheme("after-dark");
-      document.documentElement.setAttribute("data-theme", "after-dark");
-    }
+    const initial: Theme = stored === "after-dark" ? "after-dark" : "standard";
+    setThemeState(initial);
+    applyThemeAttr(initial);
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    if (theme === "after-dark") {
-      document.documentElement.setAttribute("data-theme", "after-dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
+    applyThemeAttr(theme);
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme, mounted]);
 
+  const setTheme = useCallback((next: Theme) => {
+    withThemeTransition(() => {
+      applyThemeAttr(next);
+      setThemeState(next);
+    });
+  }, []);
+
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === "standard" ? "after-dark" : "standard"));
+    withThemeTransition(() => {
+      setThemeState((prev) => {
+        const next = prev === "standard" ? "after-dark" : "standard";
+        applyThemeAttr(next);
+        return next;
+      });
+    });
   }, []);
 
   return (

@@ -30,39 +30,31 @@ function generateOrderNumber() {
   return `KAY-${n.slice(-6)}${r}`;
 }
 
-function generateHandoverToken() {
-  return randomBytes(24).toString("base64url");
-}
-
 function createOrderInMemory(payload: CreateOrderPayload): Order {
   const id = crypto.randomUUID();
   const orderNumber = generateOrderNumber();
-  const needsHandover =
-    payload.deliveryType === "gift" && payload.gift?.addressUnknown;
-
-  const handoverToken = needsHandover ? generateHandoverToken() : undefined;
+  // Gift senders must provide the delivery address — no digital handover.
+  const gift =
+    payload.deliveryType === "gift" && payload.gift
+      ? { ...payload.gift, addressUnknown: false }
+      : payload.gift;
 
   const order: Order = {
     id,
     orderNumber,
-    status: needsHandover ? "pending_handover" : "confirmed",
+    status: "confirmed",
     deliveryType: payload.deliveryType,
     items: payload.items,
     subtotal: payload.pricing.productSubtotal,
     pricing: payload.pricing,
     buyer: payload.buyer,
     buyerAddress: payload.buyerAddress,
-    gift: payload.gift,
-    handoverToken,
-    handoverStatus: needsHandover ? "pending" : "not_required",
+    gift,
+    handoverStatus: "not_required",
     createdAt: new Date().toISOString(),
   };
 
   orders.set(id, order);
-  if (handoverToken) {
-    handoverIndex.set(handoverToken, id);
-  }
-
   return order;
 }
 
@@ -72,28 +64,29 @@ export async function createOrder(
 ): Promise<Order> {
   const id = crypto.randomUUID();
   const orderNumber = generateOrderNumber();
-  const needsHandover =
-    payload.deliveryType === "gift" && payload.gift?.addressUnknown;
-  const handoverToken = needsHandover ? generateHandoverToken() : undefined;
-  const status = needsHandover ? "pending_handover" : "confirmed";
-  const handoverStatus = needsHandover ? "pending" : "not_required";
+  const normalized: CreateOrderPayload =
+    payload.deliveryType === "gift" && payload.gift
+      ? {
+          ...payload,
+          gift: { ...payload.gift, addressUnknown: false },
+        }
+      : payload;
 
   if (isSupabaseOrdersEnabled()) {
     try {
-      return await insertOrder(payload, {
+      return await insertOrder(normalized, {
         id,
         orderNumber,
         userId: options?.userId,
-        handoverToken,
-        status,
-        handoverStatus,
+        status: "confirmed",
+        handoverStatus: "not_required",
       });
     } catch (err) {
       console.error("[orders] Supabase insert failed, using memory:", err);
     }
   }
 
-  return createOrderInMemory(payload);
+  return createOrderInMemory(normalized);
 }
 
 export async function getOrder(reference: string): Promise<Order | null> {

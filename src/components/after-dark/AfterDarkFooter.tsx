@@ -5,6 +5,7 @@ import {
   AFTER_DARK_ROUTES,
 } from "@/lib/after-dark/catalog";
 import { SITE_ROUTES } from "@/lib/data/site-routes";
+import { Logo } from "@/components/brand/Logo";
 import {
   IconFacebook,
   IconInstagram,
@@ -17,10 +18,14 @@ export function AfterDarkFooter() {
       <div className="mx-auto max-w-[1280px] px-4 py-14 lg:px-10 lg:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
-            <p className="font-serif text-[18px] tracking-[0.06em] text-ad-amber">
-              KAYAFTERDARK
-            </p>
-            <p className="mt-3 max-w-xs text-[13px] leading-relaxed text-white/55">
+            <Logo
+              href={AFTER_DARK_ROUTES.home}
+              variant="dark"
+              size="md"
+              label="Kay After Dark — Home"
+              tagline="After Dark"
+            />
+            <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-white/55">
               Discreet luxury for mature audiences. Anonymous packaging, confidential
               handling, and curated intimacy — by invitation to the dark.
             </p>

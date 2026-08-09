@@ -16,11 +16,31 @@ import {
 } from "@/lib/shop/collections";
 
 const NAV_ITEMS = [
-  { label: "Gifts" as const, hasDropdown: true },
-  { label: "By Occasion" as const, hasDropdown: true },
-  { label: "By Recipient" as const, hasDropdown: true },
-  { label: "Luxury Collection" as const, hasDropdown: false },
-  { label: "Corporate Gifting" as const, hasDropdown: false },
+  { label: "Gifts" as const, short: "Gifts", hasDropdown: true, priority: 1 },
+  {
+    label: "By Occasion" as const,
+    short: "Occasion",
+    hasDropdown: true,
+    priority: 1,
+  },
+  {
+    label: "By Recipient" as const,
+    short: "Recipient",
+    hasDropdown: true,
+    priority: 1,
+  },
+  {
+    label: "Luxury Collection" as const,
+    short: "Luxury",
+    hasDropdown: false,
+    priority: 2,
+  },
+  {
+    label: "Corporate Gifting" as const,
+    short: "Corporate",
+    hasDropdown: false,
+    priority: 2,
+  },
 ];
 
 function getNavHref(label: string): string {
@@ -34,6 +54,7 @@ function getNavHref(label: string): string {
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const { itemCount, openCart } = useCart();
@@ -42,35 +63,39 @@ export function Header() {
     e.preventDefault();
     const q = searchQuery.trim();
     router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
+    setSearchOpen(false);
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-kay-bg">
-      <div className="relative mx-auto grid h-[60px] max-w-[1440px] grid-cols-[1fr_auto] items-center gap-2 px-4 sm:grid-cols-[1fr_auto_1fr] sm:px-8 lg:px-16 xl:px-20">
-        <Logo size="md" className="justify-self-start" />
+    <header className="sticky top-0 z-50 border-b border-kay-border-light/80 bg-kay-bg/95 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:h-[60px] sm:gap-4 sm:px-6 lg:px-10 xl:px-14">
+        <Logo size="md" className="shrink-0" />
 
         <nav
-          className="hidden items-center justify-center gap-6 lg:flex lg:justify-self-center"
+          className="hidden min-w-0 flex-1 items-center justify-center gap-x-5 xl:gap-x-7 2xl:gap-x-8 lg:flex"
           aria-label="Main navigation"
         >
           {NAV_ITEMS.map((link) => {
             const dropdown =
               NAV_DROPDOWN_LINKS[link.label as keyof typeof NAV_DROPDOWN_LINKS];
+            const showClass =
+              link.priority > 1 ? "hidden xl:flex" : "flex";
 
             if (link.hasDropdown && dropdown) {
               return (
                 <div
                   key={link.label}
-                  className="relative"
+                  className={`relative ${showClass}`}
                   onMouseEnter={() => setOpenDropdown(link.label)}
                   onMouseLeave={() => setOpenDropdown(null)}
                 >
                   <Link
                     href={getNavHref(link.label)}
-                    className="flex items-center gap-1 py-2 text-[13px] font-normal text-kay-fg transition-opacity hover:opacity-60"
+                    className="inline-flex items-center gap-1 whitespace-nowrap py-2 text-[12px] tracking-[0.02em] text-kay-fg transition-opacity hover:opacity-55 xl:text-[13px]"
                   >
-                    {link.label}
-                    <IconChevronDown className="mt-px opacity-50" />
+                    <span className="xl:hidden">{link.short}</span>
+                    <span className="hidden xl:inline">{link.label}</span>
+                    <IconChevronDown className="mt-px opacity-45" />
                   </Link>
                   {openDropdown === link.label && (
                     <div className="absolute left-1/2 top-full z-50 min-w-[180px] -translate-x-1/2 pt-2">
@@ -96,59 +121,80 @@ export function Header() {
               <Link
                 key={link.label}
                 href={getNavHref(link.label)}
-                className="text-[13px] font-normal text-kay-fg transition-opacity hover:opacity-60"
+                className={`${showClass} items-center whitespace-nowrap text-[12px] tracking-[0.02em] text-kay-fg transition-opacity hover:opacity-55 xl:text-[13px]`}
               >
-                {link.label}
+                <span className="xl:hidden">{link.short}</span>
+                <span className="hidden xl:inline">{link.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="flex min-w-0 items-center justify-self-end gap-0.5 sm:gap-1.5">
-          <div className="hidden sm:block">
-            <ThemeToggle />
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <div className="relative hidden items-center md:flex">
+            {searchOpen ? (
+              <form onSubmit={handleSearch} className="flex items-center">
+                <label htmlFor="header-search" className="sr-only">
+                  Search gifts
+                </label>
+                <input
+                  id="header-search"
+                  type="search"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onBlur={() => {
+                    if (!searchQuery.trim()) setSearchOpen(false);
+                  }}
+                  placeholder="Search…"
+                  className="h-9 w-40 rounded-full border border-kay-border bg-kay-input-bg px-3.5 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle focus:border-kay-fg lg:w-48"
+                />
+              </form>
+            ) : (
+              <button
+                type="button"
+                aria-label="Search"
+                onClick={() => setSearchOpen(true)}
+                className="flex h-9 w-9 items-center justify-center text-kay-fg transition-opacity hover:opacity-55"
+              >
+                <IconSearch />
+              </button>
+            )}
           </div>
-          <form onSubmit={handleSearch} className="hidden md:flex">
-            <label htmlFor="header-search" className="sr-only">
-              Search gifts
-            </label>
-            <input
-              id="header-search"
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search…"
-              className="h-9 w-28 rounded-full border border-kay-border bg-kay-input-bg px-3 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle focus:border-kay-fg lg:w-36"
-            />
-          </form>
+
           <Link
             href="/search"
             aria-label="Search"
-            className="flex h-10 w-10 items-center justify-center text-kay-fg transition-opacity hover:opacity-60 md:hidden"
+            className="flex h-9 w-9 items-center justify-center text-kay-fg transition-opacity hover:opacity-55 md:hidden"
           >
             <IconSearch />
           </Link>
+
+          <div className="mx-0.5 hidden h-4 w-px bg-kay-border sm:block" aria-hidden />
+
+          <ThemeToggle className="hidden sm:flex" />
           <HeaderPortalLink className="hidden sm:flex" />
           <HeaderAccountLink />
           <button
             type="button"
             aria-label="Shopping bag"
             onClick={openCart}
-            className="relative flex h-10 w-10 items-center justify-center text-kay-fg transition-opacity hover:opacity-60"
+            className="relative flex h-9 w-9 items-center justify-center text-kay-fg transition-opacity hover:opacity-55"
           >
             <IconBag />
             {itemCount > 0 && (
-              <span className="absolute right-1 top-1.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-kay-accent px-0.5 text-[9px] font-medium leading-none text-kay-accent-fg">
+              <span className="absolute right-0.5 top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-kay-accent px-0.5 text-[9px] font-medium leading-none text-kay-accent-fg">
                 {itemCount > 9 ? "9+" : itemCount}
               </span>
             )}
           </button>
+
           <button
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
-            className="ml-1 flex h-10 w-10 flex-col items-center justify-center gap-1.5 lg:hidden"
+            className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 lg:hidden"
           >
             <span
               className={`block h-px w-5 bg-kay-fg transition-transform ${menuOpen ? "translate-y-[3.5px] rotate-45" : ""}`}

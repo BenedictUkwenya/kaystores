@@ -40,10 +40,10 @@ export default function RootLayout({
     >
       <body className="flex min-h-full min-w-0 flex-col overflow-x-hidden">
         <Script
-          id="kay-splash-boot"
+          id="kay-boot"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(sessionStorage.getItem("kay-splash-seen-v5")!=="1"){document.documentElement.setAttribute("data-splash-boot","1");}}catch(e){}})();`,
+            __html: `(function(){try{if(localStorage.getItem("kay-theme")==="after-dark"){document.documentElement.setAttribute("data-theme","after-dark");}if(sessionStorage.getItem("kay-splash-seen-v5")!=="1"){document.documentElement.setAttribute("data-splash-boot","1");}}catch(e){}})();`,
           }}
         />
         <AppProviders>{children}</AppProviders>

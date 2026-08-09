@@ -48,6 +48,16 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
+      const addr = body.gift.recipientAddress;
+      if (!addr?.line1?.trim() || !addr.city?.trim() || !addr.state?.trim()) {
+        return NextResponse.json(
+          {
+            error:
+              "Recipient delivery address is required for gift orders.",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     if (body.deliveryType === "gift" && body.gift) {
@@ -55,6 +65,7 @@ export async function POST(request: Request) {
         ...body.gift,
         recipientEmail: body.gift.recipientEmail?.trim().toLowerCase(),
         recipientName: body.gift.recipientName.trim(),
+        addressUnknown: false,
       };
     }
 
