@@ -46,7 +46,24 @@ export function HeaderPortalLink({
 
       const role = (profile?.role as UserRole) ?? "customer";
       const portal = PORTAL_CONFIG[role];
-      setPortals(portal ? [portal] : []);
+      if (portal) {
+        setPortals([portal]);
+        return;
+      }
+
+      // Pending / rejected applicants stay role=customer but have a vendors row.
+      const { data: vendor } = await sb
+        .from("vendors")
+        .select("status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (vendor?.status === "pending" || vendor?.status === "rejected") {
+        setPortals([{ href: "/vendor/apply", label: "Application" }]);
+        return;
+      }
+
+      setPortals([]);
     }
 
     loadRole();

@@ -6,6 +6,7 @@ import {
 } from "@/lib/orders/repository";
 import { fetchConciergeRequestsForAccount } from "@/lib/concierge/repository";
 import { getSupabaseConfig } from "@/lib/supabase/env";
+import { getVendorByUserId } from "@/lib/auth/roles";
 
 export default async function AccountPage() {
   if (!getSupabaseConfig().isConfigured) {
@@ -14,6 +15,7 @@ export default async function AccountPage() {
         initialUser={null}
         initialOrders={[]}
         initialConciergeRequests={[]}
+        initialVendorApplication={null}
       />
     );
   }
@@ -33,11 +35,14 @@ export default async function AccountPage() {
       })
     : [];
 
+  const vendorApplication = user ? await getVendorByUserId(user.id) : null;
+
   return (
     <AccountPanel
       initialUser={user}
       initialOrders={orders}
       initialConciergeRequests={conciergeRequests}
+      initialVendorApplication={vendorApplication}
     />
   );
 }

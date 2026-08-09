@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import type { OrderSummary } from "@/types/order";
 import type { ClientConciergeStatus } from "@/types/concierge";
+import type { Vendor } from "@/types/dashboard";
 import { formatNaira } from "@/lib/data/home";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { AccountOrders } from "@/components/account/AccountOrders";
@@ -21,6 +22,7 @@ type Props = {
   user: User;
   orders: OrderSummary[];
   conciergeRequests: ClientConciergeStatus[];
+  vendorApplication: Vendor | null;
   onSignOut: () => void;
 };
 
@@ -55,6 +57,7 @@ export function AccountDashboard({
   user,
   orders,
   conciergeRequests,
+  vendorApplication,
   onSignOut,
 }: Props) {
   const name =
@@ -70,6 +73,40 @@ export function AccountDashboard({
     0,
   );
 
+  const pendingVendor = vendorApplication?.status === "pending";
+  const rejectedVendor = vendorApplication?.status === "rejected";
+  const approvedVendor = vendorApplication?.status === "approved";
+
+  const serviceLinks = pendingVendor
+    ? [
+        {
+          href: "/vendor/apply",
+          label: "Application status",
+          description: "Pending Kay review",
+          icon: IconShield,
+        },
+        ...SERVICES,
+      ]
+    : approvedVendor
+      ? [
+          {
+            href: "/vendor",
+            label: "Vendor portal",
+            description: "Catalogue, orders & wallet",
+            icon: IconBag,
+          },
+          ...SERVICES,
+        ]
+      : [
+          {
+            href: "/vendor/apply",
+            label: "Become a vendor",
+            description: "Apply to sell with Kay",
+            icon: IconBag,
+          },
+          ...SERVICES,
+        ];
+
   return (
     <AccountLayout
       title={`Welcome back, ${firstName}`}
@@ -77,6 +114,48 @@ export function AccountDashboard({
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
         <div className="space-y-8">
+          {vendorApplication &&
+            (pendingVendor || rejectedVendor || approvedVendor) && (
+              <section
+                className={`rounded-2xl border px-5 py-5 sm:px-6 ${
+                  pendingVendor
+                    ? "border-amber-200/80 bg-amber-50/70"
+                    : rejectedVendor
+                      ? "border-red-200/80 bg-red-50/70"
+                      : "border-kay-gold/30 bg-kay-gold-light/40"
+                }`}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
+                  Vendor application
+                </p>
+                <p className="mt-2 font-serif text-[22px] text-kay-fg">
+                  {pendingVendor
+                    ? "Under review"
+                    : rejectedVendor
+                      ? "Not approved"
+                      : "Approved partner"}
+                </p>
+                <p className="mt-1 text-[13px] text-kay-muted">
+                  {vendorApplication.businessName}
+                  {pendingVendor
+                    ? " — Kay is reviewing your application."
+                    : rejectedVendor
+                      ? " — you can update details and apply again."
+                      : " — your vendor portal is ready."}
+                </p>
+                <Link
+                  href={approvedVendor ? "/vendor" : "/vendor/apply"}
+                  className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-kay-fg px-5 text-[12px] font-medium text-kay-fg transition-colors hover:bg-kay-surface"
+                >
+                  {approvedVendor
+                    ? "Open vendor portal"
+                    : pendingVendor
+                      ? "View application status"
+                      : "View application"}
+                </Link>
+              </section>
+            )}
+
           <section className="overflow-hidden rounded-2xl border border-kay-border-light bg-kay-surface-elevated shadow-[var(--kay-card-shadow)]">
             <div className="border-b border-kay-border-light bg-gradient-to-r from-kay-surface via-kay-surface-elevated to-kay-gold-light/25 px-6 py-6 sm:px-8">
               <div className="flex flex-wrap items-center gap-5">
@@ -127,8 +206,8 @@ export function AccountDashboard({
               Services
             </p>
             <ul className="mt-4 space-y-2">
-              {SERVICES.map((service) => (
-                <li key={service.href}>
+              {serviceLinks.map((service) => (
+                <li key={service.href + service.label}>
                   <Link
                     href={service.href}
                     className="group flex items-start gap-3 rounded-xl border border-transparent p-3 transition-colors hover:border-kay-border-light hover:bg-kay-surface"

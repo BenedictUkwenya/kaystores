@@ -8,11 +8,14 @@ import { AccountDashboard } from "@/components/account/AccountDashboard";
 import { AccountGuestView } from "@/components/account/AccountGuestView";
 import type { OrderSummary } from "@/types/order";
 import type { ClientConciergeStatus } from "@/types/concierge";
+import type { Vendor } from "@/types/dashboard";
+import { readVendorApplyDraft } from "@/lib/vendor/apply-draft";
 
 type Props = {
   initialUser: User | null;
   initialOrders: OrderSummary[];
   initialConciergeRequests: ClientConciergeStatus[];
+  initialVendorApplication: Vendor | null;
 };
 
 function AccountSkeleton() {
@@ -33,6 +36,7 @@ export function AccountPanel({
   initialUser,
   initialOrders,
   initialConciergeRequests,
+  initialVendorApplication,
 }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser);
@@ -40,7 +44,19 @@ export function AccountPanel({
   const [conciergeRequests, setConciergeRequests] = useState<
     ClientConciergeStatus[]
   >(initialConciergeRequests);
+  const [vendorApplication] = useState<Vendor | null>(
+    initialVendorApplication,
+  );
   const [loading, setLoading] = useState(!initialUser && !initialOrders.length);
+
+  useEffect(() => {
+    // Finish vendor signup draft after verify if user landed on account.
+    if (!initialUser) return;
+    if (initialVendorApplication) return;
+    if (readVendorApplyDraft()) {
+      router.replace("/vendor/apply");
+    }
+  }, [initialUser, initialVendorApplication, router]);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -110,6 +126,7 @@ export function AccountPanel({
       user={user}
       orders={orders}
       conciergeRequests={conciergeRequests}
+      vendorApplication={vendorApplication}
       onSignOut={handleSignOut}
     />
   );
