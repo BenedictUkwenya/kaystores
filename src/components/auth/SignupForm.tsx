@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
 import {
   saveVendorApplyDraft,
@@ -342,14 +341,6 @@ export function SignupForm() {
                   : "Create account"}
         </button>
       </form>
-
-      {!isRoleInvite && (
-        <div className="mt-4">
-          <Suspense fallback={null}>
-            <GoogleSignInButton />
-          </Suspense>
-        </div>
-      )}
 
       <AuthLinkRow
         left={{ text: "Already have an account?", href: "/login", linkText: "Sign in" }}

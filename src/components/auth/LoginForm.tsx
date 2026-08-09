@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Input } from "@/components/ui/Input";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -106,12 +104,6 @@ export function LoginForm() {
           {loading ? "Signing in…" : "Login"}
         </button>
       </form>
-
-      <div className="mt-4">
-        <Suspense fallback={null}>
-          <GoogleSignInButton label="Sign in with Google" />
-        </Suspense>
-      </div>
 
       <AuthLinkRow
         left={{ text: "Forgot password?", href: "/forgot-password", linkText: "Reset" }}
