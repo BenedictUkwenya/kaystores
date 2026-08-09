@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { CartProvider } from "@/providers/CartProvider";
-import { CompareProvider } from "@/providers/CompareProvider";
-import { CartShell } from "@/components/cart/CartShell";
+import Script from "next/script";
+import { AppProviders } from "@/providers/AppProviders";
 import { baseMetadata } from "@/lib/metadata";
 import "./globals.css";
 
@@ -41,14 +39,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full min-w-0 flex-col overflow-x-hidden">
-        <ThemeProvider>
-          <CartProvider>
-            <CompareProvider>
-              {children}
-              <CartShell />
-            </CompareProvider>
-          </CartProvider>
-        </ThemeProvider>
+        <Script
+          id="kay-splash-boot"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(sessionStorage.getItem("kay-splash-seen-v5")!=="1"){document.documentElement.setAttribute("data-splash-boot","1");}}catch(e){}})();`,
+          }}
+        />
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

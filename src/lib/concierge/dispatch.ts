@@ -12,7 +12,7 @@ import {
   parseStoredAttachments,
   signConciergeAttachments,
 } from "@/lib/storage/concierge-attachments";
-import { applyClientMarkup } from "@/lib/pricing/markup";
+import { markupPrice } from "@/lib/pricing/markup";
 import type {
   ClientConciergeDetail,
   ClientConciergeOffer,
@@ -598,7 +598,7 @@ async function finalizeOfferSelection(
 
   void notifyConciergeOfferSelectedClient(mappedRequest, {
     vendorBusinessName: vendor?.business_name ?? "Kay partner",
-    quotedPrice: applyClientMarkup(assignRow.quoted_price ?? 0),
+    quotedPrice: await markupPrice(assignRow.quoted_price ?? 0),
   });
 
   if (vendor) {
@@ -813,7 +813,7 @@ export async function fetchClientConciergeDetail(
       recommendedOffer = {
         assignmentId: a.id,
         vendorBusinessName: "Kay curated selection",
-        quotedPrice: applyClientMarkup(a.quotedPrice ?? 0),
+        quotedPrice: await markupPrice(a.quotedPrice ?? 0),
         vendorNotes: a.vendorNotes,
         offerImages: signedImages,
         outcome: a.outcome,
@@ -835,7 +835,7 @@ export async function fetchClientConciergeDetail(
       acceptedOffer = {
         assignmentId: a.id,
         vendorBusinessName: "Kay curated selection",
-        quotedPrice: applyClientMarkup(a.quotedPrice ?? 0),
+        quotedPrice: await markupPrice(a.quotedPrice ?? 0),
         vendorNotes: a.vendorNotes,
         offerImages: signedImages,
         outcome: a.outcome,

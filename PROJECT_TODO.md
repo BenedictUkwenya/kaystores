@@ -8,9 +8,7 @@
 
 
 
-**Last updated:** 2026-08-06
-
-
+**Last updated:** 2026-08-09
 
 ---
 
@@ -55,6 +53,10 @@
 - [x] **Kay After Dark 18+ experience** (`/after-dark` — age gate, hero, catalog, curated box)
 
 - [x] Logo / wordmark in header & footer
+
+- [x] Brand splash screen + Kay mark loading states
+
+- [x] Favicon, app icons, email logo from brand mark
 
 - [x] After Dark polish on all pages (shop uses CSS variables)
 
@@ -252,6 +254,8 @@
 
 - [x] **Pending invites tab** — Members → Invited lists open role invites with reminder email + copy link
 
+- [x] **Admin markup tiers** — `/admin/pricing` sets % and/or flat ₦ by vendor list-price range (shop + concierge); migration `024_pricing_markup_tiers.sql`
+
 - [ ] Inventory sync
 
 
@@ -282,11 +286,11 @@
 
 | Help & legal      | 10   | 11    |
 
-| Backend           | 6    | 7     |
+| Backend           | 7    | 8     |
 
 
 
-**Overall:** 68 / 73 checklist items complete
+**Overall:** 69 / 74 checklist items complete
 
 
 

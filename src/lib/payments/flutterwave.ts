@@ -75,7 +75,7 @@ export async function initializeFlutterwavePayment(
       customizations: {
         title: input.title,
         description: input.description,
-        logo: `${getSiteUrl()}/favicon.ico`,
+        logo: `${getSiteUrl()}/brand/email-logo.png`,
       },
     }),
   });

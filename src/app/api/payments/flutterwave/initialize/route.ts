@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       .trim()
       .toLowerCase();
 
-    const breakdown = calculateConciergeClientPrice(concierge.quotedPrice);
+    const breakdown = await calculateConciergeClientPrice(concierge.quotedPrice);
     await setPaymentPending("concierge", id, breakdown.clientPrice);
 
     const payment = await initializeFlutterwavePayment({

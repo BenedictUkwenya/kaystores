@@ -206,6 +206,7 @@ export const ADMIN_NAV: DashboardNavItem[] = [
   },
   { href: "/admin/vendors", label: "Vendors" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/pricing", label: "Pricing" },
   { href: "/admin/payouts", label: "Payouts" },
   {
     href: "/admin/concierge",

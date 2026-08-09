@@ -10,6 +10,7 @@ In the Supabase SQL Editor, run (in order):
 - `supabase/migrations/002_orders.sql`
 - `supabase/migrations/003_order_pricing.sql`
 - `supabase/migrations/004_concierge.sql`
+- …through latest, including `023_vendor_onboarding.sql` and `024_pricing_markup_tiers.sql`
 - `supabase/seed.sql` (optional)
 
 ## 2. Set secrets (Supabase Dashboard or CLI)

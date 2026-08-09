@@ -8,6 +8,7 @@ import { mapProductRow } from "@/types/product";
 import {
   applyClientMarkupToProduct,
   applyClientMarkupToProducts,
+  getMarkupTiers,
   vendorPriceBoundFromClient,
 } from "@/lib/pricing/markup";
 import { createClient } from "@/lib/supabase/server";
@@ -115,7 +116,7 @@ async function getProductsFromFallback(
 ): Promise<ProductsResult> {
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
-  const marked = applyClientMarkupToProducts(FALLBACK_PRODUCTS);
+  const marked = await applyClientMarkupToProducts(FALLBACK_PRODUCTS);
   const filtered = applyFiltersLocally(marked, params.filters ?? {});
   const sorted = sortProducts(filtered, params.sort ?? "newest");
   return paginateProducts(sorted, page, pageSize);
@@ -150,11 +151,19 @@ export async function getProducts(
     }
 
     if (filters.minPrice != null && filters.minPrice > 0) {
-      query = query.gte("price", vendorPriceBoundFromClient(filters.minPrice));
+      const tiers = await getMarkupTiers();
+      query = query.gte(
+        "price",
+        vendorPriceBoundFromClient(filters.minPrice, tiers, "min"),
+      );
     }
 
     if (filters.maxPrice != null) {
-      query = query.lte("price", vendorPriceBoundFromClient(filters.maxPrice));
+      const tiers = await getMarkupTiers();
+      query = query.lte(
+        "price",
+        vendorPriceBoundFromClient(filters.maxPrice, tiers, "max"),
+      );
     }
 
     if (filters.occasions?.length === 1) {
@@ -210,9 +219,10 @@ export async function getProducts(
     }
 
     const total = count ?? data.length;
+    const tiers = await getMarkupTiers();
     return {
       products: data.map((row) =>
-        applyClientMarkupToProduct(mapProductRow(row)),
+        applyClientMarkupToProduct(mapProductRow(row), tiers),
       ),
       total,
       page,
@@ -226,10 +236,11 @@ export async function getProducts(
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const { isConfigured } = getSupabaseConfig();
+  const tiers = await getMarkupTiers();
 
   if (!isConfigured) {
     const product = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-    return product ? applyClientMarkupToProduct(product) : null;
+    return product ? applyClientMarkupToProduct(product, tiers) : null;
   }
 
   try {
@@ -243,13 +254,13 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
     if (error || !data) {
       const product = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-      return product ? applyClientMarkupToProduct(product) : null;
+      return product ? applyClientMarkupToProduct(product, tiers) : null;
     }
 
-    return applyClientMarkupToProduct(mapProductRow(data));
+    return applyClientMarkupToProduct(mapProductRow(data), tiers);
   } catch {
     const product = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-    return product ? applyClientMarkupToProduct(product) : null;
+    return product ? applyClientMarkupToProduct(product, tiers) : null;
   }
 }
 
@@ -284,7 +295,9 @@ export async function getAfterDarkProducts(
   const sort = params.sort ?? "newest";
 
   if (!isConfigured) {
-    const filtered = FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct);
+    const filtered = await applyClientMarkupToProducts(
+      FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct),
+    );
     const sorted = sortProducts(filtered, sort);
     return paginateProducts(sorted, page, pageSize);
   }
@@ -298,7 +311,9 @@ export async function getAfterDarkProducts(
   });
 
   if (result.products.length === 0) {
-    const filtered = FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct);
+    const filtered = await applyClientMarkupToProducts(
+      FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct),
+    );
     const sorted = sortProducts(filtered, sort);
     return paginateProducts(sorted, page, pageSize);
   }
@@ -328,22 +343,26 @@ export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
       .in("slug", unique)
       .eq("status", "live");
 
+    const tiers = await getMarkupTiers();
+
     if (error || !data?.length) {
-      return unique
-        .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
-        .filter((p): p is Product => p != null);
+      return applyClientMarkupToProducts(
+        unique
+          .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
+          .filter((p): p is Product => p != null),
+      );
     }
 
     const bySlug = new Map(
       data.map((row) => [
         String(row.slug),
-        applyClientMarkupToProduct(mapProductRow(row)),
+        applyClientMarkupToProduct(mapProductRow(row), tiers),
       ]),
     );
     return unique
       .map((slug) => bySlug.get(slug) ?? FALLBACK_PRODUCTS.find((p) => p.slug === slug))
       .filter((p): p is Product => p != null)
-      .map((p) => (bySlug.has(p.slug) ? p : applyClientMarkupToProduct(p)));
+      .map((p) => (bySlug.has(p.slug) ? p : applyClientMarkupToProduct(p, tiers)));
   } catch {
     return applyClientMarkupToProducts(
       unique

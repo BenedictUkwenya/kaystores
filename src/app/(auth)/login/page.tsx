@@ -1,9 +1,10 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { KaySuspenseFallback } from "@/components/brand/KaySuspenseFallback";
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<p className="text-kay-muted">Loading…</p>}>
+    <Suspense fallback={<KaySuspenseFallback />}>
       <LoginForm />
     </Suspense>
   );

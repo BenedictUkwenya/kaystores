@@ -246,7 +246,7 @@ export function VendorProductForm({
           min={0}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          hint="What the customer pays today"
+          hint="Your list price — Kay adds markup for the customer-facing shop price"
           required
         />
         <Input

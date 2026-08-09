@@ -18,12 +18,16 @@ function siteUrl(): string {
 }
 
 function layout(title: string, body: string, opts?: { omitExpiry?: boolean }) {
+  const logo = `${siteUrl()}/brand/email-logo.png`;
   const expiry = opts?.omitExpiry
     ? ""
     : `<p style="margin-top:28px;font-size:11px;color:#8a8a8a">This code expires in 1 hour. If you didn't request this, you can ignore this email.</p>`;
   return `<!DOCTYPE html><html><body style="font-family:Georgia,serif;background:#f9f7f2;margin:0;padding:32px 16px">
   <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #eceae4;border-radius:12px;padding:32px">
-    <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#b89a6a">Kay Stores</p>
+    <div style="margin:0 0 20px;text-align:left">
+      <img src="${logo}" width="48" height="48" alt="Kay Stores" style="display:block;width:48px;height:48px;border:0;outline:none" />
+      <p style="margin:12px 0 0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#b89a6a">Kay Stores</p>
+    </div>
     <h1 style="margin:0 0 20px;font-size:22px;font-weight:400;color:#000">${title}</h1>
     ${body}
     ${expiry}

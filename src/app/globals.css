@@ -102,17 +102,450 @@ h6 {
   scrollbar-width: none;
 }
 
+.kay-logo-slot {
+  flex-shrink: 0;
+}
+
 .kay-logo {
-  mix-blend-mode: multiply;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.kay-logo--light {
+  opacity: 1;
+}
+
+.kay-logo--dark {
+  opacity: 0;
+}
+
+[data-theme="after-dark"] .kay-logo--light {
+  opacity: 0;
+}
+
+[data-theme="after-dark"] .kay-logo--dark {
+  opacity: 1;
 }
 
 [data-theme="after-dark"] .hero-image {
   filter: brightness(0.72) saturate(0.85);
 }
 
-[data-theme="after-dark"] .kay-logo {
-  mix-blend-mode: normal;
-  filter: invert(1);
+/* —— Splash — cinematic brand intro (always black / gold) —— */
+.kay-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #050505;
+  overflow: hidden;
+  color: #f3efe6;
+  pointer-events: auto;
+}
+
+.kay-splash--exit {
+  pointer-events: none;
+  background: transparent;
+}
+
+.kay-splash-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 52%;
+  background: #050505;
+  z-index: 5;
+  will-change: transform;
+}
+
+.kay-splash-panel--left {
+  left: 0;
+  border-right: 1px solid rgba(184, 154, 106, 0.12);
+}
+
+.kay-splash-panel--right {
+  right: 0;
+  border-left: 1px solid rgba(184, 154, 106, 0.12);
+}
+
+.kay-splash--exit .kay-splash-panel--left {
+  animation: kay-splash-part-left 1.85s cubic-bezier(0.77, 0, 0.18, 1) forwards;
+}
+
+.kay-splash--exit .kay-splash-panel--right {
+  animation: kay-splash-part-right 1.85s cubic-bezier(0.77, 0, 0.18, 1) forwards;
+}
+
+.kay-splash-ambient {
+  position: absolute;
+  inset: -20%;
+  z-index: 6;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 45% 35% at 50% 42%, rgba(184, 154, 106, 0.16), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(184, 154, 106, 0.05), transparent 55%);
+  opacity: 0;
+  animation: kay-splash-ambient 3.2s 0.4s ease forwards;
+}
+
+.kay-splash--exit .kay-splash-ambient {
+  animation: kay-splash-fade-out 0.9s ease forwards;
+}
+
+.kay-splash-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  opacity: 0.07;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+.kay-splash-center {
+  position: relative;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.kay-splash--exit .kay-splash-center {
+  animation: kay-splash-fade-out 0.85s 0.1s ease forwards;
+}
+
+.kay-splash-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.kay-splash-mark-stage {
+  position: relative;
+  width: clamp(72px, 14vw, 108px);
+  height: clamp(72px, 14vw, 108px);
+  flex-shrink: 0;
+}
+
+.kay-splash-mark-glow {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(196, 165, 116, 0.35), transparent 68%);
+  opacity: 0;
+  filter: blur(8px);
+  animation: kay-splash-glow-in 2.4s 0.6s ease forwards;
+}
+
+.kay-splash-mark-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+  animation: kay-splash-unmask-up 2.2s 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.kay-splash-mark {
+  position: absolute;
+  inset: 0;
+  background: url("/brand/icon-dark-256.png") center / contain no-repeat;
+  transform: scale(1.08) translateY(12%);
+  animation: kay-splash-mark-settle 2.2s 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+.kay-splash-mark-shine {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 236, 200, 0.55) 48%,
+    transparent 62%
+  );
+  transform: translateX(-120%) skewX(-18deg);
+  animation: kay-splash-shine 2s 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.kay-splash-word {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0;
+  margin-top: -0.12em;
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+  font-size: clamp(4rem, 12vw, 7rem);
+  font-weight: 500;
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+  color: #f6f1e8;
+}
+
+.kay-splash-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.55em);
+  filter: blur(6px);
+  animation: kay-splash-letter 1.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  animation-delay: calc(2.4s + var(--i) * 0.28s);
+}
+
+.kay-splash-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.65rem;
+  min-height: 1rem;
+}
+
+.kay-splash-rule {
+  display: block;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #b89a6a, transparent);
+  animation: kay-splash-rule 1.3s 4.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.kay-splash-tag {
+  margin: 0;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+  text-transform: uppercase;
+  color: #c4a574;
+  opacity: 0;
+  animation: kay-splash-tag-in 1.3s 4.5s ease forwards;
+}
+
+.kay-splash-footer {
+  position: absolute;
+  bottom: clamp(1.5rem, 5vh, 2.75rem);
+  left: 0;
+  right: 0;
+  z-index: 7;
+  text-align: center;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: rgba(196, 165, 116, 0.55);
+  opacity: 0;
+  animation: kay-splash-tag-in 1.2s 5.2s ease forwards;
+}
+
+.kay-splash--exit .kay-splash-footer {
+  animation: kay-splash-fade-out 0.7s ease forwards;
+}
+
+@keyframes kay-splash-ambient {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kay-splash-glow-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kay-splash-unmask-up {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes kay-splash-mark-settle {
+  to {
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes kay-splash-shine {
+  to {
+    transform: translateX(120%) skewX(-18deg);
+  }
+}
+
+@keyframes kay-splash-letter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes kay-splash-rule {
+  to {
+    width: 2.75rem;
+  }
+}
+
+@keyframes kay-splash-tag-in {
+  to {
+    opacity: 1;
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
+  }
+}
+
+@keyframes kay-splash-part-left {
+  to {
+    transform: translateX(-105%);
+  }
+}
+
+@keyframes kay-splash-part-right {
+  to {
+    transform: translateX(105%);
+  }
+}
+
+@keyframes kay-splash-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kay-splash-ambient,
+  .kay-splash-mark-glow,
+  .kay-splash-mark-frame,
+  .kay-splash-mark,
+  .kay-splash-mark-shine,
+  .kay-splash-letter,
+  .kay-splash-rule,
+  .kay-splash-tag,
+  .kay-splash-footer,
+  .kay-splash--exit .kay-splash-panel--left,
+  .kay-splash--exit .kay-splash-panel--right,
+  .kay-splash--exit .kay-splash-center {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
+
+  .kay-splash-mark-frame {
+    clip-path: none;
+  }
+
+  .kay-splash-mark,
+  .kay-splash-letter {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .kay-splash-rule {
+    width: 2.75rem;
+  }
+
+  .kay-splash-tag,
+  .kay-splash-footer,
+  .kay-splash-ambient,
+  .kay-splash-mark-glow {
+    opacity: 1;
+  }
+}
+
+/* —— Loader — shimmer hold (no spinner) —— */
+.kay-loader-frame {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+
+.kay-loader-mark {
+  display: block;
+  background: url("/brand/icon-512.png") center / contain no-repeat;
+  opacity: 0.85;
+}
+
+[data-theme="after-dark"] .kay-loader-mark,
+.kay-loader--dark .kay-loader-mark {
+  background-image: url("/brand/icon-dark-256.png");
+}
+
+.kay-loader-shine {
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(
+    110deg,
+    transparent 40%,
+    rgba(255, 236, 200, 0.45) 50%,
+    transparent 60%
+  );
+  transform: translateX(-130%) skewX(-16deg);
+  animation: kay-loader-shine 2.2s ease-in-out infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.kay-loader-label {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--kay-muted, #6b6b6b);
+}
+
+[data-theme="after-dark"] .kay-loader-label {
+  color: #a3a3a3;
+}
+
+.kay-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(249, 247, 242, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+[data-theme="after-dark"] .kay-loading-overlay {
+  background: rgba(5, 5, 5, 0.82);
+}
+
+@keyframes kay-loader-shine {
+  0% {
+    transform: translateX(-130%) skewX(-16deg);
+  }
+  55%,
+  100% {
+    transform: translateX(130%) skewX(-16deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kay-loader-shine {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* First-paint veil until splash mounts (avoids spinner flash) */
+html[data-splash-boot="1"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: #050505;
+  pointer-events: none;
 }
 
 /* Checkout — cream page + light cards (readable in both themes) */

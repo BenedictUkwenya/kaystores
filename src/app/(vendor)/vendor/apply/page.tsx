@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { VendorApplyForm } from "@/components/vendor/VendorApplyForm";
+import { KaySuspenseFallback } from "@/components/brand/KaySuspenseFallback";
 
 export default function VendorApplyPage() {
   return (
@@ -24,7 +25,7 @@ export default function VendorApplyPage() {
           Sign up & apply
         </Link>
       </p>
-      <Suspense fallback={<p className="text-kay-muted">Loading…</p>}>
+      <Suspense fallback={<KaySuspenseFallback />}>
         <VendorApplyForm />
       </Suspense>
     </AccountLayout>

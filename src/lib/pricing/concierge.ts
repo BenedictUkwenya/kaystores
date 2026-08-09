@@ -1,12 +1,14 @@
-import { applyClientMarkup } from "@/lib/pricing/markup";
+import { markupPrice } from "@/lib/pricing/markup";
 
 export type ConciergePaymentBreakdown = {
-  /** Single client-facing price (vendor quote + 15% markup). */
+  /** Single client-facing price (vendor quote + Kay markup tiers). */
   clientPrice: number;
 };
 
-export function calculateConciergeClientPrice(vendorQuote: number): ConciergePaymentBreakdown {
+export async function calculateConciergeClientPrice(
+  vendorQuote: number,
+): Promise<ConciergePaymentBreakdown> {
   return {
-    clientPrice: applyClientMarkup(vendorQuote),
+    clientPrice: await markupPrice(vendorQuote),
   };
 }

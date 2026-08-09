@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { OTPInput } from "@/components/auth/OTPInput";
+import { KaySuspenseFallback } from "@/components/brand/KaySuspenseFallback";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { AUTH_OTP_LENGTH } from "@/lib/auth/otp";
 
@@ -159,7 +160,7 @@ function VerifyFormInner() {
 
 export function VerifyForm() {
   return (
-    <Suspense fallback={<p className="text-kay-muted">Loading…</p>}>
+    <Suspense fallback={<KaySuspenseFallback />}>
       <VerifyFormInner />
     </Suspense>
   );

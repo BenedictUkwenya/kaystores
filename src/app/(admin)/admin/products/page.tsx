@@ -28,7 +28,7 @@ export default async function AdminProductsPage() {
       nav={ADMIN_NAV}
       eyebrow="Catalogue"
       title="All products"
-      description="Every listing on Kay — vendor and platform catalogue."
+      description="Every listing on Kay — vendor and platform catalogue. Prices shown are vendor list prices; customer prices use Pricing tiers."
       badge="Admin"
     >
       <DataTable<Product>
@@ -51,7 +51,7 @@ export default async function AdminProductsPage() {
             header: "Status",
             render: (p) => <StatusBadge status={p.status ?? "live"} />,
           },
-          { key: "price", header: "Price", render: (p) => formatNaira(p.price) },
+          { key: "price", header: "Vendor price", render: (p) => formatNaira(p.price) },
           {
             key: "badges",
             header: "Badges",
