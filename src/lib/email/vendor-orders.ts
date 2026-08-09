@@ -70,13 +70,15 @@ export async function notifyVendorsForPaidOrder(orderId: string): Promise<void> 
     byVendor.set(vendorId, entry);
   }
 
-  for (const { vendor, lines } of byVendor.values()) {
-    void sendKayEmail({
-      type: "vendor_new_order",
-      appUrl: getEmailSiteUrl(),
-      vendor,
-      orderNumber: String(order.order_number),
-      lineSummary: lines.join(", "),
-    });
-  }
+  await Promise.all(
+    [...byVendor.values()].map(({ vendor, lines }) =>
+      sendKayEmail({
+        type: "vendor_new_order",
+        appUrl: getEmailSiteUrl(),
+        vendor,
+        orderNumber: String(order.order_number),
+        lineSummary: lines.join(", "),
+      }),
+    ),
+  );
 }

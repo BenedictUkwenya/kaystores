@@ -27,6 +27,9 @@ export async function insertOrder(
     handoverToken?: string;
     status: Order["status"];
     handoverStatus: Order["handoverStatus"];
+    paymentStatus?: Order["paymentStatus"];
+    paymentReference?: string | null;
+    paidAt?: string | null;
   },
 ): Promise<Order> {
   const supabase = await createClient();
@@ -44,6 +47,9 @@ export async function insertOrder(
     gift: payload.gift,
     handoverToken: meta.handoverToken,
     handoverStatus: meta.handoverStatus,
+    paymentStatus: meta.paymentStatus,
+    paymentReference: meta.paymentReference,
+    paidAt: meta.paidAt,
   });
 
   const { data, error } = await supabase

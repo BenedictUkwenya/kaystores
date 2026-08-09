@@ -214,6 +214,23 @@ export function Header() {
           className="max-h-[70vh] overflow-y-auto border-t border-kay-border-light bg-kay-bg px-4 py-4 sm:px-8 lg:hidden"
           aria-label="Mobile navigation"
         >
+          {/* Theme controls first — visible without scrolling on small screens */}
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-kay-border-light pb-4">
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wider text-kay-subtle">
+                Appearance
+              </p>
+              <Link
+                href="/after-dark"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1.5 inline-block text-[13px] font-medium tracking-wide text-kay-gold"
+              >
+                After Dark
+              </Link>
+            </div>
+            <ThemeToggle />
+          </div>
+
           <ul className="space-y-4">
             <li>
               <Link
@@ -274,12 +291,6 @@ export function Header() {
               >
                 Search
               </Link>
-            </li>
-            <li className="flex items-center justify-between border-t border-kay-border-light pt-4">
-              <span className="text-[11px] uppercase tracking-wider text-kay-subtle">
-                Appearance
-              </span>
-              <ThemeToggle />
             </li>
           </ul>
         </nav>

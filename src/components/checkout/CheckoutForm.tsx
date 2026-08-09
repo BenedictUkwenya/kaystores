@@ -10,7 +10,7 @@ import { Toggle } from "@/components/ui/Toggle";
 import { Button } from "@/components/ui/Button";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { CheckoutStep } from "@/components/checkout/CheckoutStep";
-import { PaymentMethodSelect } from "@/components/checkout/PaymentMethodSelect";
+import { ManualPaymentConfirm } from "@/components/checkout/ManualPaymentConfirm";
 import { IconArrowRight, IconGift, IconPackage } from "@/components/ui/Icons";
 import type { DeliveryType } from "@/types/order";
 import { GIFT_NOTE_MAX_LENGTH } from "@/types/order";
@@ -18,6 +18,7 @@ import {
   calculateOrderPricing,
   toPricingPayload,
 } from "@/lib/pricing/calculate";
+import { formatNaira } from "@/lib/data/home";
 import { SITE_ROUTES } from "@/lib/data/site-routes";
 import { useCheckoutPrefill } from "@/hooks/useCheckoutPrefill";
 import { CheckoutProcessing } from "@/components/checkout/CheckoutProcessing";
@@ -41,7 +42,7 @@ export function CheckoutForm({
   const { items, clearCart } = useCart();
   const pricing = useMemo(() => calculateOrderPricing(items), [items]);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("self");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank">("card");
+  const [paidConfirmed, setPaidConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{
     id: string;
@@ -110,6 +111,11 @@ export function CheckoutForm({
       }
     }
 
+    if (!paidConfirmed) {
+      setError('Confirm “Yes, I have paid” before placing your order.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -123,6 +129,7 @@ export function CheckoutForm({
           pricing: toPricingPayload(pricing),
           buyer: { fullName, email: buyer.email, phone: buyer.phone },
           buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
+          paymentConfirmed: true,
           gift:
             deliveryType === "gift"
               ? {
@@ -147,18 +154,6 @@ export function CheckoutForm({
       const order = await res.json();
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
       clearCart();
-
-      const payRes = await fetch("/api/payments/flutterwave/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "order", id: order.id, email: buyer.email }),
-      });
-      const payData = await payRes.json();
-      if (payRes.ok && payData.link) {
-        window.location.href = payData.link;
-        return;
-      }
-
       router.replace(`/order/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -481,10 +476,11 @@ export function CheckoutForm({
             </div>
           </CheckoutStep>
 
-          <CheckoutStep step={2} title="Payment Method">
-            <PaymentMethodSelect
-              value={paymentMethod}
-              onChange={setPaymentMethod}
+          <CheckoutStep step={2} title="Payment">
+            <ManualPaymentConfirm
+              confirmed={paidConfirmed}
+              onChange={setPaidConfirmed}
+              amountLabel={formatNaira(pricing.grandTotal)}
             />
           </CheckoutStep>
 
@@ -497,22 +493,22 @@ export function CheckoutForm({
           <div>
             <button
               type="submit"
-              disabled={submitting || !pricing.canCheckout}
+              disabled={submitting || !pricing.canCheckout || !paidConfirmed}
               className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kay-gold text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(184,154,106,0.4)] transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {submitting
-                ? "Processing…"
+                ? "Placing order…"
                 : pricing.canCheckout
                   ? isPrivateCheckout
-                    ? "Complete private order"
-                    : "Complete Purchase"
+                    ? "Place private order"
+                    : "Place order"
                   : "Minimum order not met"}
-              {!submitting && pricing.canCheckout && (
+              {!submitting && pricing.canCheckout && paidConfirmed && (
                 <IconArrowRight className="h-4 w-4" />
               )}
             </button>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-kay-subtle">
-              By clicking Complete Purchase, you agree to Kay Stores&apos;{" "}
+              By placing your order, you agree to Kay Stores&apos;{" "}
               <Link href={SITE_ROUTES.terms} className="underline hover:text-kay-fg">
                 Terms of Service
               </Link>{" "}

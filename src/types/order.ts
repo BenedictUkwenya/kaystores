@@ -93,6 +93,8 @@ export type CreateOrderPayload = {
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;
+  /** Customer attests payment was made offline / manually. */
+  paymentConfirmed?: boolean;
 };
 
 export const GIFT_NOTE_MAX_LENGTH = 200;

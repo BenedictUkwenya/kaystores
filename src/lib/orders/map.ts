@@ -127,6 +127,9 @@ export function buildOrderInsert(row: {
   gift?: GiftDetails;
   handoverToken?: string;
   handoverStatus: Order["handoverStatus"];
+  paymentStatus?: Order["paymentStatus"];
+  paymentReference?: string | null;
+  paidAt?: string | null;
 }) {
   return {
     id: row.id,
@@ -143,5 +146,8 @@ export function buildOrderInsert(row: {
     handover_token: row.handoverToken ?? null,
     handover_status: row.handoverStatus,
     recipient_address: null,
+    payment_status: row.paymentStatus ?? "unpaid",
+    payment_reference: row.paymentReference ?? null,
+    paid_at: row.paidAt ?? null,
   };
 }

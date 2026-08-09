@@ -46,11 +46,12 @@ export function Logo({
   return (
     <Link
       href={href}
-      className={`kay-logo-root inline-flex shrink-0 items-center ${variantClass} ${className}`}
+      className={`kay-logo-root group inline-flex shrink-0 items-center ${variantClass} ${className}`}
       aria-label={label}
       style={style}
     >
-      <span className="kay-logo-slot relative inline-block h-[var(--logo-h)] w-[var(--logo-w)] shrink-0">
+      <span className="kay-logo-slot relative inline-block h-[var(--logo-h)] w-[var(--logo-w)] shrink-0 overflow-visible">
+        <span className="kay-logo-glow" aria-hidden />
         <Image
           src="/brand/kay-logo-light.png"
           alt=""
@@ -71,9 +72,10 @@ export function Logo({
           aria-hidden
           className="kay-logo kay-logo--dark"
         />
+        <span className="kay-logo-sheen" aria-hidden />
       </span>
       <span
-        className={`ml-0.5 -translate-y-[0.22em] font-serif font-medium leading-none tracking-[-0.04em] ${text}`}
+        className={`kay-logo-word ml-0.5 -translate-y-[0.22em] font-serif font-medium leading-none tracking-[-0.04em] ${text}`}
         aria-hidden
       >
         ay

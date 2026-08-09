@@ -1,6 +1,5 @@
 import { KayLoader } from "@/components/brand/KayLoader";
 
-/** Full-bleed brand hold while the route streams in. */
-export default function Loading() {
+export default function VendorLoading() {
   return <KayLoader size="lg" stage label="Loading" />;
 }

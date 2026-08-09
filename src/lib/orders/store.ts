@@ -38,6 +38,7 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
     payload.deliveryType === "gift" && payload.gift
       ? { ...payload.gift, addressUnknown: false }
       : payload.gift;
+  const paid = Boolean(payload.paymentConfirmed);
 
   const order: Order = {
     id,
@@ -51,6 +52,9 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
     buyerAddress: payload.buyerAddress,
     gift,
     handoverStatus: "not_required",
+    paymentStatus: paid ? "paid" : "unpaid",
+    paymentReference: paid ? "manual-confirm" : null,
+    paidAt: paid ? new Date().toISOString() : null,
     createdAt: new Date().toISOString(),
   };
 
@@ -71,6 +75,8 @@ export async function createOrder(
           gift: { ...payload.gift, addressUnknown: false },
         }
       : payload;
+  const paid = Boolean(normalized.paymentConfirmed);
+  const paidAt = paid ? new Date().toISOString() : null;
 
   if (isSupabaseOrdersEnabled()) {
     try {
@@ -80,6 +86,9 @@ export async function createOrder(
         userId: options?.userId,
         status: "confirmed",
         handoverStatus: "not_required",
+        paymentStatus: paid ? "paid" : "unpaid",
+        paymentReference: paid ? "manual-confirm" : null,
+        paidAt,
       });
     } catch (err) {
       console.error("[orders] Supabase insert failed, using memory:", err);

@@ -7,7 +7,11 @@ import {
   createVendorOrderItemsFromOrder,
   fetchProductVendorMap,
 } from "@/lib/vendors/repository";
+import { notifyOrderEmails } from "@/lib/email/send";
+import { notifyVendorsForPaidOrder } from "@/lib/email/vendor-orders";
+import { getEmailSiteUrl } from "@/lib/site";
 import type { CreateOrderPayload } from "@/types/order";
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CreateOrderPayload;
@@ -69,6 +73,13 @@ export async function POST(request: Request) {
       };
     }
 
+    if (!body.paymentConfirmed) {
+      return NextResponse.json(
+        { error: "Please confirm that you have paid before placing the order." },
+        { status: 400 },
+      );
+    }
+
     body.buyer = {
       ...body.buyer,
       email: body.buyer.email.trim().toLowerCase(),
@@ -102,7 +113,17 @@ export async function POST(request: Request) {
         ...item,
         vendorId: item.vendorId ?? vendorMap.get(item.productId)?.vendorId ?? null,
       }));
-      await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap);
+      await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap, {
+        paymentPaid: order.paymentStatus === "paid",
+      });
+
+      // Manual checkout marks paid immediately — previously emails only ran after Flutterwave.
+      // Await so Vercel doesn't freeze the isolate before Resend is invoked.
+      const appUrl = getEmailSiteUrl();
+      await notifyOrderEmails(order, appUrl);
+      if (order.paymentStatus === "paid") {
+        await notifyVendorsForPaidOrder(order.id);
+      }
     } catch (err) {
       await restoreStockForOrder(body.items);
       throw err;

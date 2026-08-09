@@ -51,14 +51,15 @@ export function GiftRecipientNotice({
   return (
     <div className="rounded-lg border border-kay-gold/30 bg-kay-beta-bg/50 px-4 py-4">
       <h2 className="text-[13px] font-medium text-kay-fg">
-        Gift notification sent
+        Gift notification
       </h2>
       <p className="mt-2 text-[13px] leading-relaxed text-kay-muted">
-        We emailed <span className="font-medium text-kay-fg">{recipientName}</span>{" "}
+        We email <span className="font-medium text-kay-fg">{recipientName}</span>{" "}
         at{" "}
-        <span className="font-medium text-kay-fg">{recipientEmail}</span>. If they
-        don&apos;t see it, ask them to check <strong>Spam</strong> and{" "}
-        <strong>Promotions</strong> in Gmail, or search for &quot;Kay Stores&quot;.
+        <span className="font-medium text-kay-fg">{recipientEmail}</span> when the
+        order is placed. If they don&apos;t see it, ask them to check{" "}
+        <strong>Spam</strong> and <strong>Promotions</strong> in Gmail, or search
+        for &quot;Kay Stores&quot; — then tap resend below.
       </p>
 
       {handoverUrl && (

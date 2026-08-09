@@ -416,9 +416,14 @@ export async function createVendorOrderItemsFromOrder(
   orderId: string,
   items: OrderItem[],
   productVendorMap: Map<string, { vendorId: string | null; name: string; segment: string }>,
+  options?: { paymentPaid?: boolean },
 ): Promise<void> {
   const admin = createAdminClient();
   if (!admin) return;
+
+  const fulfillmentStatus = options?.paymentPaid
+    ? "awaiting_hub_delivery"
+    : "awaiting_payment";
 
   const rows = items
     .map((item) => {
@@ -435,7 +440,7 @@ export async function createVendorOrderItemsFromOrder(
         unit_price: item.price,
         line_total: lineTotal,
         vendor_earnings: lineTotal,
-        fulfillment_status: "awaiting_payment",
+        fulfillment_status: fulfillmentStatus,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r != null);

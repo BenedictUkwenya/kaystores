@@ -3,7 +3,7 @@ import { updateOrderAdmin } from "@/lib/admin/repository";
 import { fetchOrderById } from "@/lib/orders/repository";
 import { notifyOrderEmails } from "@/lib/email/send";
 import { notifyVendorsForPaidOrder } from "@/lib/email/vendor-orders";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 import { parseTxRef } from "@/lib/payments/config";
 import type { PaymentKind } from "@/lib/payments/config";
 
@@ -64,8 +64,8 @@ export async function confirmOrderPayment(
 
   const order = await fetchOrderById(orderId);
   if (order) {
-    void notifyOrderEmails(order, getSiteUrl());
-    void notifyVendorsForPaidOrder(orderId);
+    await notifyOrderEmails(order, getEmailSiteUrl());
+    await notifyVendorsForPaidOrder(orderId);
   }
 
   return true;

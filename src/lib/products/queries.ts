@@ -206,9 +206,8 @@ export async function getProducts(
       return getProductsFromFallback(params);
     }
 
+    // Empty catalog is intentional after a wipe — do not resurrect seed fallbacks.
     if (!data || data.length === 0) {
-      const fallback = await getProductsFromFallback(params);
-      if (fallback.total > 0) return fallback;
       return {
         products: [],
         total: count ?? 0,
@@ -252,15 +251,15 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       .eq("status", "live")
       .maybeSingle();
 
-    if (error || !data) {
-      const product = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-      return product ? applyClientMarkupToProduct(product, tiers) : null;
+    if (error) {
+      console.error("getProductBySlug:", error.message);
+      return null;
     }
+    if (!data) return null;
 
     return applyClientMarkupToProduct(mapProductRow(data), tiers);
   } catch {
-    const product = FALLBACK_PRODUCTS.find((p) => p.slug === slug);
-    return product ? applyClientMarkupToProduct(product, tiers) : null;
+    return null;
   }
 }
 
@@ -302,23 +301,13 @@ export async function getAfterDarkProducts(
     return paginateProducts(sorted, page, pageSize);
   }
 
-  const result = await getProducts({
+  return getProducts({
     ...params,
     filters: { collections: ["after-dark"] },
     page,
     pageSize,
     sort,
   });
-
-  if (result.products.length === 0) {
-    const filtered = await applyClientMarkupToProducts(
-      FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct),
-    );
-    const sorted = sortProducts(filtered, sort);
-    return paginateProducts(sorted, page, pageSize);
-  }
-
-  return result;
 }
 
 export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
@@ -343,31 +332,22 @@ export async function getProductsBySlugs(slugs: string[]): Promise<Product[]> {
       .in("slug", unique)
       .eq("status", "live");
 
-    const tiers = await getMarkupTiers();
-
-    if (error || !data?.length) {
-      return applyClientMarkupToProducts(
-        unique
-          .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
-          .filter((p): p is Product => p != null),
-      );
+    if (error) {
+      console.error("getProductsBySlugs:", error.message);
+      return [];
     }
 
+    const tiers = await getMarkupTiers();
     const bySlug = new Map(
-      data.map((row) => [
+      (data ?? []).map((row) => [
         String(row.slug),
         applyClientMarkupToProduct(mapProductRow(row), tiers),
       ]),
     );
     return unique
-      .map((slug) => bySlug.get(slug) ?? FALLBACK_PRODUCTS.find((p) => p.slug === slug))
-      .filter((p): p is Product => p != null)
-      .map((p) => (bySlug.has(p.slug) ? p : applyClientMarkupToProduct(p, tiers)));
+      .map((slug) => bySlug.get(slug))
+      .filter((p): p is Product => p != null);
   } catch {
-    return applyClientMarkupToProducts(
-      unique
-        .map((slug) => FALLBACK_PRODUCTS.find((p) => p.slug === slug))
-        .filter((p): p is Product => p != null),
-    );
+    return [];
   }
 }

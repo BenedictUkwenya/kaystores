@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrder } from "@/lib/orders/store";
 import { resendGiftRecipientEmail } from "@/lib/email/send";
-import { getSiteUrl } from "@/lib/site";
+import { getEmailSiteUrl } from "@/lib/site";
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await resendGiftRecipientEmail(order, getSiteUrl());
+    const result = await resendGiftRecipientEmail(order, getEmailSiteUrl());
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error ?? "Could not resend notification." },

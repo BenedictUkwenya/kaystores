@@ -249,7 +249,7 @@
 
 - [x] Email notifications (concierge, order updates, recipient link)
 
-- [x] **Flutterwave payments** — shop checkout + concierge pay-after-selection; webhook at `/api/webhooks/flutterwave`
+- [x] **Manual payment confirm at checkout** (“Yes, I have paid” — Flutterwave paused for shop orders)
 
 - [x] **Vendor invite vs self-apply** — Kay invites choose instant access or profile-first (both auto-approved); self-apply collects NIN and stays pending admin review
 
