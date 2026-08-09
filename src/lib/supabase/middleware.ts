@@ -90,6 +90,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password");
   const isSuspendedPage = pathname === "/account-suspended";
+  const isSupportPage =
+    pathname === "/support" ||
+    pathname.startsWith("/support/") ||
+    pathname.startsWith("/api/support");
 
   if (user && !isAuthPage) {
     const { role, accountStatus } = await fetchUserProfileMeta(user.id);
@@ -102,7 +106,11 @@ export async function updateSession(request: NextRequest) {
       return response;
     }
 
-    if (accountStatus === "suspended" && !isSuspendedPage) {
+    if (
+      accountStatus === "suspended" &&
+      !isSuspendedPage &&
+      !isSupportPage
+    ) {
       return NextResponse.redirect(new URL("/account-suspended", request.url));
     }
 

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchConciergeQueueCounts } from "@/lib/concierge/dispatch";
+import { countSupportThreadsNeedingAttention } from "@/lib/support/repository";
 import { fetchVendorOrderItems } from "@/lib/vendors/repository";
 
 export type DashboardNavAttention = Partial<Record<string, boolean>>;
@@ -14,13 +15,14 @@ export async function fetchAdminNavAttention(): Promise<DashboardNavAttention> {
   const db = admin();
   if (!db) return {};
 
-  const [counts, ordersRes] = await Promise.all([
+  const [counts, ordersRes, supportAttention] = await Promise.all([
     fetchConciergeQueueCounts(),
     db
       .from("orders")
       .select("id", { count: "exact", head: true })
       .eq("payment_status", "paid")
       .in("status", ["confirmed", "processing", "pending_handover"]),
+    countSupportThreadsNeedingAttention().catch(() => 0),
   ]);
 
   const conciergeAttention =
@@ -29,6 +31,7 @@ export async function fetchAdminNavAttention(): Promise<DashboardNavAttention> {
   return {
     "/admin/concierge": conciergeAttention,
     "/admin/orders": (ordersRes.count ?? 0) > 0,
+    "/admin/support": supportAttention > 0,
   };
 }
 

@@ -15,6 +15,7 @@ import {
   IconArrowRight,
   IconBag,
   IconDiamond,
+  IconInfo,
   IconShield,
 } from "@/components/ui/Icons";
 
@@ -27,6 +28,12 @@ type Props = {
 };
 
 const SERVICES = [
+  {
+    href: "/support",
+    label: "Message Kay",
+    description: "Chat with our support team",
+    icon: IconInfo,
+  },
   {
     href: "/concierge",
     label: "New request",

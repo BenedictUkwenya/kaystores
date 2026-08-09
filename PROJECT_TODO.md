@@ -201,6 +201,8 @@
 
 - [x] Contact Us
 
+- [x] In-app support chat (`/support` + `/admin/support`, email alerts, images)
+
 - [x] Our Story (→ `/about`)
 
 - [x] Careers
@@ -285,13 +287,13 @@
 
 | About & concierge | 9    | 9     |
 
-| Help & legal      | 10   | 11    |
+| Help & legal      | 11   | 12    |
 
 | Backend           | 7    | 8     |
 
 
 
-**Overall:** 69 / 74 checklist items complete
+**Overall:** 70 / 75 checklist items complete
 
 
 

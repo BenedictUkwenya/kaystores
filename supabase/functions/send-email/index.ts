@@ -730,6 +730,39 @@ function buildMessage(
         tags: [{ name: "category", value: "auth_otp" }],
       };
     }
+    case "support_message": {
+      const { audience, to, preview, senderName, deepLink } = payload;
+      if (audience === "team") {
+        if (!teamEmail) return null;
+        const html = layout(
+          "New support message",
+          `<p style="color:#5c5c5c;line-height:1.6">${senderName || "A customer"} sent a message in Kay Support.</p>
+          <p style="color:#5c5c5c;white-space:pre-wrap;line-height:1.6">${preview || "[Image attached]"}</p>
+          ${ctaButton(deepLink, "Open support inbox")}`,
+        );
+        return {
+          to: [teamEmail],
+          subject: `[Support] ${senderName || "New message"}`,
+          html,
+          text: stripHtml(html),
+          tags: [{ name: "category", value: "support_message" }],
+        };
+      }
+      const html = layout(
+        "Reply from Kay Support",
+        `<p style="color:#5c5c5c;line-height:1.6">You have a new reply from the Kay team.</p>
+        <p style="color:#5c5c5c;white-space:pre-wrap;line-height:1.6">${preview || "[Image attached]"}</p>
+        ${ctaButton(deepLink, "Open conversation")}`,
+      );
+      return {
+        to: [to],
+        subject: "New reply from Kay Support",
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "support_message" }],
+      };
+    }
     default:
       return null;
   }

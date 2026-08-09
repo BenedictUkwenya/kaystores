@@ -14,10 +14,10 @@ export default function AccountSuspendedPage() {
         mistake, contact our team and we&apos;ll review your account.
       </p>
       <Link
-        href="/contact"
+        href="/support"
         className="mt-8 inline-flex h-11 items-center justify-center rounded-full bg-kay-accent px-8 text-[13px] font-medium text-kay-accent-fg"
       >
-        Contact support
+        Message Kay Support
       </Link>
       <Link
         href="/login"

@@ -112,6 +112,18 @@ export type AuthOtpEmailPayload = {
   action: AuthOtpAction;
 };
 
+export type SupportMessageEmailPayload = {
+  type: "support_message";
+  appUrl: string;
+  audience: "team" | "user";
+  /** Required when audience is "user"; ignored for team (uses KAY_TEAM_EMAIL). */
+  to?: string;
+  preview: string;
+  senderName?: string;
+  deepLink: string;
+  threadId: string;
+};
+
 export type KayEmailPayload =
   | OrderEmailPayload
   | ConciergeEmailPayload
@@ -119,4 +131,5 @@ export type KayEmailPayload =
   | ContactEmailPayload
   | VendorEmailPayload
   | RoleEmailPayload
-  | AuthOtpEmailPayload;
+  | AuthOtpEmailPayload
+  | SupportMessageEmailPayload;

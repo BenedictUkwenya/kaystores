@@ -213,6 +213,11 @@ export const ADMIN_NAV: DashboardNavItem[] = [
     label: "Concierge",
     attentionLabel: "Concierge requests need attention",
   },
+  {
+    href: "/admin/support",
+    label: "Support",
+    attentionLabel: "Support messages need a reply",
+  },
 ];
 
 export const VENDOR_NAV: DashboardNavItem[] = [
