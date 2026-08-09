@@ -133,6 +133,12 @@ type Payload =
       reminder?: boolean;
     }
   | {
+      type: "auth_otp";
+      to: string;
+      token: string;
+      action: "signup" | "recovery" | "magiclink" | "email_change" | string;
+    }
+  | {
       type:
         | "concierge_offers_ready"
         | "concierge_recommendation_ready"
@@ -687,6 +693,41 @@ function buildMessage(
         text: `Your Kay Stores account now has ${roleLabel} access.\n\nOpen portal: ${portalUrl}\n`,
         replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "role_upgraded" }],
+      };
+    }
+    case "auth_otp": {
+      const { to, token, action } = payload;
+      const code = `<p style="margin:24px 0;font-size:32px;letter-spacing:0.35em;font-weight:600;color:#000;text-align:center">${token}</p>`;
+      const expiry =
+        `<p style="margin-top:28px;font-size:11px;color:#8a8a8a">This code expires in 1 hour. If you didn't request this, you can ignore this email.</p>`;
+      let title = "Verification code";
+      let intro =
+        `<p style="color:#5c5c5c;line-height:1.6">Enter this code to continue:</p>`;
+      let subject = "Your Kay verification code";
+      if (action === "signup") {
+        title = "Your verification code";
+        intro =
+          `<p style="color:#5c5c5c;line-height:1.6">Welcome to Kay. Enter this code on the verification screen to finish creating your account:</p>`;
+        subject = "Verify your Kay account";
+      } else if (action === "recovery") {
+        title = "Password reset code";
+        intro =
+          `<p style="color:#5c5c5c;line-height:1.6">Enter this code to reset your password:</p>`;
+        subject = "Reset your Kay password";
+      } else if (action === "magiclink") {
+        title = "Sign-in code";
+        intro =
+          `<p style="color:#5c5c5c;line-height:1.6">Enter this code to sign in:</p>`;
+        subject = "Your Kay sign-in code";
+      }
+      const html = layout(title, `${intro}${code}${expiry}`);
+      return {
+        to: [to],
+        subject,
+        html,
+        text: `${title}: ${token}`,
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "auth_otp" }],
       };
     }
     default:

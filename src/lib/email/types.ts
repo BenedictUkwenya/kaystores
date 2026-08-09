@@ -103,10 +103,20 @@ export type ConciergeOfferEmailPayload = {
   };
 };
 
+export type AuthOtpAction = "signup" | "recovery" | "magiclink" | "email_change";
+
+export type AuthOtpEmailPayload = {
+  type: "auth_otp";
+  to: string;
+  token: string;
+  action: AuthOtpAction;
+};
+
 export type KayEmailPayload =
   | OrderEmailPayload
   | ConciergeEmailPayload
   | ConciergeOfferEmailPayload
   | ContactEmailPayload
   | VendorEmailPayload
-  | RoleEmailPayload;
+  | RoleEmailPayload
+  | AuthOtpEmailPayload;

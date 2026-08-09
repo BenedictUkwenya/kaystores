@@ -61,9 +61,21 @@ supabase functions deploy send-auth-email --no-verify-jwt
 
 ## 4. Auth emails via Resend (OTP codes)
 
-Signup and password reset use **8-digit codes** on `/verify` (must match **Auth → Providers → Email → OTP length** in Supabase). By default Supabase sends its own magic-link emails — you must enable the **Send Email** hook.
+Signup / password reset use **8-digit codes** on `/verify` (OTP length must match **Auth → Providers → Email**).
 
-### Enable the hook (one-time, Dashboard)
+**App path (preferred — avoids Supabase Auth email rate limits):**
+
+1. `POST /api/auth/signup` → Admin `generateLink` (Supabase does **not** send mail) → Resend via `send-email` (`auth_otp`)
+2. `POST /api/auth/send-otp` → same for recovery / resend code
+3. Browser verifies with `verifyOtp`
+
+Redeploy after email function changes:
+
+```bash
+supabase functions deploy send-email --no-verify-jwt
+```
+
+### Optional: Send Email hook (safety net)
 
 1. Deploy `send-auth-email` (command above).
 2. **Authentication → Hooks → Send Email** → type **HTTPS**.
@@ -77,15 +89,11 @@ supabase secrets set SEND_EMAIL_HOOK_SECRET="v1,whsec_xxxxxxxx"
 
 6. **Enable** the hook and save.
 
-While the hook is on, Supabase stops sending auth mail itself — all signup / reset emails go through Resend with Kay branding and a numeric code.
-
 | Secret | Purpose |
 |--------|---------|
 | `SEND_EMAIL_HOOK_SECRET` | Verifies webhook payloads from Supabase Auth |
 
-### Fallback (no hook): SMTP + template
-
-If you prefer not to use the hook, configure **Project Settings → Auth → SMTP** with Resend (`smtp.resend.com`, user `resend`, password = your Resend API key), then edit **Authentication → Email Templates → Confirm signup** to use `{{ .Token }}` instead of `{{ .ConfirmationURL }}`.
+Do **not** rely on client `signUp` / `resetPasswordForEmail` for mail — those hit Auth rate limits even when the hook uses Resend.
 
 ## 5. What stays in `.env.local` / Vercel
 
@@ -104,7 +112,7 @@ Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fa
 
 | Event | Emails sent |
 |-------|-------------|
-| Sign up / password reset | 8-digit code via Resend (`send-auth-email` hook) |
+| Sign up / password reset | 8-digit code via Resend (`/api/auth/signup` + `/api/auth/send-otp` → `send-email` `auth_otp`) |
 | Order placed | Buyer confirmation + team alert + handover link (if gift) |
 | Handover completed | Team alert |
 | Concierge submitted | Submitter confirmation + team alert (+ link to admin concierge) |

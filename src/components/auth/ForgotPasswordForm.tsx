@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
@@ -17,20 +16,22 @@ export function ForgotPasswordForm() {
     setError("");
     setLoading(true);
 
-    const supabase = createBrowserSupabase();
-    if (!supabase) {
-      setError("Auth is not configured. Add Supabase keys to .env.local");
-      setLoading(false);
-      return;
-    }
+    const trimmed = email.trim().toLowerCase();
 
-    const trimmed = email.trim();
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(
-      trimmed,
-    );
-
-    if (authError) {
-      setError(authError.message);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed, action: "recovery" }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Could not send reset email.");
+        setLoading(false);
+        return;
+      }
+    } catch {
+      setError("Could not send reset email.");
       setLoading(false);
       return;
     }

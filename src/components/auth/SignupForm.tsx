@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
-import { createBrowserSupabase } from "@/lib/supabase/browser";
 import {
   saveVendorApplyDraft,
-  submitVendorApplicationRequest,
 } from "@/lib/vendor/apply-draft";
 import { isValidNin } from "@/lib/vendor/nin";
 
@@ -50,9 +47,6 @@ export function SignupForm() {
   const [nin, setNin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [vendorSuccess, setVendorSuccess] = useState<"pending" | "approved" | null>(
-    null,
-  );
 
   // Self-apply or profile-invite both collect vendor fields; instant does not.
   const isSelfVendorSignup =
@@ -132,70 +126,27 @@ export function SignupForm() {
     }
 
     setLoading(true);
-    const supabase = createBrowserSupabase();
-    if (!supabase) {
-      setError("Auth is not configured. Add Supabase keys to .env.local");
-      setLoading(false);
-      return;
-    }
-
     const normalizedEmail = email.trim().toLowerCase();
 
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        data: { full_name: fullName.trim() },
-      },
-    });
-
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.session) {
-      await fetch("/api/auth/redeem-invites", { method: "POST" });
-
-      if (isInstantInvite) {
-        router.push("/vendor");
-        router.refresh();
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+          fullName: fullName.trim(),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Could not create account.");
+        setLoading(false);
         return;
       }
-
-      if (showVendorFields) {
-        try {
-          const result = await submitVendorApplicationRequest({
-            businessName: businessName.trim(),
-            contactName: fullName.trim(),
-            contactEmail: normalizedEmail,
-            contactPhone: contactPhone.trim(),
-            catalogDescription: catalogDescription.trim(),
-            nin: isSelfVendorSignup ? nin.trim() : undefined,
-            inviteToken: inviteToken || undefined,
-          });
-          if (result.status === "approved") {
-            router.push("/vendor");
-            router.refresh();
-            return;
-          }
-          setVendorSuccess("pending");
-          setLoading(false);
-          return;
-        } catch (err) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Account created but application failed.",
-          );
-          setLoading(false);
-          return;
-        }
-      }
-
-      router.push(inviteRole === "admin" ? "/admin" : next);
-      router.refresh();
+    } catch {
+      setError("Could not create account. Please try again.");
+      setLoading(false);
       return;
     }
 
@@ -221,26 +172,6 @@ export function SignupForm() {
 
     router.push(
       `/verify?email=${encodeURIComponent(normalizedEmail)}&type=signup&next=${encodeURIComponent(verifyNext)}`,
-    );
-  }
-
-  if (vendorSuccess === "pending") {
-    return (
-      <div className="text-center">
-        <h1 className="font-serif text-[32px] text-kay-fg sm:text-[36px]">
-          Application submitted
-        </h1>
-        <p className="mt-4 text-[14px] leading-relaxed text-kay-muted">
-          Your account is ready and your vendor application is with our team.
-          We&apos;ll email you when it&apos;s approved or if we need anything else.
-        </p>
-        <Link
-          href="/account"
-          className="mt-8 inline-flex h-11 items-center justify-center rounded-full border border-kay-fg px-8 text-[13px] font-medium"
-        >
-          Go to account
-        </Link>
-      </div>
     );
   }
 

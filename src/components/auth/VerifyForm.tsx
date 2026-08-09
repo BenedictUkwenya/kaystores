@@ -42,7 +42,8 @@ function VerifyFormInner() {
       return;
     }
 
-    const otpType = type === "recovery" ? "recovery" : "signup";
+    const otpType =
+      type === "recovery" ? "recovery" : type === "email" ? "email" : "signup";
 
     const { error: authError } = await supabase.auth.verifyOtp({
       email,
@@ -73,24 +74,30 @@ function VerifyFormInner() {
     setResending(true);
     setError("");
 
-    const supabase = createBrowserSupabase();
-    if (!supabase) {
-      setError("Auth is not configured.");
-      setResending(false);
-      return;
-    }
-
-    if (type === "recovery") {
-      const { error: authError } = await supabase.auth.resetPasswordForEmail(
-        email,
-      );
-      if (authError) setError(authError.message);
-    } else {
-      const { error: authError } = await supabase.auth.resend({
-        type: "signup",
-        email,
+    try {
+      const action = type === "recovery" ? "recovery" : "signup";
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, action }),
       });
-      if (authError) setError(authError.message);
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        verifyType?: string;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Could not send a new code.");
+        setResending(false);
+        return;
+      }
+
+      if (data.verifyType && data.verifyType !== type) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("type", data.verifyType);
+        router.replace(`/verify?${params.toString()}`);
+      }
+    } catch {
+      setError("Could not send a new code.");
     }
 
     setResending(false);
