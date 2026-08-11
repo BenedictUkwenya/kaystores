@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/providers/CartProvider";
@@ -11,7 +11,12 @@ import { Button } from "@/components/ui/Button";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { CheckoutStep } from "@/components/checkout/CheckoutStep";
 import { ManualPaymentConfirm } from "@/components/checkout/ManualPaymentConfirm";
-import { IconArrowRight, IconGift, IconPackage } from "@/components/ui/Icons";
+import {
+  IconArrowRight,
+  IconGift,
+  IconPackage,
+  IconUpload,
+} from "@/components/ui/Icons";
 import type { DeliveryType } from "@/types/order";
 import { GIFT_NOTE_MAX_LENGTH } from "@/types/order";
 import {
@@ -64,6 +69,8 @@ export function CheckoutForm({
   const [addReveal, setAddReveal] = useState(false);
   const [revealVideo, setRevealVideo] = useState<File | null>(null);
   const [revealPhoto, setRevealPhoto] = useState<File | null>(null);
+  const revealVideoRef = useRef<HTMLInputElement>(null);
+  const revealPhotoRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -528,31 +535,102 @@ export function CheckoutForm({
                     />
                     {addReveal && (
                       <div className="mt-4 space-y-3 border-t border-kay-border-light pt-4">
-                        <label className="block text-[12px] text-kay-muted">
-                          Video (optional)
-                          <input
-                            type="file"
-                            accept="video/mp4,video/webm,video/quicktime"
-                            className="mt-1 block w-full text-[13px] text-kay-fg"
-                            onChange={(e) =>
-                              setRevealVideo(e.target.files?.[0] ?? null)
-                            }
-                          />
-                        </label>
-                        <label className="block text-[12px] text-kay-muted">
-                          Photo (optional)
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            className="mt-1 block w-full text-[13px] text-kay-fg"
-                            onChange={(e) =>
-                              setRevealPhoto(e.target.files?.[0] ?? null)
-                            }
-                          />
-                        </label>
+                        <p className="text-[13px] font-medium text-kay-fg">
+                          Choose what goes behind the QR
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <input
+                              ref={revealVideoRef}
+                              type="file"
+                              accept="video/mp4,video/webm,video/quicktime"
+                              className="sr-only"
+                              onChange={(e) =>
+                                setRevealVideo(e.target.files?.[0] ?? null)
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => revealVideoRef.current?.click()}
+                              className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
+                            >
+                              <IconUpload className="h-4 w-4 text-kay-gold" />
+                              <span className="text-[13px] font-medium text-kay-fg">
+                                {revealVideo ? "Change video" : "Select video"}
+                              </span>
+                              <span className="text-[11px] text-kay-muted">
+                                MP4, WebM, or MOV
+                              </span>
+                            </button>
+                            {revealVideo && (
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <p className="truncate text-[12px] text-kay-muted">
+                                  {revealVideo.name}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRevealVideo(null);
+                                    if (revealVideoRef.current) {
+                                      revealVideoRef.current.value = "";
+                                    }
+                                  }}
+                                  className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <input
+                              ref={revealPhotoRef}
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="sr-only"
+                              onChange={(e) =>
+                                setRevealPhoto(e.target.files?.[0] ?? null)
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => revealPhotoRef.current?.click()}
+                              className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
+                            >
+                              <IconUpload className="h-4 w-4 text-kay-gold" />
+                              <span className="text-[13px] font-medium text-kay-fg">
+                                {revealPhoto ? "Change photo" : "Select photo"}
+                              </span>
+                              <span className="text-[11px] text-kay-muted">
+                                PNG, JPG, or WebP
+                              </span>
+                            </button>
+                            {revealPhoto && (
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <p className="truncate text-[12px] text-kay-muted">
+                                  {revealPhoto.name}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRevealPhoto(null);
+                                    if (revealPhotoRef.current) {
+                                      revealPhotoRef.current.value = "";
+                                    }
+                                  }}
+                                  className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         <p className="text-[11px] text-kay-subtle">
                           Gift note above is included in the Reveal. After placing
-                          your order you can record a video on the next screen.
+                          your order you can also record a video on the next
+                          screen.
                         </p>
                       </div>
                     )}
