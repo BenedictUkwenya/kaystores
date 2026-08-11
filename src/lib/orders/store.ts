@@ -14,6 +14,7 @@ import {
   isUuid,
   normalizeOrderNumber,
 } from "@/lib/orders/resolve";
+import { ensureGiftReveal } from "@/lib/reveal/repository";
 import type {
   AddressDetails,
   CreateOrderPayload,
@@ -62,6 +63,22 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
   return order;
 }
 
+async function attachGiftReveal(order: Order): Promise<Order> {
+  if (order.deliveryType !== "gift" || !isSupabaseOrdersEnabled()) {
+    return order;
+  }
+  try {
+    const reveal = await ensureGiftReveal(order);
+    if (!reveal) return order;
+    const withToken = { ...order, revealToken: reveal.token };
+    orders.set(order.id, withToken);
+    return withToken;
+  } catch (err) {
+    console.error("[orders] gift reveal mint failed:", err);
+    return order;
+  }
+}
+
 export async function createOrder(
   payload: CreateOrderPayload,
   options?: { userId?: string },
@@ -80,7 +97,7 @@ export async function createOrder(
 
   if (isSupabaseOrdersEnabled()) {
     try {
-      return await insertOrder(normalized, {
+      const inserted = await insertOrder(normalized, {
         id,
         orderNumber,
         userId: options?.userId,
@@ -90,12 +107,13 @@ export async function createOrder(
         paymentReference: paid ? "manual-confirm" : null,
         paidAt,
       });
+      return attachGiftReveal(inserted);
     } catch (err) {
       console.error("[orders] Supabase insert failed, using memory:", err);
     }
   }
 
-  return createOrderInMemory(normalized);
+  return attachGiftReveal(createOrderInMemory(normalized));
 }
 
 export async function getOrder(reference: string): Promise<Order | null> {

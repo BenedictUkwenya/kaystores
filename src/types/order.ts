@@ -78,6 +78,8 @@ export type Order = {
   paymentReference?: string | null;
   paidAt?: string | null;
   createdAt: string;
+  /** Present when a Kay Reveal exists for this gift order (emails / UI). */
+  revealToken?: string;
 };
 
 export type OrderSummary = Pick<

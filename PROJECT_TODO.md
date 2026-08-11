@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-08-09
+**Last updated:** 2026-08-11
 
 ---
 
@@ -129,6 +129,8 @@
 - [x] Gift flow: recipient note (with character limit)
 
 - [x] Gift flow: **Anonymous** toggle (strip buyer data from labels/slips)
+
+- [x] Kay Reveal QR (video/photo/note, custom QR sticker, `/reveal/[token]`)
 
 - [x] **Recipient address required at gift checkout** (no “address unknown” / sender must provide delivery address)
 - [x] **Recipient address collection page** (legacy Digital Handover — kept for older pending links only)
@@ -281,7 +283,7 @@
 
 | Shop pages        | 15   | 15    |
 
-| Cart & checkout   | 11   | 11    |
+| Cart & checkout   | 12   | 12    |
 
 | AI engine         | 4    | 6     |
 
@@ -293,7 +295,7 @@
 
 
 
-**Overall:** 70 / 75 checklist items complete
+**Overall:** 71 / 76 checklist items complete
 
 
 

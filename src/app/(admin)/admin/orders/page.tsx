@@ -48,6 +48,16 @@ export default async function AdminOrdersPage() {
             header: "Buyer",
             render: (o) => o.buyer.email,
           },
+          {
+            key: "type",
+            header: "Type",
+            render: (o) =>
+              o.deliveryType === "gift" ? (
+                <span className="text-kay-gold">Gift · Reveal</span>
+              ) : (
+                "Self"
+              ),
+          },
         ]}
       />
     </DashboardLayout>

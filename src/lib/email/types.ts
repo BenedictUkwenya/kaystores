@@ -12,6 +12,16 @@ export type OrderEmailPayload = {
   order: Order;
 };
 
+export type GiftRevealOpenedEmailPayload = {
+  type: "gift_reveal_opened";
+  appUrl: string;
+  to: string;
+  buyerName: string;
+  recipientName: string;
+  orderNumber: string;
+  orderId: string;
+};
+
 export type ConciergeEmailPayload = {
   type: "concierge";
   appUrl: string;
@@ -132,4 +142,5 @@ export type KayEmailPayload =
   | VendorEmailPayload
   | RoleEmailPayload
   | AuthOtpEmailPayload
-  | SupportMessageEmailPayload;
+  | SupportMessageEmailPayload
+  | GiftRevealOpenedEmailPayload;

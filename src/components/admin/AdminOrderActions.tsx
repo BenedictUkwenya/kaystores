@@ -10,6 +10,7 @@ type Props = {
   paymentStatus?: string;
   trackingNumber?: string;
   trackingCarrier?: string;
+  isGift?: boolean;
 };
 
 export function AdminOrderActions({
@@ -17,6 +18,7 @@ export function AdminOrderActions({
   paymentStatus,
   trackingNumber: initialTracking,
   trackingCarrier: initialCarrier,
+  isGift = false,
 }: Props) {
   const router = useRouter();
   const [trackingNumber, setTrackingNumber] = useState(initialTracking ?? "");
@@ -49,6 +51,30 @@ export function AdminOrderActions({
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
         Admin actions
       </p>
+
+      {isGift && (
+        <div className="space-y-2 rounded-xl border border-kay-border-light bg-kay-surface p-3">
+          <p className="text-[12px] font-medium text-kay-fg">Kay Reveal QR</p>
+          <p className="text-[11px] leading-relaxed text-kay-muted">
+            Download the packing sticker for the box. This locks further sender
+            edits to the Reveal.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`/api/admin/orders/${orderId}/reveal-qr?format=pdf`}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-kay-fg px-3 text-[12px] font-medium text-kay-fg"
+            >
+              Download sticker PDF
+            </a>
+            <a
+              href={`/api/admin/orders/${orderId}/reveal-qr?format=png`}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-kay-border-light px-3 text-[12px] text-kay-fg"
+            >
+              Download QR PNG
+            </a>
+          </div>
+        </div>
+      )}
 
       {paymentStatus !== "paid" && (
         <div className="space-y-3">

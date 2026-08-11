@@ -61,6 +61,9 @@ export function CheckoutForm({
   const [giftNote, setGiftNote] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState(emptyAddress);
+  const [addReveal, setAddReveal] = useState(false);
+  const [revealVideo, setRevealVideo] = useState<File | null>(null);
+  const [revealPhoto, setRevealPhoto] = useState<File | null>(null);
 
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -154,6 +157,50 @@ export function CheckoutForm({
       const order = await res.json();
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
       clearCart();
+
+      if (
+        deliveryType === "gift" &&
+        (addReveal || revealVideo || revealPhoto || giftNote.trim())
+      ) {
+        try {
+          const { uploadRevealFileDirect } = await import(
+            "@/lib/reveal/client-upload"
+          );
+          let videoPath: string | undefined;
+          let photoPath: string | undefined;
+          if (revealVideo) {
+            videoPath = await uploadRevealFileDirect({
+              orderId: order.id,
+              buyerEmail: buyer.email.trim().toLowerCase(),
+              file: revealVideo,
+              kind: "video",
+            });
+          }
+          if (revealPhoto) {
+            photoPath = await uploadRevealFileDirect({
+              orderId: order.id,
+              buyerEmail: buyer.email.trim().toLowerCase(),
+              file: revealPhoto,
+              kind: "photo",
+            });
+          }
+          await fetch(`/api/orders/${order.id}/reveal`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              buyerEmail: buyer.email.trim().toLowerCase(),
+              note: giftNote,
+              videoPath,
+              photoPath,
+            }),
+          });
+        } catch {
+          // Order succeeded — user can finish Reveal on the order page.
+        }
+        router.replace(`/order/${order.id}/reveal`);
+        return;
+      }
+
       router.replace(`/order/${order.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -470,6 +517,45 @@ export function CheckoutForm({
                       checked={anonymous}
                       onChange={setAnonymous}
                     />
+                  </div>
+
+                  <div className="sm:col-span-2 rounded-xl border border-kay-gold/25 bg-kay-beta-bg/40 p-4">
+                    <Toggle
+                      label="Add a Kay Reveal"
+                      description="Optional video, photo, or note behind a Kay QR on the box. You can finish this after checkout too."
+                      checked={addReveal}
+                      onChange={setAddReveal}
+                    />
+                    {addReveal && (
+                      <div className="mt-4 space-y-3 border-t border-kay-border-light pt-4">
+                        <label className="block text-[12px] text-kay-muted">
+                          Video (optional)
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm,video/quicktime"
+                            className="mt-1 block w-full text-[13px] text-kay-fg"
+                            onChange={(e) =>
+                              setRevealVideo(e.target.files?.[0] ?? null)
+                            }
+                          />
+                        </label>
+                        <label className="block text-[12px] text-kay-muted">
+                          Photo (optional)
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="mt-1 block w-full text-[13px] text-kay-fg"
+                            onChange={(e) =>
+                              setRevealPhoto(e.target.files?.[0] ?? null)
+                            }
+                          />
+                        </label>
+                        <p className="text-[11px] text-kay-subtle">
+                          Gift note above is included in the Reveal. After placing
+                          your order you can record a video on the next screen.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

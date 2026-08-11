@@ -64,7 +64,15 @@ export async function resendGiftRecipientEmail(
   if (order.deliveryType !== "gift" || !order.gift?.recipientEmail) {
     return { ok: false, error: "Not a gift order with recipient email." };
   }
-  return sendKayEmail({ type: "gift_recipient", order, appUrl });
+  let withReveal = order;
+  try {
+    const { ensureGiftReveal } = await import("@/lib/reveal/repository");
+    const reveal = await ensureGiftReveal(order);
+    if (reveal) withReveal = { ...order, revealToken: reveal.token };
+  } catch {
+    // still send without reveal link
+  }
+  return sendKayEmail({ type: "gift_recipient", order: withReveal, appUrl });
 }
 
 export async function notifyHandoverCompleted(

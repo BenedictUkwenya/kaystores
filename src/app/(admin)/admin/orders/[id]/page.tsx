@@ -93,6 +93,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           paymentStatus={orderMeta?.payment_status as string | undefined}
           trackingNumber={orderMeta?.tracking_number as string | undefined}
           trackingCarrier={orderMeta?.tracking_carrier as string | undefined}
+          isGift={order.deliveryType === "gift"}
         />
       </div>
     </DashboardLayout>

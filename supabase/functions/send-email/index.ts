@@ -18,6 +18,7 @@ type Order = {
     addressUnknown?: boolean;
   };
   handoverToken?: string;
+  revealToken?: string;
   pricing: { grandTotal: number };
   items: {
     name: string;
@@ -307,22 +308,36 @@ function buildMessage(
       const noteBlock = gift.note?.trim()
         ? `<p style="margin:20px 0;padding:16px;border-left:3px solid #b89a6a;background:#f9f7f2;color:#5c5c5c;font-style:italic">"${gift.note.trim()}"</p>`
         : "";
+      const revealUrl = order.revealToken
+        ? `${appUrl}/reveal/${order.revealToken}`
+        : null;
+      const revealBlock = revealUrl
+        ? `<p style="color:#5c5c5c;line-height:1.6;margin-top:16px">Something personal is waiting — scan the Kay Reveal QR on your box, or open it here:</p>
+          ${ctaButton(revealUrl, "Open your Kay Reveal")}`
+        : "";
       const handoverBlock =
         gift.addressUnknown && order.handoverToken
           ? `<p style="color:#5c5c5c;line-height:1.6;margin-top:16px">To receive your ${discreet ? "private delivery" : "gift"}, please share your delivery address using this secure Kay link:</p>
           <p style="word-break:break-all;background:#f3f0ea;padding:12px;border-radius:8px;font-size:13px;margin-top:12px"><a href="${appUrl}/handover/${order.handoverToken}">${appUrl}/handover/${order.handoverToken}</a></p>`
-          : `<p style="color:#5c5c5c;font-size:13px;margin-top:16px">Your ${discreet ? "delivery" : "gift"} is being prepared with white-glove care. We'll notify you when it's on its way.</p>`;
+          : revealBlock
+            ? ""
+            : `<p style="color:#5c5c5c;font-size:13px;margin-top:16px">Your ${discreet ? "delivery" : "gift"} is being prepared with white-glove care. We'll notify you when it's on its way.</p>`;
 
       const handoverUrl =
         gift.addressUnknown && order.handoverToken
           ? `${appUrl}/handover/${order.handoverToken}`
           : null;
       const noteText = gift.note?.trim() ? `\n\nMessage: "${gift.note.trim()}"` : "";
+      const revealText = revealUrl
+        ? `\n\nOpen your Kay Reveal: ${revealUrl}`
+        : "";
       const handoverText = handoverUrl
         ? `\n\nShare your delivery address: ${handoverUrl}`
-        : discreet
-          ? "\n\nYour private delivery is being prepared — we'll notify you when it's on its way."
-          : "\n\nYour gift is being prepared — we'll notify you when it's on its way.";
+        : revealText
+          ? revealText
+          : discreet
+            ? "\n\nYour private delivery is being prepared — we'll notify you when it's on its way."
+            : "\n\nYour gift is being prepared — we'll notify you when it's on its way.";
 
       const html = layout(
           discreet ? "A private delivery is on its way" : "You've received a gift",
@@ -330,11 +345,13 @@ function buildMessage(
             ? `<p style="color:#5c5c5c;line-height:1.6">Hi ${gift.recipientName},</p>
           <p style="color:#5c5c5c;line-height:1.6"><strong>${senderLabel}</strong> has arranged a confidential delivery through Kay's private service. No product details are included in this message.</p>
           ${noteBlock}
+          ${revealBlock}
           ${handoverBlock}
           <p style="color:#8a8a8a;font-size:12px;margin-top:20px">Reference: ${order.orderNumber}</p>`
             : `<p style="color:#5c5c5c;line-height:1.6">Hi ${gift.recipientName},</p>
           <p style="color:#5c5c5c;line-height:1.6"><strong>${senderLabel}</strong> has chosen something special for you from Kay Stores.</p>
           ${noteBlock}
+          ${revealBlock}
           ${handoverBlock}
           <p style="color:#8a8a8a;font-size:12px;margin-top:20px">Reference: ${order.orderNumber}</p>`,
         );
@@ -761,6 +778,24 @@ function buildMessage(
         text: stripHtml(html),
         replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "support_message" }],
+      };
+    }
+    case "gift_reveal_opened": {
+      const { to, buyerName, recipientName, orderNumber, orderId, appUrl } =
+        payload;
+      const html = layout(
+        "Your Kay Reveal was opened",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${buyerName},</p>
+        <p style="color:#5c5c5c;line-height:1.6"><strong>${recipientName}</strong> just opened the Kay Reveal on order <strong>${orderNumber}</strong>.</p>
+        ${ctaButton(`${appUrl}/order/${orderId}`, "View your order")}`,
+      );
+      return {
+        to: [to],
+        subject: `Kay Reveal opened — ${orderNumber}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "gift_reveal_opened" }],
       };
     }
     default:

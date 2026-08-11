@@ -195,6 +195,22 @@ export default async function OrderConfirmationPage({
             />
           )}
 
+        {order.deliveryType === "gift" && (
+          <div className="rounded-lg border border-kay-gold/30 bg-kay-beta-bg/50 px-4 py-4">
+            <h2 className="text-[13px] font-medium text-kay-fg">Kay Reveal</h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-kay-muted">
+              Add or edit the video, photo, and note behind the QR code on the
+              gift box — before we ship.
+            </p>
+            <Link
+              href={`/order/${order.id}/reveal`}
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-full border border-kay-fg px-4 text-[12px] font-medium text-kay-fg transition-colors hover:bg-kay-surface"
+            >
+              Manage Kay Reveal
+            </Link>
+          </div>
+        )}
+
         {order.handoverToken &&
           order.handoverStatus === "pending" &&
           order.deliveryType !== "gift" && (
