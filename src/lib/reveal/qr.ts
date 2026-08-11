@@ -8,7 +8,10 @@ export function revealUrl(token: string): string {
   return `${getEmailSiteUrl()}/reveal/${token}`;
 }
 
-/** High-ECC QR PNG (logo is composited in PDF sticker / client UI). */
+const QR_DARK = "#1c1914";
+const QR_LIGHT = "#f9f7f2";
+
+/** High-ECC QR PNG (logo composited separately for stickers / client UI). */
 export async function generateRevealQrPng(
   token: string,
   size = 512,
@@ -17,11 +20,11 @@ export async function generateRevealQrPng(
   return QRCode.toBuffer(url, {
     type: "png",
     width: size,
-    margin: 2,
+    margin: 3,
     errorCorrectionLevel: "H",
     color: {
-      dark: "#1a1a1a",
-      light: "#f9f7f2",
+      dark: QR_DARK,
+      light: QR_LIGHT,
     },
   });
 }
@@ -46,24 +49,27 @@ export async function generateRevealStickerPdf(input: {
   token: string;
   orderNumber: string;
 }): Promise<Buffer> {
-  const qrPng = await generateRevealQrPng(input.token, 640);
+  const qrPng = await generateRevealQrPng(input.token, 720);
   const pdf = await PDFDocument.create();
-  // ~2.5" square sticker-ish at 72dpi ≈ 180pt; use larger for crisp print
-  const page = pdf.addPage([220, 260]);
+  const page = pdf.addPage([240, 280]);
   const { width, height } = page.getSize();
+
+  const cream = rgb(0.976, 0.969, 0.949);
+  const gold = rgb(0.722, 0.604, 0.416);
+  const ink = rgb(0.11, 0.1, 0.08);
 
   page.drawRectangle({
     x: 0,
     y: 0,
     width,
     height,
-    color: rgb(0.976, 0.969, 0.949), // kay cream
+    color: cream,
   });
 
   const qrImage = await pdf.embedPng(qrPng);
-  const qrSize = 170;
+  const qrSize = 180;
   const qrX = (width - qrSize) / 2;
-  const qrY = 55;
+  const qrY = 62;
   page.drawImage(qrImage, {
     x: qrX,
     y: qrY,
@@ -75,16 +81,29 @@ export async function generateRevealStickerPdf(input: {
   if (iconBytes) {
     try {
       const logo = await pdf.embedPng(iconBytes);
-      const logoSize = 36;
-      const pad = 4;
+      const badge = 34;
+      const logoSize = 20;
       const lx = qrX + (qrSize - logoSize) / 2;
       const ly = qrY + (qrSize - logoSize) / 2;
+      const bx = qrX + (qrSize - badge) / 2;
+      const by = qrY + (qrSize - badge) / 2;
+
+      // Soft underlay + white plate + gold ring (approx rounded via inset rects)
       page.drawRectangle({
-        x: lx - pad,
-        y: ly - pad,
-        width: logoSize + pad * 2,
-        height: logoSize + pad * 2,
-        color: rgb(0.976, 0.969, 0.949),
+        x: bx - 2,
+        y: by - 2,
+        width: badge + 4,
+        height: badge + 4,
+        color: cream,
+      });
+      page.drawRectangle({
+        x: bx,
+        y: by,
+        width: badge,
+        height: badge,
+        color: rgb(1, 1, 1),
+        borderColor: gold,
+        borderWidth: 1.5,
       });
       page.drawImage(logo, {
         x: lx,
@@ -103,17 +122,17 @@ export async function generateRevealStickerPdf(input: {
   const textWidth = font.widthOfTextAtSize(label, fontSize);
   page.drawText(label, {
     x: (width - textWidth) / 2,
-    y: 28,
+    y: 34,
     size: fontSize,
     font,
-    color: rgb(0.4, 0.4, 0.4),
+    color: ink,
   });
   page.drawText("Kay Reveal", {
     x: (width - font.widthOfTextAtSize("Kay Reveal", 8)) / 2,
-    y: 14,
+    y: 18,
     size: 8,
     font,
-    color: rgb(0.72, 0.6, 0.42),
+    color: gold,
   });
 
   const bytes = await pdf.save();

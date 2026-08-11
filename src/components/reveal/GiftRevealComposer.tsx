@@ -41,10 +41,15 @@ export function GiftRevealComposer({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [brandedQr, setBrandedQr] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const onQrReady = useCallback((dataUrl: string) => {
+    setBrandedQr(dataUrl);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -144,14 +149,20 @@ export function GiftRevealComposer({
       recorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        setVideoFile(new File([blob], `kay-reveal-${Date.now()}.webm`, { type: "video/webm" }));
+        setVideoFile(
+          new File([blob], `kay-reveal-${Date.now()}.webm`, {
+            type: "video/webm",
+          }),
+        );
         setRecording(false);
       };
       mediaRecorderRef.current = recorder;
       recorder.start();
       setRecording(true);
     } catch {
-      setError("Camera access was denied or unavailable. Upload a video instead.");
+      setError(
+        "Camera access was denied or unavailable. Upload a video instead.",
+      );
     }
   }
 
@@ -182,6 +193,8 @@ export function GiftRevealComposer({
     );
   }
 
+  const downloadHref = brandedQr ?? reveal.qrDataUrl;
+
   return (
     <div
       className={
@@ -190,44 +203,60 @@ export function GiftRevealComposer({
           : "rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-5 shadow-[var(--kay-card-shadow)] sm:p-6"
       }
     >
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-kay-gold">
-          Kay Reveal
-        </p>
-        <h2 className="mt-1 font-serif text-[22px] text-kay-fg">
-          A message for the box
-        </h2>
-        <p className="mt-1 text-[13px] text-kay-muted">
-          Add a video, photo, and/or note. Your recipient opens it by scanning
-          the Kay QR on the package.
-        </p>
-        <p className="mt-2 text-[12px] text-kay-subtle">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-kay-gold">
+            Kay Reveal
+          </p>
+          <h2 className="mt-1 font-serif text-[22px] text-kay-fg">
+            A message for the box
+          </h2>
+          <p className="mt-1 max-w-md text-[13px] text-kay-muted">
+            Add a video, photo, and/or note. Your recipient opens it by scanning
+            the Kay QR on the package.
+          </p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium ${
+            reveal.openedAt
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-kay-gold/15 text-kay-fg"
+          }`}
+        >
           {reveal.openedAt
             ? `Opened ${new Date(reveal.openedAt).toLocaleString()}`
             : "Not opened yet"}
-          {!reveal.editable && " · Editing locked"}
-        </p>
+          {!reveal.editable ? " · Locked" : null}
+        </span>
       </div>
 
-      <div className="flex flex-col gap-6 sm:flex-row">
-        <div className="flex flex-col items-center gap-2">
-          <KayQrCode value={reveal.url} size={compact ? 160 : 200} />
-          <button
-            type="button"
-            onClick={() => void copyLink()}
-            className="text-[12px] text-kay-muted underline-offset-2 hover:text-kay-fg hover:underline"
-          >
-            {copied ? "Link copied" : "Copy reveal link"}
-          </button>
-          {reveal.qrDataUrl && (
-            <a
-              href={reveal.qrDataUrl}
-              download="kay-reveal-qr.png"
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="mx-auto flex w-full max-w-[240px] flex-col items-center gap-3 sm:mx-0">
+          <div className="rounded-2xl border border-kay-border-light bg-[#f9f7f2] p-3 shadow-[inset_0_0_0_1px_rgba(184,154,106,0.15)]">
+            <KayQrCode
+              value={reveal.url}
+              size={compact ? 168 : 200}
+              onReady={onQrReady}
+            />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <button
+              type="button"
+              onClick={() => void copyLink()}
               className="text-[12px] text-kay-muted underline-offset-2 hover:text-kay-fg hover:underline"
             >
-              Download QR PNG
-            </a>
-          )}
+              {copied ? "Link copied" : "Copy reveal link"}
+            </button>
+            {downloadHref && (
+              <a
+                href={downloadHref}
+                download="kay-reveal-qr.png"
+                className="text-[12px] text-kay-muted underline-offset-2 hover:text-kay-fg hover:underline"
+              >
+                Download QR PNG
+              </a>
+            )}
+          </div>
         </div>
 
         <div className="min-w-0 flex-1 space-y-4">
@@ -237,7 +266,9 @@ export function GiftRevealComposer({
             </label>
             <textarea
               value={note}
-              onChange={(e) => setNote(e.target.value.slice(0, GIFT_REVEAL_NOTE_MAX))}
+              onChange={(e) =>
+                setNote(e.target.value.slice(0, GIFT_REVEAL_NOTE_MAX))
+              }
               disabled={!reveal.editable}
               rows={3}
               maxLength={GIFT_REVEAL_NOTE_MAX}
@@ -251,39 +282,53 @@ export function GiftRevealComposer({
 
           {reveal.editable && (
             <>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[12px] font-medium text-kay-fg">
+                Add media
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
                 {!recording ? (
                   <button
                     type="button"
                     onClick={() => void startRecording()}
-                    className="inline-flex h-10 items-center rounded-full border border-kay-fg px-4 text-[12px] font-medium text-kay-fg"
+                    className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-2 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
                   >
-                    Record video
+                    <span className="text-[13px] font-medium text-kay-fg">
+                      Record video
+                    </span>
+                    <span className="text-[11px] text-kay-muted">
+                      Use your camera
+                    </span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={stopRecording}
-                    className="inline-flex h-10 items-center rounded-full bg-red-600 px-4 text-[12px] font-medium text-white"
+                    className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-xl bg-red-600 px-2 text-center text-white"
                   >
-                    Stop recording
+                    <span className="text-[13px] font-medium">Stop recording</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => videoInputRef.current?.click()}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-kay-border-light px-4 text-[12px] text-kay-fg"
+                  className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-2 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
                 >
-                  <IconUpload className="h-3.5 w-3.5" />
-                  Upload video
+                  <IconUpload className="h-4 w-4 text-kay-gold" />
+                  <span className="text-[13px] font-medium text-kay-fg">
+                    {videoFile ? "Change video" : "Select video"}
+                  </span>
+                  <span className="text-[11px] text-kay-muted">MP4 / WebM</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-kay-border-light px-4 text-[12px] text-kay-fg"
+                  className="flex h-24 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-2 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
                 >
-                  <IconUpload className="h-3.5 w-3.5" />
-                  Upload photo
+                  <IconUpload className="h-4 w-4 text-kay-gold" />
+                  <span className="text-[13px] font-medium text-kay-fg">
+                    {photoFile ? "Change photo" : "Select photo"}
+                  </span>
+                  <span className="text-[11px] text-kay-muted">PNG / JPG</span>
                 </button>
                 <input
                   ref={videoInputRef}
@@ -317,7 +362,7 @@ export function GiftRevealComposer({
                       onClick={() => void save({ clearVideo: true })}
                       className="text-kay-muted underline-offset-2 hover:underline"
                     >
-                      Remove video
+                      Remove saved video
                     </button>
                   )}
                   {reveal.hasPhoto && (
@@ -326,7 +371,7 @@ export function GiftRevealComposer({
                       onClick={() => void save({ clearPhoto: true })}
                       className="text-kay-muted underline-offset-2 hover:underline"
                     >
-                      Remove photo
+                      Remove saved photo
                     </button>
                   )}
                 </div>
@@ -350,14 +395,14 @@ export function GiftRevealComposer({
                 <img
                   src={reveal.photoUrl}
                   alt="Reveal photo"
-                  className="max-h-40 rounded-lg object-cover"
+                  className="max-h-40 rounded-xl object-cover"
                 />
               )}
               {reveal.videoUrl && (
                 <video
                   src={reveal.videoUrl}
                   controls
-                  className="max-h-40 w-full rounded-lg bg-black"
+                  className="max-h-40 w-full rounded-xl bg-black"
                 />
               )}
             </div>
@@ -365,9 +410,7 @@ export function GiftRevealComposer({
         </div>
       </div>
 
-      {error && (
-        <p className="text-[12px] text-red-600">{error}</p>
-      )}
+      {error && <p className="text-[12px] text-red-600">{error}</p>}
     </div>
   );
 }
