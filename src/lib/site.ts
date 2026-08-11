@@ -12,7 +12,7 @@ const LOCAL_APP_URL =
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 /** Production fallback when local env would otherwise leak into emails. */
-const PRODUCTION_SITE_URL = "https://kaystores.vercel.app";
+const PRODUCTION_SITE_URL = "https://shoponkay.com";
 
 /** Absolute site URL for metadata, OG tags, and auth redirects. */
 export function getSiteUrl(): string {
@@ -22,10 +22,10 @@ export function getSiteUrl(): string {
     return appUrl;
   }
 
-  // Production alias (kaystores.vercel.app) — not the per-deploy preview URL.
+  // Prefer the custom domain over Vercel project / preview hosts.
   // Preview URLs often return HTML to WhatsApp/Facebook crawlers instead of og:image assets.
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_ENV === "production") {
+    return PRODUCTION_SITE_URL;
   }
 
   if (process.env.VERCEL_URL) {
@@ -48,10 +48,6 @@ export function getEmailSiteUrl(): string {
 
   if (appUrl && !LOCAL_APP_URL.test(appUrl)) {
     return appUrl;
-  }
-
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
 
   return PRODUCTION_SITE_URL;

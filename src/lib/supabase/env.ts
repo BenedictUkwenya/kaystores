@@ -3,7 +3,7 @@ export function getSupabaseConfig() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
 
   let url = rawUrl;
-  // Relative or host-only values make the browser call kaystores.vercel.app/auth/...
+  // Relative or host-only values make the browser call the wrong host for /auth/...
   // and return HTML 404s that surface as "Unexpected token '<' ... is not valid JSON".
   if (url && !/^https?:\/\//i.test(url)) {
     url = `https://${url.replace(/^\/+/, "")}`;

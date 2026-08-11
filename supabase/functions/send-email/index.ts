@@ -181,7 +181,7 @@ function siteUrl(): string {
   if (fromEnv && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(fromEnv)) {
     return fromEnv;
   }
-  return "https://kaystores.vercel.app";
+  return "https://shoponkay.com";
 }
 
 function layout(title: string, body: string) {

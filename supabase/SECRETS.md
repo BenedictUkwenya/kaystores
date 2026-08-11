@@ -39,7 +39,7 @@ supabase secrets set KAY_REPLY_TO_EMAIL=hello@shoponkay.com
 
 **Invite / email links:** Admin invites send **only** the `role_invite` email (via `send-email`) with a live signup URL like `/signup?invite=…&role=vendor`. Do **not** use Supabase `inviteUserByEmail` for vendors — that triggers the auth OTP mail (`You're invited to Kay`) with nowhere useful to enter the code.
 
-The app builds invite URLs with `getEmailSiteUrl()` so they never point at `localhost` (falls back to `https://kaystores.vercel.app`). Set `NEXT_PUBLIC_APP_URL` to the live URL on Vercel. Optional Edge secret `PUBLIC_SITE_URL` is used if the auth hook’s invite template still fires.
+The app builds invite URLs with `getEmailSiteUrl()` so they never point at `localhost` (falls back to `https://shoponkay.com`). Set `NEXT_PUBLIC_APP_URL=https://shoponkay.com` on Vercel. Edge secret `PUBLIC_SITE_URL` should also be `https://shoponkay.com` for email logo / auth-hook fallbacks.
 
 After changing email Edge Functions, redeploy:
 
