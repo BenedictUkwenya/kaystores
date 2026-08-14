@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapVendorRow } from "@/lib/auth/roles";
@@ -225,8 +226,9 @@ function deriveSegment(input: VendorProductInput): "gifting" | "after_dark" {
 export async function createVendorProduct(
   vendorId: string,
   input: VendorProductInput,
+  db?: SupabaseClient,
 ): Promise<Product> {
-  const supabase = await createClient();
+  const supabase = db ?? (await createClient());
   const segment = deriveSegment(input);
   const stockQuantity = Math.max(0, Math.floor(input.stockQuantity ?? 0));
   const inStock = stockQuantity > 0;
@@ -270,6 +272,32 @@ export async function createVendorProduct(
   const product = mapProductRow(data);
   if (publish) scheduleProductEmbeddingRefresh(product.id);
   return product;
+}
+
+export async function createVendorProductAdmin(
+  vendorId: string,
+  input: VendorProductInput,
+): Promise<Product> {
+  const admin = createAdminClient();
+  if (!admin) throw new Error("Database is not configured.");
+  return createVendorProduct(vendorId, input, admin);
+}
+
+export async function fetchProductSkuAndSlugSets(): Promise<{
+  skus: Set<string>;
+  slugs: Set<string>;
+}> {
+  const admin = createAdminClient();
+  if (!admin) return { skus: new Set(), slugs: new Set() };
+  const { data, error } = await admin.from("products").select("sku, slug");
+  if (error) throw new Error(error.message);
+  const skus = new Set<string>();
+  const slugs = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.sku) skus.add(String(row.sku).trim().toLowerCase());
+    if (row.slug) slugs.add(String(row.slug).trim().toLowerCase());
+  }
+  return { skus, slugs };
 }
 
 export async function updateVendorProduct(

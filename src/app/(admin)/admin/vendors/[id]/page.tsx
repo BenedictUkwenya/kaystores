@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/roles";
 import { fetchVendorById } from "@/lib/admin/repository";
@@ -55,6 +56,22 @@ export default async function AdminVendorDetailPage({ params }: Props) {
           </div>
         </dl>
         <p className="text-[13px] leading-relaxed text-kay-muted">{vendor.catalogDescription}</p>
+        {vendor.status === "approved" && (
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/admin/products/import?vendorId=${vendor.id}`}
+              className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
+            >
+              Import products
+            </Link>
+            <Link
+              href={`/admin/products/new?vendorId=${vendor.id}`}
+              className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
+            >
+              Add one product
+            </Link>
+          </div>
+        )}
         <AdminVendorActions vendor={vendor} />
       </div>
     </DashboardLayout>

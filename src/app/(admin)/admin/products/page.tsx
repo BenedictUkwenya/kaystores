@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mapProductRow } from "@/types/product";
@@ -31,6 +32,20 @@ export default async function AdminProductsPage() {
       description="Every listing on Kay — vendor and platform catalogue. Prices shown are vendor list prices; customer prices use Pricing tiers."
       badge="Admin"
     >
+      <div className="mb-6 flex flex-wrap gap-3">
+        <Link
+          href="/admin/products/import"
+          className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
+        >
+          Import
+        </Link>
+        <Link
+          href="/admin/products/new"
+          className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
+        >
+          Add one product
+        </Link>
+      </div>
       <DataTable<Product>
         rows={products}
         keyFn={(p) => p.id}

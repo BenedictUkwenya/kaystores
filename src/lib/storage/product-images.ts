@@ -1,4 +1,5 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const PRODUCT_IMAGE_BUCKET = "product-images";
 export const MAX_PRODUCT_IMAGES = 3;
@@ -10,6 +11,19 @@ const ALLOWED_TYPES = new Set([
   "image/webp",
   "image/gif",
 ]);
+
+const EXT_TYPES: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+export function contentTypeForImageName(name: string): string | null {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_TYPES[ext] ?? null;
+}
 
 export function validateProductImageFile(file: File): string | null {
   if (!ALLOWED_TYPES.has(file.type)) {
@@ -53,3 +67,36 @@ export async function uploadProductImage(
 
   return data.publicUrl;
 }
+
+export async function uploadProductImageAdmin(
+  vendorId: string,
+  bytes: Uint8Array,
+  fileName: string,
+): Promise<string> {
+  const admin = createAdminClient();
+  if (!admin) throw new Error("File storage is not configured.");
+
+  const contentType = contentTypeForImageName(fileName);
+  if (!contentType) throw new Error(`${fileName} must be JPG, PNG, WebP, or GIF.`);
+  if (bytes.byteLength > MAX_PRODUCT_IMAGE_BYTES) {
+    throw new Error(`${fileName} exceeds the 5MB limit.`);
+  }
+
+  const ext = fileName.split(".").pop()?.toLowerCase() || "jpg";
+  const safeExt = ["jpg", "jpeg", "png", "webp", "gif"].includes(ext)
+    ? ext.replace("jpeg", "jpg")
+    : "jpg";
+  const path = `${vendorId}/${crypto.randomUUID()}.${safeExt}`;
+
+  const { error } = await admin.storage.from(PRODUCT_IMAGE_BUCKET).upload(path, bytes, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType,
+  });
+
+  if (error) throw new Error(`Could not upload ${fileName}.`);
+
+  const { data } = admin.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+

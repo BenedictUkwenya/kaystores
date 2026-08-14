@@ -21,6 +21,8 @@ type Props = {
   product?: Product;
   vendorId: string;
   canListAfterDark: boolean;
+  variant?: "vendor" | "admin";
+  initialBrand?: string;
 };
 
 type SlugStatus = "idle" | "checking" | "available" | "taken";
@@ -29,15 +31,18 @@ export function VendorProductForm({
   product,
   vendorId,
   canListAfterDark,
+  variant = "vendor",
+  initialBrand,
 }: Props) {
   const router = useRouter();
   const isEdit = Boolean(product);
+  const isAdmin = variant === "admin";
 
   const [name, setName] = useState(product?.name ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(product?.slug));
   const [sku, setSku] = useState(product?.sku ?? "");
-  const [brand, setBrand] = useState(product?.brand ?? "");
+  const [brand, setBrand] = useState(product?.brand ?? initialBrand ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(String(product?.price ?? ""));
   const [discountPercent, setDiscountPercent] = useState(
@@ -93,7 +98,10 @@ export function VendorProductForm({
       try {
         const params = new URLSearchParams({ slug: resolvedSlug });
         if (product?.id) params.set("excludeProductId", product.id);
-        const res = await fetch(`/api/vendor/products/check-slug?${params}`);
+        const endpoint = isAdmin
+          ? "/api/admin/products/check-slug"
+          : "/api/vendor/products/check-slug";
+        const res = await fetch(`${endpoint}?${params}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Check failed");
         setSlugStatus(data.available ? "available" : "taken");
@@ -104,7 +112,7 @@ export function VendorProductForm({
       }
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [resolvedSlug, isEdit, product?.slug, product?.id]);
+  }, [resolvedSlug, isEdit, isAdmin, product?.slug, product?.id]);
 
   async function handleSubmit(e: React.FormEvent, publish = false) {
     e.preventDefault();
@@ -169,16 +177,20 @@ export function VendorProductForm({
     try {
       const url = isEdit
         ? `/api/vendor/products/${product!.id}`
-        : "/api/vendor/products";
+        : isAdmin
+          ? "/api/admin/products"
+          : "/api/vendor/products";
       const res = await fetch(url, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(
+          isAdmin && !isEdit ? { ...payload, vendorId } : payload,
+        ),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Save failed");
 
-      router.push("/vendor/products");
+      router.push(isAdmin ? "/admin/products" : "/vendor/products");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");

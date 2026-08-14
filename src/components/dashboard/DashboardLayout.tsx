@@ -205,7 +205,8 @@ export const ADMIN_NAV: DashboardNavItem[] = [
     attentionLabel: "Open orders need attention",
   },
   { href: "/admin/vendors", label: "Vendors" },
-  { href: "/admin/products", label: "Products" },
+  { href: "/admin/products", label: "Products", exact: true },
+  { href: "/admin/products/import", label: "Import" },
   { href: "/admin/pricing", label: "Pricing" },
   { href: "/admin/payouts", label: "Payouts" },
   {

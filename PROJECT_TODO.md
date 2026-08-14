@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-14
 
 ---
 
@@ -261,6 +261,8 @@
 
 - [x] **Admin markup tiers** — `/admin/pricing` sets % and/or flat ₦ by vendor list-price range (shop + concierge); migration `024_pricing_markup_tiers.sql`
 
+- [x] **Admin vendor product import** — CSV + SKU-named images at `/admin/products/import`, plus one-off form at `/admin/products/new`
+
 - [ ] Inventory sync
 
 
@@ -291,11 +293,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 7    | 8     |
+| Backend           | 8    | 9     |
 
 
 
-**Overall:** 71 / 76 checklist items complete
+**Overall:** 72 / 77 checklist items complete
 
 
 
