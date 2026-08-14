@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/roles";
 import { fetchAllVendors, fetchVendorById } from "@/lib/admin/repository";
@@ -6,6 +5,7 @@ import {
   ADMIN_NAV,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
+import { AdminProductOwnerPicker } from "@/components/admin/AdminProductOwnerPicker";
 import { VendorProductForm } from "@/components/vendor/VendorProductForm";
 
 type Props = {
@@ -23,40 +23,11 @@ export default async function AdminNewProductPage({ searchParams }: Props) {
         role="admin"
         nav={ADMIN_NAV}
         eyebrow="Catalogue"
-        title="Add one product"
-        description="Choose whether this listing is Kay inventory or belongs to a vendor."
+        title="Create a new listing"
+        description="Start by choosing who owns the inventory. This controls fulfilment, earnings, and payout handling."
         badge="Admin"
       >
-        <div className="space-y-5">
-          <Link
-            href="/admin/products/new?owner=kay"
-            className="flex items-baseline justify-between rounded-xl border border-kay-gold/40 bg-kay-gold-light/20 px-4 py-4 text-[14px] hover:border-kay-gold"
-          >
-            <span className="font-medium">Kay Stores inventory</span>
-            <span className="text-[12px] text-kay-muted">
-              Kay-owned · no vendor payout
-            </span>
-          </Link>
-          {vendors.length === 0 ? (
-            <p className="text-[14px] text-kay-muted">No approved vendors yet.</p>
-          ) : (
-            <ul className="divide-y divide-kay-border-light border-y border-kay-border-light">
-            {vendors.map((vendor) => (
-              <li key={vendor.id}>
-                <Link
-                  href={`/admin/products/new?vendorId=${vendor.id}`}
-                  className="flex items-baseline justify-between gap-4 py-3 text-[14px] hover:text-kay-gold"
-                >
-                  <span className="font-medium">{vendor.businessName}</span>
-                  <span className="text-[12px] text-kay-subtle">
-                    {vendor.contactEmail}
-                  </span>
-                </Link>
-              </li>
-            ))}
-            </ul>
-          )}
-        </div>
+        <AdminProductOwnerPicker vendors={vendors} />
       </DashboardLayout>
     );
   }
