@@ -106,18 +106,21 @@ function DashboardSidebar({
   role: UserRole;
 }) {
   return (
-    <aside className="hidden lg:sticky lg:top-6 lg:flex lg:h-[calc(100vh-3rem)] lg:w-[248px] lg:shrink-0 lg:flex-col">
-      <div className="flex h-full flex-col overflow-hidden rounded-[28px] border border-kay-border-light bg-kay-surface-elevated shadow-[var(--kay-card-shadow)]">
-        <div className="border-b border-kay-border-light px-5 py-5">
+    <aside className="hidden lg:sticky lg:top-6 lg:flex lg:h-[calc(100dvh-5.5rem)] lg:w-[248px] lg:shrink-0 lg:flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-kay-border-light bg-kay-surface-elevated shadow-[var(--kay-card-shadow)]">
+        <div className="shrink-0 border-b border-kay-border-light px-5 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-kay-gold">
             {role === "admin" ? "Kay operations" : "Vendor studio"}
           </p>
-          <p className="mt-1 font-serif text-[20px] leading-tight text-kay-fg">
+          <p className="mt-1 font-serif text-[18px] leading-tight text-kay-fg">
             {role === "admin" ? "Command centre" : "Your boutique"}
           </p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Dashboard navigation">
+        <nav
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3"
+          aria-label="Dashboard navigation"
+        >
           <ul className="space-y-1">
             {nav.map((item) => {
               const active = isActive(pathname, item);
@@ -154,16 +157,16 @@ function DashboardSidebar({
           </ul>
         </nav>
 
-        <div className="border-t border-kay-border-light bg-[#111111] p-5 text-white">
+        <div className="shrink-0 border-t border-kay-border-light bg-[#111111] px-4 py-4 text-white">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-kay-gold">
             White-glove standard
           </p>
-          <p className="mt-2 font-serif text-[17px] leading-snug">
-            Discreet packaging, hub QC, 72-hour delivery.
+          <p className="mt-1.5 font-serif text-[15px] leading-snug">
+            Hub QC · discreet packaging · 72hr delivery
           </p>
           <Link
             href="/"
-            className="mt-4 inline-flex text-[12px] font-medium text-white/70 hover:text-kay-gold"
+            className="mt-3 inline-flex text-[12px] font-medium text-white/70 hover:text-kay-gold"
           >
             View storefront →
           </Link>
