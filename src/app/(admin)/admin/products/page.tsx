@@ -50,7 +50,18 @@ export default async function AdminProductsPage() {
         rows={products}
         keyFn={(p) => p.id}
         columns={[
-          { key: "name", header: "Name", render: (p) => p.name },
+          {
+            key: "name",
+            header: "Name",
+            render: (p) => (
+              <Link
+                href={`/admin/products/${p.id}/edit`}
+                className="font-medium hover:text-kay-gold"
+              >
+                {p.name}
+              </Link>
+            ),
+          },
           { key: "brand", header: "Brand", render: (p) => p.brand },
           {
             key: "placement",

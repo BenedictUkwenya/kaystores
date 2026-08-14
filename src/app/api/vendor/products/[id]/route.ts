@@ -1,6 +1,7 @@
 import { apiErrorResponse, requireVendor } from "@/lib/auth/roles";
 import { prepareVendorProductInput } from "@/lib/products/vendor-placement";
 import {
+  deleteVendorProduct,
   updateVendorProduct,
   type VendorProductInput,
 } from "@/lib/vendors/repository";
@@ -55,6 +56,17 @@ export async function PATCH(request: Request, { params }: Ctx) {
       prepareVendorProductInput(body as VendorProductInput),
     );
     return Response.json({ product });
+  } catch (err) {
+    return apiErrorResponse(err);
+  }
+}
+
+export async function DELETE(_request: Request, { params }: Ctx) {
+  try {
+    const { vendor } = await requireVendor();
+    const { id } = await params;
+    await deleteVendorProduct(id, vendor.id);
+    return Response.json({ ok: true });
   } catch (err) {
     return apiErrorResponse(err);
   }

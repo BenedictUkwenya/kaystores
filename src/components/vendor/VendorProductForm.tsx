@@ -70,6 +70,7 @@ export function VendorProductForm({
   const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!slugTouched && name.trim()) {
@@ -176,7 +177,9 @@ export function VendorProductForm({
 
     try {
       const url = isEdit
-        ? `/api/vendor/products/${product!.id}`
+        ? isAdmin
+          ? `/api/admin/products/${product!.id}`
+          : `/api/vendor/products/${product!.id}`
         : isAdmin
           ? "/api/admin/products"
           : "/api/vendor/products";
@@ -196,6 +199,28 @@ export function VendorProductForm({
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!product || !window.confirm(`Delete "${product.name}" permanently?`)) {
+      return;
+    }
+    setError(null);
+    setDeleting(true);
+    try {
+      const endpoint = isAdmin
+        ? `/api/admin/products/${product.id}`
+        : `/api/vendor/products/${product.id}`;
+      const res = await fetch(endpoint, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Delete failed");
+      router.push(isAdmin ? "/admin/products" : "/vendor/products");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -411,7 +436,7 @@ export function VendorProductForm({
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Button
           type="submit"
-          disabled={loading || slugStatus === "taken"}
+          disabled={loading || deleting || slugStatus === "taken"}
           className="w-full sm:w-auto"
         >
           {loading ? "Saving…" : "Save draft"}
@@ -419,12 +444,23 @@ export function VendorProductForm({
         <Button
           type="button"
           variant="secondary"
-          disabled={loading || slugStatus === "taken"}
+          disabled={loading || deleting || slugStatus === "taken"}
           onClick={(e) => handleSubmit(e, true)}
           className="w-full sm:w-auto"
         >
           Save & publish
         </Button>
+        {isEdit && (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={loading || deleting}
+            onClick={() => void handleDelete()}
+            className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
+          >
+            {deleting ? "Deleting…" : "Delete product"}
+          </Button>
+        )}
       </div>
     </form>
   );

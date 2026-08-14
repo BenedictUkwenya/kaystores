@@ -304,8 +304,9 @@ export async function updateVendorProduct(
   productId: string,
   vendorId: string,
   input: Partial<VendorProductInput>,
+  db?: SupabaseClient,
 ): Promise<Product> {
-  const supabase = await createClient();
+  const supabase = db ?? (await createClient());
   const payload: Record<string, unknown> = {};
   if (input.name != null) payload.name = input.name;
   if (input.slug != null) payload.slug = slugifyProductName(input.slug);
@@ -354,6 +355,20 @@ export async function updateVendorProduct(
     scheduleProductEmbeddingRefresh(product.id);
   }
   return product;
+}
+
+export async function deleteVendorProduct(
+  productId: string,
+  vendorId: string,
+  db?: SupabaseClient,
+): Promise<void> {
+  const supabase = db ?? (await createClient());
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", productId)
+    .eq("vendor_id", vendorId);
+  if (error) throw new Error(error.message);
 }
 
 export async function publishVendorProduct(

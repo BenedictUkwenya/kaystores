@@ -27,23 +27,33 @@ export function ProductImageUpload({ vendorId, images, onChange }: Props) {
     setUploading(true);
 
     const files = Array.from(fileList).slice(0, slotsLeft);
-    const uploaded: string[] = [];
+    const results = await Promise.allSettled(
+      files.map((file) => uploadProductImage(vendorId, file)),
+    );
+    const uploaded = results
+      .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
+      .map((result) => result.value);
+    const failed = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
 
-    try {
-      for (const file of files) {
-        const url = await uploadProductImage(vendorId, file);
-        uploaded.push(url);
-      }
+    if (uploaded.length > 0) {
       onChange([...images, ...uploaded]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-      if (uploaded.length > 0) {
-        onChange([...images, ...uploaded]);
-      }
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
+    if (failed) {
+      setError(
+        uploaded.length
+          ? `${uploaded.length} photo(s) uploaded. ${failed.reason instanceof Error ? failed.reason.message : "Some photos could not be uploaded."}`
+          : failed.reason instanceof Error
+            ? failed.reason.message
+            : "Upload failed",
+      );
+    }
+    if (files.length < fileList.length) {
+      setError(`Only ${slotsLeft} more photo${slotsLeft === 1 ? "" : "s"} can be added.`);
+    }
+    setUploading(false);
+    if (inputRef.current) inputRef.current.value = "";
   }
 
   function removeAt(index: number) {
@@ -101,7 +111,7 @@ export function ProductImageUpload({ vendorId, images, onChange }: Props) {
               +
             </span>
             <span className="text-[10px] leading-tight text-kay-muted">
-              {uploading ? "Uploading…" : "Add photo"}
+              {uploading ? "Uploading…" : "Add photos"}
             </span>
           </button>
         )}
@@ -111,14 +121,14 @@ export function ProductImageUpload({ vendorId, images, onChange }: Props) {
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple={slotsLeft > 1}
+        multiple
         className="sr-only"
         onChange={(e) => handleFiles(e.target.files)}
       />
 
       <p className="mt-2 text-[12px] leading-relaxed text-kay-muted">
-        Upload up to {MAX_PRODUCT_IMAGES} photos from your phone or computer (JPG,
-        PNG, WebP — max 5 MB each). First image is the cover on Kay.
+        Select multiple photos at once, up to {MAX_PRODUCT_IMAGES} total (JPG,
+        PNG, WebP, or GIF — max 5 MB each). The first image is the cover on Kay.
       </p>
 
       {error && (
