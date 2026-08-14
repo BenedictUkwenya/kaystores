@@ -64,6 +64,16 @@ export default async function AdminProductsPage() {
           },
           { key: "brand", header: "Brand", render: (p) => p.brand },
           {
+            key: "owner",
+            header: "Owner",
+            render: (p) =>
+              p.vendor_id ? (
+                <span className="text-kay-muted">Vendor listing</span>
+              ) : (
+                <span className="font-medium text-kay-gold">Kay Stores</span>
+              ),
+          },
+          {
             key: "placement",
             header: "Placement",
             render: (p) => (
@@ -77,7 +87,7 @@ export default async function AdminProductsPage() {
             header: "Status",
             render: (p) => <StatusBadge status={p.status ?? "live"} />,
           },
-          { key: "price", header: "Vendor price", render: (p) => formatNaira(p.price) },
+          { key: "price", header: "List price", render: (p) => formatNaira(p.price) },
           {
             key: "badges",
             header: "Badges",

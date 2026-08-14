@@ -2,6 +2,7 @@ import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const PRODUCT_IMAGE_BUCKET = "product-images";
+export const KAY_PRODUCT_IMAGE_FOLDER = "kay";
 export const MAX_PRODUCT_IMAGES = 3;
 export const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
 

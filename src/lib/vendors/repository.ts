@@ -224,7 +224,7 @@ function deriveSegment(input: VendorProductInput): "gifting" | "after_dark" {
 }
 
 export async function createVendorProduct(
-  vendorId: string,
+  vendorId: string | null,
   input: VendorProductInput,
   db?: SupabaseClient,
 ): Promise<Product> {
@@ -275,7 +275,7 @@ export async function createVendorProduct(
 }
 
 export async function createVendorProductAdmin(
-  vendorId: string,
+  vendorId: string | null,
   input: VendorProductInput,
 ): Promise<Product> {
   const admin = createAdminClient();
@@ -302,7 +302,7 @@ export async function fetchProductSkuAndSlugSets(): Promise<{
 
 export async function updateVendorProduct(
   productId: string,
-  vendorId: string,
+  vendorId: string | null,
   input: Partial<VendorProductInput>,
   db?: SupabaseClient,
 ): Promise<Product> {
@@ -341,13 +341,14 @@ export async function updateVendorProduct(
     payload.reviewed_at = new Date().toISOString();
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("products")
     .update(payload)
-    .eq("id", productId)
-    .eq("vendor_id", vendorId)
-    .select("*")
-    .single();
+    .eq("id", productId);
+  query = vendorId
+    ? query.eq("vendor_id", vendorId)
+    : query.is("vendor_id", null);
+  const { data, error } = await query.select("*").single();
 
   if (error) throw mapProductWriteError(error, input.slug ?? "");
   const product = mapProductRow(data);
@@ -359,15 +360,18 @@ export async function updateVendorProduct(
 
 export async function deleteVendorProduct(
   productId: string,
-  vendorId: string,
+  vendorId: string | null,
   db?: SupabaseClient,
 ): Promise<void> {
   const supabase = db ?? (await createClient());
-  const { error } = await supabase
+  let query = supabase
     .from("products")
     .delete()
-    .eq("id", productId)
-    .eq("vendor_id", vendorId);
+    .eq("id", productId);
+  query = vendorId
+    ? query.eq("vendor_id", vendorId)
+    : query.is("vendor_id", null);
+  const { error } = await query;
   if (error) throw new Error(error.message);
 }
 

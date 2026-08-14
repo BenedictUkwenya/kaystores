@@ -263,6 +263,8 @@
 
 - [x] **Admin vendor product import** — CSV + SKU-named images at `/admin/products/import`, plus one-off form at `/admin/products/new`
 
+- [x] **Kay-owned product catalogue** — admin listings with no vendor payout, including product images, editing, and deletion
+
 - [ ] Inventory sync
 
 
@@ -293,11 +295,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 8    | 9     |
+| Backend           | 9    | 10    |
 
 
 
-**Overall:** 72 / 77 checklist items complete
+**Overall:** 73 / 78 checklist items complete
 
 
 

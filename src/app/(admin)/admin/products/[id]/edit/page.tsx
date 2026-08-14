@@ -32,14 +32,20 @@ export default async function EditAdminProductPage({ params }: Props) {
       nav={ADMIN_NAV}
       eyebrow="Catalogue"
       title={`Edit ${product.name}`}
-      description="Update this listing, its images, categories, stock, or publishing status."
+      description={
+        product.vendor_id
+          ? "Update this vendor listing, its images, categories, stock, or publishing status."
+          : "Kay-owned inventory — vendor payouts do not apply."
+      }
       badge="Admin"
     >
       <VendorProductForm
         variant="admin"
         product={product}
-        vendorId={product.vendor_id ?? ""}
-        canListAfterDark={Boolean(vendor?.canListAfterDark)}
+        vendorId={product.vendor_id}
+        canListAfterDark={
+          product.vendor_id ? Boolean(vendor?.canListAfterDark) : true
+        }
       />
     </DashboardLayout>
   );

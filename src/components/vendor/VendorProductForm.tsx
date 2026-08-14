@@ -13,13 +13,16 @@ import {
 } from "@/lib/products/discount";
 import { slugifyProductName } from "@/lib/products/slug";
 import { hasAnyPlacement } from "@/lib/shop/taxonomy";
-import { MAX_PRODUCT_IMAGES } from "@/lib/storage/product-images";
+import {
+  KAY_PRODUCT_IMAGE_FOLDER,
+  MAX_PRODUCT_IMAGES,
+} from "@/lib/storage/product-images";
 import { formatNaira } from "@/lib/data/home";
 import type { Product } from "@/types/product";
 
 type Props = {
   product?: Product;
-  vendorId: string;
+  vendorId?: string | null;
   canListAfterDark: boolean;
   variant?: "vendor" | "admin";
   initialBrand?: string;
@@ -37,6 +40,7 @@ export function VendorProductForm({
   const router = useRouter();
   const isEdit = Boolean(product);
   const isAdmin = variant === "admin";
+  const imageFolder = vendorId || KAY_PRODUCT_IMAGE_FOLDER;
 
   const [name, setName] = useState(product?.name ?? "");
   const [slug, setSlug] = useState(product?.slug ?? "");
@@ -187,7 +191,7 @@ export function VendorProductForm({
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          isAdmin && !isEdit ? { ...payload, vendorId } : payload,
+          isAdmin && !isEdit && vendorId ? { ...payload, vendorId } : payload,
         ),
       });
       const data = await res.json();
@@ -271,7 +275,7 @@ export function VendorProductForm({
       />
 
       <ProductImageUpload
-        vendorId={vendorId}
+        vendorId={imageFolder}
         images={images}
         onChange={setImages}
       />

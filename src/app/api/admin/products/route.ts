@@ -14,20 +14,18 @@ export async function POST(request: Request) {
     };
     const { vendorId, ...input } = body;
     const trimmedVendorId = vendorId?.trim();
-    if (!trimmedVendorId) {
-      return Response.json({ error: "vendorId is required." }, { status: 400 });
-    }
+    if (trimmedVendorId) {
+      const vendor = await fetchVendorById(trimmedVendorId);
+      if (!vendor || vendor.status !== "approved") {
+        throw new AuthError("Approved vendor not found.", 404);
+      }
 
-    const vendor = await fetchVendorById(trimmedVendorId);
-    if (!vendor || vendor.status !== "approved") {
-      throw new AuthError("Approved vendor not found.", 404);
-    }
-
-    if (body.segment === "after_dark" && !vendor.canListAfterDark) {
-      return Response.json(
-        { error: "After Dark listings require trusted vendor status." },
-        { status: 403 },
-      );
+      if (body.segment === "after_dark" && !vendor.canListAfterDark) {
+        return Response.json(
+          { error: "After Dark listings require trusted vendor status." },
+          { status: 403 },
+        );
+      }
     }
 
     if (body.images && body.images.length > 3) {
@@ -38,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const product = await createVendorProductAdmin(
-      vendor.id,
+      trimmedVendorId || null,
       prepareVendorProductInput(input),
     );
     return Response.json({ product });

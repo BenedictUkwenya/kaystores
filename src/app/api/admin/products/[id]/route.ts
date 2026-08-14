@@ -50,10 +50,10 @@ export async function PATCH(request: Request, { params }: Ctx) {
       .select("vendor_id")
       .eq("id", id)
       .maybeSingle();
-    if (error || !data?.vendor_id) {
+    if (error || !data) {
       return Response.json({ error: "Product not found." }, { status: 404 });
     }
-    if (body.segment === "after_dark") {
+    if (body.segment === "after_dark" && data.vendor_id) {
       const vendor = await fetchVendorById(String(data.vendor_id));
       if (!vendor?.canListAfterDark) {
         return Response.json(
@@ -65,7 +65,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
 
     const product = await updateVendorProduct(
       id,
-      String(data.vendor_id),
+      data.vendor_id ? String(data.vendor_id) : null,
       prepareVendorProductInput(body as VendorProductInput),
       admin,
     );
@@ -86,10 +86,14 @@ export async function DELETE(_request: Request, { params }: Ctx) {
       .select("vendor_id")
       .eq("id", id)
       .maybeSingle();
-    if (error || !data?.vendor_id) {
+    if (error || !data) {
       return Response.json({ error: "Product not found." }, { status: 404 });
     }
-    await deleteVendorProduct(id, String(data.vendor_id), admin);
+    await deleteVendorProduct(
+      id,
+      data.vendor_id ? String(data.vendor_id) : null,
+      admin,
+    );
     return Response.json({ ok: true });
   } catch (err) {
     return apiErrorResponse(err);
