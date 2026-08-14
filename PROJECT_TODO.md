@@ -265,6 +265,8 @@
 
 - [x] **Kay-owned product catalogue** — admin listings with no vendor payout, including product images, editing, and deletion
 
+- [x] **Premium admin & vendor portal redesign** — icon-led operations shell, richer overview/products/orders/onboarding, denser usable workspace
+
 - [ ] Inventory sync
 
 
@@ -295,11 +297,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 9    | 10    |
+| Backend           | 10   | 11    |
 
 
 
-**Overall:** 73 / 78 checklist items complete
+**Overall:** 74 / 79 checklist items complete
 
 
 

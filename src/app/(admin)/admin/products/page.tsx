@@ -9,8 +9,10 @@ import {
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { AdminProductTagEditor } from "@/components/admin/AdminProductTagEditor";
+import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { formatPlacementSummary } from "@/lib/shop/taxonomy";
 import { formatNaira } from "@/lib/data/home";
+import { IconPackage, IconPlus, IconImport } from "@/components/ui/Icons";
 import type { Product } from "@/types/product";
 
 export default async function AdminProductsPage() {
@@ -22,6 +24,8 @@ export default async function AdminProductsPage() {
     .order("created_at", { ascending: false })
     .limit(100);
   const products = (data ?? []).map(mapProductRow);
+  const kayOwned = products.filter((p) => !p.vendor_id).length;
+  const live = products.filter((p) => p.status === "live").length;
 
   return (
     <DashboardLayout
@@ -29,72 +33,108 @@ export default async function AdminProductsPage() {
       nav={ADMIN_NAV}
       eyebrow="Catalogue"
       title="All products"
-      description="Every listing on Kay — vendor and platform catalogue. Prices shown are vendor list prices; customer prices use Pricing tiers."
+      description={`${products.length} listings · ${live} live · ${kayOwned} Kay-owned. List prices feed Pricing tiers for shoppers.`}
       badge="Admin"
+      actions={
+        <>
+          <Link
+            href="/admin/products/import"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-kay-border px-4 text-[12px] font-medium text-kay-fg hover:border-kay-fg"
+          >
+            <IconImport className="h-3.5 w-3.5" />
+            Import
+          </Link>
+          <Link
+            href="/admin/products/new"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-kay-accent px-4 text-[12px] font-medium text-kay-accent-fg"
+          >
+            <IconPlus className="h-3.5 w-3.5" />
+            Add product
+          </Link>
+        </>
+      }
     >
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Link
-          href="/admin/products/import"
-          className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
-        >
-          Import
-        </Link>
-        <Link
-          href="/admin/products/new"
-          className="rounded-full border border-kay-border px-4 py-2 text-[12px] font-medium hover:border-kay-fg"
-        >
-          Add one product
-        </Link>
-      </div>
-      <DataTable<Product>
-        rows={products}
-        keyFn={(p) => p.id}
-        columns={[
-          {
-            key: "name",
-            header: "Name",
-            render: (p) => (
-              <Link
-                href={`/admin/products/${p.id}/edit`}
-                className="font-medium hover:text-kay-gold"
-              >
-                {p.name}
-              </Link>
-            ),
-          },
-          { key: "brand", header: "Brand", render: (p) => p.brand },
-          {
-            key: "owner",
-            header: "Owner",
-            render: (p) =>
-              p.vendor_id ? (
-                <span className="text-kay-muted">Vendor listing</span>
-              ) : (
-                <span className="font-medium text-kay-gold">Kay Stores</span>
+      {products.length === 0 ? (
+        <DashboardEmptyState
+          icon={<IconPackage className="h-6 w-6" />}
+          title="Catalogue is empty"
+          description="Add a Kay-owned gift or invite a vendor and import their SKUs."
+          actionHref="/admin/products/new?owner=kay"
+          actionLabel="Add Kay product"
+          secondaryHref="/admin/products/import"
+          secondaryLabel="Import CSV"
+        />
+      ) : (
+        <DataTable<Product>
+          rows={products}
+          keyFn={(p) => p.id}
+          columns={[
+            {
+              key: "name",
+              header: "Product",
+              render: (p) => (
+                <div>
+                  <Link
+                    href={`/admin/products/${p.id}/edit`}
+                    className="font-medium hover:text-kay-gold"
+                  >
+                    {p.name}
+                  </Link>
+                  <p className="mt-0.5 font-mono text-[11px] text-kay-subtle">
+                    {p.sku}
+                  </p>
+                </div>
               ),
-          },
-          {
-            key: "placement",
-            header: "Placement",
-            render: (p) => (
-              <span className="text-[12px] text-kay-muted">
-                {formatPlacementSummary(p)}
-              </span>
-            ),
-          },
-          {
-            key: "status",
-            header: "Status",
-            render: (p) => <StatusBadge status={p.status ?? "live"} />,
-          },
-          { key: "price", header: "List price", render: (p) => formatNaira(p.price) },
-          {
-            key: "badges",
-            header: "Badges",
-            render: (p) => <AdminProductTagEditor product={p} />,
-          },
-        ]}
-      />
+            },
+            { key: "brand", header: "Brand", render: (p) => p.brand },
+            {
+              key: "owner",
+              header: "Owner",
+              render: (p) =>
+                p.vendor_id ? (
+                  <span className="text-kay-muted">Vendor</span>
+                ) : (
+                  <span className="font-medium text-kay-gold">Kay Stores</span>
+                ),
+            },
+            {
+              key: "placement",
+              header: "Placement",
+              render: (p) => (
+                <span className="text-[12px] text-kay-muted">
+                  {formatPlacementSummary(p)}
+                </span>
+              ),
+            },
+            {
+              key: "stock",
+              header: "Stock",
+              render: (p) =>
+                p.stock_quantity > 0 ? (
+                  <span>{p.stock_quantity}</span>
+                ) : (
+                  <span className="text-amber-700">Out</span>
+                ),
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (p) => <StatusBadge status={p.status ?? "live"} />,
+            },
+            {
+              key: "price",
+              header: "List price",
+              render: (p) => formatNaira(p.price),
+            },
+            {
+              key: "badges",
+              header: "Badges",
+              hideOnMobile: true,
+              render: (p) => <AdminProductTagEditor product={p} />,
+            },
+          ]}
+        />
+      )}
     </DashboardLayout>
   );
 }

@@ -331,6 +331,148 @@ export function IconPinterest({ className }: IconProps) {
   );
 }
 
+export function IconHome({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 10.5L12 4L20 10.5V20H14V14H10V20H4V10.5Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconUsers({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="9" cy="8" r="3" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M3 19C3 15.686 5.686 13 9 13C12.314 13 15 15.686 15 19" strokeLinecap="round" />
+      <path d="M15 16.5C15 14.567 16.343 13 18 13C19.657 13 21 14.567 21 16.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconOrders({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M7 4H17L19 20H5L7 4Z" strokeLinejoin="round" />
+      <path d="M9 8H15" strokeLinecap="round" />
+      <path d="M10 12H14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconStore({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 9L5.5 4H18.5L20 9" strokeLinejoin="round" />
+      <path d="M4 9H20V20H4V9Z" strokeLinejoin="round" />
+      <path d="M9 13H15V20H9V13Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconTag({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 12V4H11L21 14L13 22L3 12Z" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="1.25" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function IconImport({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 4V14M12 14L8 10M12 14L16 10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 16V18C4 19.105 4.895 20 6 20H18C19.105 20 20 19.105 20 18V16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconPercent({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="7.5" cy="7.5" r="2" />
+      <circle cx="16.5" cy="16.5" r="2" />
+      <path d="M18 6L6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconWallet({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 7.5C3 6.119 4.119 5 5.5 5H19C20.105 5 21 5.895 21 7V17C21 18.105 20.105 19 19 19H5.5C4.119 19 3 17.881 3 16.5V7.5Z" strokeLinejoin="round" />
+      <path d="M21 12H16.5C15.672 12 15 12.672 15 13.5C15 14.328 15.672 15 16.5 15H21" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconConcierge({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M5 18V11C5 7.134 8.134 4 12 4C15.866 4 19 7.134 19 11V18" strokeLinecap="round" />
+      <path d="M3 18H21" strokeLinecap="round" />
+      <path d="M9 18V20C9 21.105 9.895 22 11 22H13C14.105 22 15 21.105 15 20V18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconSupport({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M5 11C5 7.134 8.134 4 12 4C15.866 4 19 7.134 19 11V13C19 14.657 17.657 16 16 16H14L12 18L10 16H8C6.343 16 5 14.657 5 13V11Z" strokeLinejoin="round" />
+      <path d="M9.5 10.5H9.51M12 10.5H12.01M14.5 10.5H14.51" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconSettings({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3V5M12 19V21M4.9 4.9L6.3 6.3M17.7 17.7L19.1 19.1M3 12H5M19 12H21M4.9 19.1L6.3 17.7M17.7 6.3L19.1 4.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconChart({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M4 19H20" strokeLinecap="round" />
+      <path d="M7 16V10" strokeLinecap="round" />
+      <path d="M12 16V6" strokeLinecap="round" />
+      <path d="M17 16V12" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconCheckCircle({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12.5L11 15L16 9.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function IconAlert({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 4L21 19H3L12 4Z" strokeLinejoin="round" />
+      <path d="M12 10V14M12 16.5H12.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconClock({ className }: IconProps) {
+  return (
+    <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7V12L15 14" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const CATEGORY_ICONS = {
   handbag: IconHandbag,
   watch: IconWatch,
