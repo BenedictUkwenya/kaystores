@@ -144,18 +144,38 @@ export function getCollectionBySlug(slug: string): CollectionConfig | null {
   return COLLECTION_PAGES[slug] ?? getCategoryConfig(slug) ?? null;
 }
 
-export function getSearchConfig(query: string): CollectionConfig {
+export function getSearchConfig(
+  query: string,
+  options?: { collection?: string },
+): CollectionConfig {
+  const isAfterDark = options?.collection === "after-dark";
   return {
     slug: "search",
-    title: query ? `Results for "${query}"` : "Search",
+    title: query
+      ? `Results for "${query}"`
+      : isAfterDark
+        ? "Search After Dark"
+        : "Search",
     description: query
-      ? `Showing gifts matching your search.`
-      : "Search our luxury gift collection.",
-    breadcrumbs: [
-      { label: "Home", href: "/" },
-      { label: "Search", href: "/search" },
-    ],
-    filters: { search: query },
+      ? isAfterDark
+        ? "Showing After Dark selections matching your search."
+        : "Showing gifts matching your search."
+      : isAfterDark
+        ? "Search the After Dark collection."
+        : "Search our luxury gift collection.",
+    breadcrumbs: isAfterDark
+      ? [
+          { label: "After Dark", href: "/after-dark" },
+          { label: "Search", href: "/search?collection=after-dark" },
+        ]
+      : [
+          { label: "Home", href: "/" },
+          { label: "Search", href: "/search" },
+        ],
+    filters: {
+      search: query,
+      ...(isAfterDark ? { collections: ["after-dark"] } : {}),
+    },
   };
 }
 

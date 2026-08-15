@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   AFTER_DARK_NAV,
@@ -14,7 +15,20 @@ import { IconBag, IconSearch, IconX } from "@/components/ui/Icons";
 
 export function AfterDarkHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
   const { itemCount, openCart } = useCart();
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    const params = new URLSearchParams({ collection: "after-dark" });
+    if (q) params.set("q", q);
+    router.push(`/search?${params.toString()}`);
+    setSearchOpen(false);
+    setMenuOpen(false);
+  }
 
   return (
     <header className="ad-header-glow sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
@@ -44,13 +58,52 @@ export function AfterDarkHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="hidden h-9 w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:text-ad-amber sm:flex"
-          >
-            <IconSearch className="h-4 w-4" />
-          </Link>
+          <div className="relative flex items-center">
+            {searchOpen ? (
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center overflow-hidden rounded-full border border-white/15 bg-white/5 focus-within:border-ad-amber/60"
+              >
+                <label htmlFor="after-dark-search" className="sr-only">
+                  Search After Dark
+                </label>
+                <input
+                  id="after-dark-search"
+                  type="search"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setSearchOpen(false);
+                      setSearchQuery("");
+                    }
+                  }}
+                  onBlur={() => {
+                    if (!searchQuery.trim()) setSearchOpen(false);
+                  }}
+                  placeholder="Search After Dark…"
+                  className="h-9 w-[min(42vw,11rem)] bg-transparent pl-3.5 pr-1 text-[12px] text-white outline-none placeholder:text-white/40 sm:w-40"
+                />
+                <button
+                  type="submit"
+                  aria-label="Submit search"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center text-ad-amber transition-opacity hover:opacity-80"
+                >
+                  <IconSearch className="h-4 w-4" />
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                aria-label="Search After Dark"
+                onClick={() => setSearchOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition-colors hover:text-ad-amber"
+              >
+                <IconSearch className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <HeaderPortalLink variant="dark" className="hidden sm:flex" />
           <HeaderAccountLink variant="dark" />
           <button
@@ -91,6 +144,18 @@ export function AfterDarkHeader() {
                 </Link>
               </li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSearchOpen(true);
+                }}
+                className="block py-1 text-left text-[14px] text-white/80"
+              >
+                Search
+              </button>
+            </li>
             <li className="border-t border-white/10 pt-3">
               <HeaderPortalLink variant="dark" className="flex flex-wrap gap-2" />
             </li>

@@ -36,6 +36,12 @@ function buildFiltersFromParams(
     filters.minPrice = Number(searchParams.minPrice);
   if (searchParams.maxPrice)
     filters.maxPrice = Number(searchParams.maxPrice);
+  if (searchParams.collection === "after-dark") {
+    filters.collections = [
+      ...(filters.collections ?? []),
+      "after-dark",
+    ].filter((v, i, a) => a.indexOf(v) === i);
+  }
 
   const urlOccasions = searchParams.occasion?.split(",").filter(Boolean);
   const urlRecipients = searchParams.recipient?.split(",").filter(Boolean);
@@ -81,6 +87,7 @@ export async function CatalogPage({
         sort={sort}
         basePath={basePath}
         searchParams={searchParams}
+        showSearch={basePath === "/search"}
       />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[220px_1fr] lg:gap-10 xl:grid-cols-[240px_1fr]">

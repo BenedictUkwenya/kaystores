@@ -15,6 +15,7 @@ export const AFTER_DARK_ROUTES = {
   about: "/after-dark/about",
   contact: "/after-dark/contact",
   concierge: "/concierge",
+  search: "/search?collection=after-dark",
 } as const;
 
 export const AFTER_DARK_NAV = [

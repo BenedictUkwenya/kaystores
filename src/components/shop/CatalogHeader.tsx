@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconChevronDown } from "@/components/ui/Icons";
+import { CatalogSearchForm } from "@/components/shop/CatalogSearchForm";
 
 type CatalogHeaderProps = {
   title: string;
@@ -12,6 +13,7 @@ type CatalogHeaderProps = {
   sort: string;
   basePath: string;
   searchParams?: Record<string, string | undefined>;
+  showSearch?: boolean;
 };
 
 export function CatalogHeader({
@@ -22,6 +24,7 @@ export function CatalogHeader({
   sort,
   basePath,
   searchParams,
+  showSearch = false,
 }: CatalogHeaderProps) {
   const router = useRouter();
 
@@ -90,6 +93,17 @@ export function CatalogHeader({
           </div>
         </div>
       </div>
+
+      {showSearch && (
+        <div className="mt-4 max-w-xl">
+          <CatalogSearchForm
+            initialQuery={searchParams?.q ?? ""}
+            basePath={basePath}
+            preserveParams={searchParams}
+            placeholder="Search by gift name, brand, or keyword…"
+          />
+        </div>
+      )}
 
       <p className="mt-2 text-[12px] text-kay-subtle sm:hidden">
         {total.toLocaleString()} {total === 1 ? "gift" : "gifts"}

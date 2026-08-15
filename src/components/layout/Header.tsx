@@ -131,7 +131,7 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <div className="relative hidden items-center md:flex">
+          <div className="relative flex items-center">
             {searchOpen ? (
               <form
                 onSubmit={handleSearch}
@@ -156,7 +156,7 @@ export function Header() {
                     if (!searchQuery.trim()) setSearchOpen(false);
                   }}
                   placeholder="Search…"
-                  className="h-9 w-36 bg-transparent pl-3.5 pr-1 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle lg:w-44"
+                  className="h-9 w-[min(42vw,11rem)] bg-transparent pl-3.5 pr-1 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle sm:w-36 lg:w-44"
                 />
                 <button
                   type="submit"
@@ -177,14 +177,6 @@ export function Header() {
               </button>
             )}
           </div>
-
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="flex h-9 w-9 items-center justify-center text-kay-fg transition-opacity hover:opacity-55 md:hidden"
-          >
-            <IconSearch />
-          </Link>
 
           <div className="mx-0.5 hidden h-4 w-px bg-kay-border sm:block" aria-hidden />
 
@@ -300,13 +292,16 @@ export function Header() {
               <HeaderPortalLink className="flex flex-wrap gap-2 pt-1" />
             </li>
             <li>
-              <Link
-                href="/search"
-                onClick={() => setMenuOpen(false)}
-                className="text-[15px] text-kay-fg"
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setSearchOpen(true);
+                }}
+                className="text-left text-[15px] text-kay-fg"
               >
                 Search
-              </Link>
+              </button>
             </li>
           </ul>
         </nav>
