@@ -9,21 +9,33 @@ import {
 import { DataTable } from "@/components/dashboard/DataTable";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { AdminProductTagEditor } from "@/components/admin/AdminProductTagEditor";
+import { AdminProductActions } from "@/components/admin/AdminProductActions";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { formatPlacementSummary } from "@/lib/shop/taxonomy";
 import { formatNaira } from "@/lib/data/home";
 import { IconPackage, IconPlus, IconImport } from "@/components/ui/Icons";
 import type { Product } from "@/types/product";
 
+type AdminProductRow = Product & { vendorName: string | null };
+
 export default async function AdminProductsPage() {
   await requireAdmin();
   const admin = createAdminClient();
   const { data } = await admin!
     .from("products")
-    .select("*")
+    .select("*, vendors(business_name)")
     .order("created_at", { ascending: false })
     .limit(100);
-  const products = (data ?? []).map(mapProductRow);
+  const products: AdminProductRow[] = (data ?? []).map((row) => {
+    const product = mapProductRow(row as Record<string, unknown>);
+    const vendorsRaw = (row as { vendors?: { business_name?: string } | null })
+      .vendors;
+    const vendorName =
+      vendorsRaw && typeof vendorsRaw === "object"
+        ? vendorsRaw.business_name
+        : null;
+    return { ...product, vendorName: vendorName ? String(vendorName) : null };
+  });
   const kayOwned = products.filter((p) => !p.vendor_id).length;
   const live = products.filter((p) => p.status === "live").length;
 
@@ -33,7 +45,7 @@ export default async function AdminProductsPage() {
       nav={ADMIN_NAV}
       eyebrow="Catalogue"
       title="All products"
-      description={`${products.length} listings · ${live} live · ${kayOwned} Kay-owned. List prices feed Pricing tiers for shoppers.`}
+      description={`${products.length} listings · ${live} live · ${kayOwned} Kay-owned. Use Edit or Delete on any vendor or Kay listing.`}
       badge="Admin"
       actions={
         <>
@@ -65,7 +77,7 @@ export default async function AdminProductsPage() {
           secondaryLabel="Import CSV"
         />
       ) : (
-        <DataTable<Product>
+        <DataTable<AdminProductRow>
           rows={products}
           keyFn={(p) => p.id}
           columns={[
@@ -92,7 +104,12 @@ export default async function AdminProductsPage() {
               header: "Owner",
               render: (p) =>
                 p.vendor_id ? (
-                  <span className="text-kay-muted">Vendor</span>
+                  <Link
+                    href={`/admin/vendors/${p.vendor_id}`}
+                    className="text-kay-muted hover:text-kay-gold"
+                  >
+                    {p.vendorName ?? "Vendor"}
+                  </Link>
                 ) : (
                   <span className="font-medium text-kay-gold">Kay Stores</span>
                 ),
@@ -125,6 +142,13 @@ export default async function AdminProductsPage() {
               key: "price",
               header: "List price",
               render: (p) => formatNaira(p.price),
+            },
+            {
+              key: "actions",
+              header: "Manage",
+              render: (p) => (
+                <AdminProductActions productId={p.id} productName={p.name} />
+              ),
             },
             {
               key: "badges",

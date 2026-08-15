@@ -371,8 +371,9 @@ export async function deleteVendorProduct(
   query = vendorId
     ? query.eq("vendor_id", vendorId)
     : query.is("vendor_id", null);
-  const { error } = await query;
+  const { data, error } = await query.select("id");
   if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error("Product not found or already deleted.");
 }
 
 export async function publishVendorProduct(

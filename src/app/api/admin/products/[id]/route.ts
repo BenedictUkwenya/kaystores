@@ -3,7 +3,6 @@ import { fetchVendorById } from "@/lib/admin/repository";
 import { prepareVendorProductInput } from "@/lib/products/vendor-placement";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  deleteVendorProduct,
   updateVendorProduct,
   type VendorProductInput,
 } from "@/lib/vendors/repository";
@@ -83,18 +82,24 @@ export async function DELETE(_request: Request, { params }: Ctx) {
     if (!admin) throw new Error("Database is not configured.");
     const { data, error } = await admin
       .from("products")
-      .select("vendor_id")
+      .select("id, vendor_id, name")
       .eq("id", id)
       .maybeSingle();
     if (error || !data) {
       return Response.json({ error: "Product not found." }, { status: 404 });
     }
-    await deleteVendorProduct(
-      id,
-      data.vendor_id ? String(data.vendor_id) : null,
-      admin,
-    );
-    return Response.json({ ok: true });
+    // Admin can delete by id regardless of ownership (Kay or vendor).
+    const { error: deleteError } = await admin
+      .from("products")
+      .delete()
+      .eq("id", id);
+    if (deleteError) {
+      return Response.json(
+        { error: deleteError.message || "Could not delete product." },
+        { status: 400 },
+      );
+    }
+    return Response.json({ ok: true, name: data.name });
   } catch (err) {
     return apiErrorResponse(err);
   }

@@ -207,7 +207,14 @@ export function VendorProductForm({
   }
 
   async function handleDelete() {
-    if (!product || !window.confirm(`Delete "${product.name}" permanently?`)) {
+    if (
+      !product ||
+      !window.confirm(
+        isAdmin
+          ? `Delete "${product.name}" permanently from the Kay catalogue?`
+          : `Delete "${product.name}" permanently?`,
+      )
+    ) {
       return;
     }
     setError(null);

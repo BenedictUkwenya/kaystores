@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/roles";
 import { fetchVendorById } from "@/lib/admin/repository";
@@ -30,14 +31,22 @@ export default async function EditAdminProductPage({ params }: Props) {
     <DashboardLayout
       role="admin"
       nav={ADMIN_NAV}
-      eyebrow="Catalogue"
+      eyebrow={product.vendor_id ? "Vendor listing" : "Kay inventory"}
       title={`Edit ${product.name}`}
       description={
         product.vendor_id
-          ? "Update this vendor listing, its images, categories, stock, or publishing status."
+          ? `Vendor product${vendor ? ` for ${vendor.businessName}` : ""}. You can update details, images, stock, or delete this listing.`
           : "Kay-owned inventory — vendor payouts do not apply."
       }
       badge="Admin"
+      actions={
+        <Link
+          href="/admin/products"
+          className="inline-flex h-10 items-center rounded-full border border-kay-border px-4 text-[12px] font-medium hover:border-kay-fg"
+        >
+          Back to products
+        </Link>
+      }
     >
       <VendorProductForm
         variant="admin"
