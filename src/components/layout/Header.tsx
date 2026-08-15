@@ -133,7 +133,10 @@ export function Header() {
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
           <div className="relative hidden items-center md:flex">
             {searchOpen ? (
-              <form onSubmit={handleSearch} className="flex items-center">
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center overflow-hidden rounded-full border border-kay-border bg-kay-input-bg focus-within:border-kay-fg"
+              >
                 <label htmlFor="header-search" className="sr-only">
                   Search gifts
                 </label>
@@ -143,12 +146,25 @@ export function Header() {
                   autoFocus
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setSearchOpen(false);
+                      setSearchQuery("");
+                    }
+                  }}
                   onBlur={() => {
                     if (!searchQuery.trim()) setSearchOpen(false);
                   }}
                   placeholder="Search…"
-                  className="h-9 w-40 rounded-full border border-kay-border bg-kay-input-bg px-3.5 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle focus:border-kay-fg lg:w-48"
+                  className="h-9 w-36 bg-transparent pl-3.5 pr-1 text-[12px] text-kay-fg outline-none placeholder:text-kay-subtle lg:w-44"
                 />
+                <button
+                  type="submit"
+                  aria-label="Submit search"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center text-kay-fg transition-opacity hover:opacity-55"
+                >
+                  <IconSearch className="h-4 w-4" />
+                </button>
               </form>
             ) : (
               <button

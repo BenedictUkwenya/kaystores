@@ -6,17 +6,12 @@ import {
   ADMIN_NAV,
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
-import { DataTable } from "@/components/dashboard/DataTable";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
-import { AdminProductTagEditor } from "@/components/admin/AdminProductTagEditor";
-import { AdminProductActions } from "@/components/admin/AdminProductActions";
+import {
+  AdminProductCatalogue,
+  type AdminProductRow,
+} from "@/components/admin/AdminProductCatalogue";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
-import { formatPlacementSummary } from "@/lib/shop/taxonomy";
-import { formatNaira } from "@/lib/data/home";
 import { IconPackage, IconPlus, IconImport } from "@/components/ui/Icons";
-import type { Product } from "@/types/product";
-
-type AdminProductRow = Product & { vendorName: string | null };
 
 export default async function AdminProductsPage() {
   await requireAdmin();
@@ -77,87 +72,7 @@ export default async function AdminProductsPage() {
           secondaryLabel="Import CSV"
         />
       ) : (
-        <DataTable<AdminProductRow>
-          rows={products}
-          keyFn={(p) => p.id}
-          columns={[
-            {
-              key: "name",
-              header: "Product",
-              render: (p) => (
-                <div>
-                  <Link
-                    href={`/admin/products/${p.id}/edit`}
-                    className="font-medium hover:text-kay-gold"
-                  >
-                    {p.name}
-                  </Link>
-                  <p className="mt-0.5 font-mono text-[11px] text-kay-subtle">
-                    {p.sku}
-                  </p>
-                </div>
-              ),
-            },
-            { key: "brand", header: "Brand", render: (p) => p.brand },
-            {
-              key: "owner",
-              header: "Owner",
-              render: (p) =>
-                p.vendor_id ? (
-                  <Link
-                    href={`/admin/vendors/${p.vendor_id}`}
-                    className="text-kay-muted hover:text-kay-gold"
-                  >
-                    {p.vendorName ?? "Vendor"}
-                  </Link>
-                ) : (
-                  <span className="font-medium text-kay-gold">Kay Stores</span>
-                ),
-            },
-            {
-              key: "placement",
-              header: "Placement",
-              render: (p) => (
-                <span className="text-[12px] text-kay-muted">
-                  {formatPlacementSummary(p)}
-                </span>
-              ),
-            },
-            {
-              key: "stock",
-              header: "Stock",
-              render: (p) =>
-                p.stock_quantity > 0 ? (
-                  <span>{p.stock_quantity}</span>
-                ) : (
-                  <span className="text-amber-700">Out</span>
-                ),
-            },
-            {
-              key: "status",
-              header: "Status",
-              render: (p) => <StatusBadge status={p.status ?? "live"} />,
-            },
-            {
-              key: "price",
-              header: "List price",
-              render: (p) => formatNaira(p.price),
-            },
-            {
-              key: "actions",
-              header: "Manage",
-              render: (p) => (
-                <AdminProductActions productId={p.id} productName={p.name} />
-              ),
-            },
-            {
-              key: "badges",
-              header: "Badges",
-              hideOnMobile: true,
-              render: (p) => <AdminProductTagEditor product={p} />,
-            },
-          ]}
-        />
+        <AdminProductCatalogue products={products} />
       )}
     </DashboardLayout>
   );
