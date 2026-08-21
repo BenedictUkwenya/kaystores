@@ -253,7 +253,9 @@
 
 - [x] Email notifications (concierge, order updates, recipient link)
 
-- [x] **Manual payment confirm at checkout** (“Yes, I have paid” — Flutterwave paused for shop orders)
+- [x] **Manual payment confirm at checkout** (“Yes, I have paid” — fallback when online gateway is offline)
+
+- [ ] **Paystack live payments** — code + Vercel keys are in place; set Live Webhook URL to `https://www.shoponkay.com/api/webhooks/paystack`, sandbox-test a checkout, then mark complete
 
 - [x] **Vendor invite vs self-apply** — Kay invites choose instant access or profile-first (both auto-approved); self-apply collects NIN and stays pending admin review
 

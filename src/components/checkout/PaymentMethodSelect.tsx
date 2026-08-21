@@ -43,7 +43,7 @@ export function PaymentMethodSelect({
               </span>
             </div>
             <p className="mt-1 text-[12px] text-kay-muted">
-              Pay securely via Flutterwave after you place your order.
+              Pay securely via Paystack after you place your order.
             </p>
           </div>
         </div>
@@ -70,11 +70,11 @@ export function PaymentMethodSelect({
                 Bank transfer
               </span>
               <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-medium text-sky-700">
-                Flutterwave
+                Paystack
               </span>
             </div>
             <p className="mt-1 text-[12px] text-kay-muted">
-              Transfer or USSD options on the Flutterwave checkout page.
+              Transfer or USSD options on the Paystack checkout page.
             </p>
           </div>
         </div>

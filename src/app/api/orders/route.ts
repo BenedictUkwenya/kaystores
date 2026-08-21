@@ -14,11 +14,13 @@ import {
   attachQuoteToOrder,
   getSelectedQuoteAmount,
 } from "@/lib/shipping/terminal";
+import { isPaystackConfigured } from "@/lib/payments/config";
 import type { CreateOrderPayload } from "@/types/order";
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CreateOrderPayload;
+    const paystackOnline = isPaystackConfigured();
 
     if (!body.items?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
@@ -91,11 +93,16 @@ export async function POST(request: Request) {
       };
     }
 
-    if (!body.paymentConfirmed) {
+    // Paystack: create unpaid orders and collect payment after redirect.
+    // Manual path: still require paymentConfirmed when Paystack is offline.
+    if (!paystackOnline && !body.paymentConfirmed) {
       return NextResponse.json(
         { error: "Please confirm that you have paid before placing the order." },
         { status: 400 },
       );
+    }
+    if (paystackOnline) {
+      body.paymentConfirmed = false;
     }
 
     body.buyer = {
@@ -136,11 +143,10 @@ export async function POST(request: Request) {
         paymentPaid: order.paymentStatus === "paid",
       });
 
-      // Manual checkout marks paid immediately — previously emails only ran after Flutterwave.
-      // Await so Vercel doesn't freeze the isolate before Resend is invoked.
-      const appUrl = getEmailSiteUrl();
-      await notifyOrderEmails(order, appUrl);
+      // Emails / vendor notify only after payment (Paystack webhook or manual confirm).
       if (order.paymentStatus === "paid") {
+        const appUrl = getEmailSiteUrl();
+        await notifyOrderEmails(order, appUrl);
         await notifyVendorsForPaidOrder(order.id);
       }
     } catch (err) {

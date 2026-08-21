@@ -14,13 +14,19 @@ import {
   isDiscreetOrder,
 } from "@/lib/after-dark/checkout-privacy";
 import { OrderPaymentSection } from "@/components/payments/OrderPaymentSection";
-import { PaymentReturnVerifier } from "@/components/payments/FlutterwavePayButton";
-import { buildTxRef } from "@/lib/payments/config";
+import { PaymentReturnVerifier } from "@/components/payments/PaystackPayButton";
+import { buildTxRef, isPaystackConfigured } from "@/lib/payments/config";
 import { IconLock } from "@/components/ui/Icons";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ payment?: string; tx_ref?: string; status?: string }>;
+  searchParams: Promise<{
+    payment?: string;
+    reference?: string;
+    trxref?: string;
+    tx_ref?: string;
+    status?: string;
+  }>;
 };
 
 export default async function OrderConfirmationPage({
@@ -33,8 +39,12 @@ export default async function OrderConfirmationPage({
   if (!order) notFound();
 
   const paid = order.paymentStatus === "paid";
-  const txRef =
-    query.tx_ref ?? (query.payment === "return" ? buildTxRef("order", id) : null);
+  const paystackEnabled = isPaystackConfigured();
+  const reference =
+    query.reference ??
+    query.trxref ??
+    query.tx_ref ??
+    (query.payment === "return" ? buildTxRef("order", id) : null);
 
   const pricing = order.pricing;
   const discreet = isDiscreetOrder(order.items);
@@ -95,8 +105,8 @@ export default async function OrderConfirmationPage({
         <OrderTrackingTimeline order={order} />
       </div>
 
-      {txRef && !paid && <PaymentReturnVerifier txRef={txRef} />}
-      <OrderPaymentSection order={order} />
+      {reference && !paid && <PaymentReturnVerifier reference={reference} />}
+      <OrderPaymentSection order={order} paystackEnabled={paystackEnabled} />
 
       <div className="mt-6 space-y-6 rounded-lg border border-kay-border-light bg-kay-surface-elevated/60 p-5 sm:p-6">
         <div>

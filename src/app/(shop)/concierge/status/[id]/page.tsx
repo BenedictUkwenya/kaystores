@@ -8,13 +8,18 @@ import {
 import { ConciergeOfferResponse } from "@/components/concierge/ConciergeOfferResponse";
 import { ConciergePaymentSection } from "@/components/concierge/ConciergePaymentSection";
 import { ConciergeStatusTimeline } from "@/components/concierge/ConciergeStatusTimeline";
-import { PaymentReturnVerifier } from "@/components/payments/FlutterwavePayButton";
+import { PaymentReturnVerifier } from "@/components/payments/PaystackPayButton";
 import { buildTxRef } from "@/lib/payments/config";
 import { formatNaira } from "@/lib/data/home";
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ payment?: string; tx_ref?: string }>;
+  searchParams: Promise<{
+    payment?: string;
+    reference?: string;
+    trxref?: string;
+    tx_ref?: string;
+  }>;
 };
 
 export default async function ConciergeStatusDetailPage({
@@ -27,7 +32,9 @@ export default async function ConciergeStatusDetailPage({
   if (!detail) notFound();
 
   const paid = detail.paymentStatus === "paid";
-  const txRef =
+  const reference =
+    query.reference ??
+    query.trxref ??
     query.tx_ref ??
     (query.payment === "return" ? buildTxRef("concierge", id) : null);
 
@@ -71,7 +78,7 @@ export default async function ConciergeStatusDetailPage({
       </div>
 
       <ConciergeOfferResponse detail={detail} />
-      {txRef && !paid && <PaymentReturnVerifier txRef={txRef} />}
+      {reference && !paid && <PaymentReturnVerifier reference={reference} />}
       <ConciergePaymentSection detail={detail} />
 
       <div className="mt-6 rounded-lg border border-kay-border-light bg-kay-surface-elevated/60 p-5 sm:p-6">

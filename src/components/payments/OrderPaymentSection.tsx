@@ -4,15 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatNaira } from "@/lib/data/home";
 import type { Order } from "@/types/order";
+import { PaystackPayButton } from "@/components/payments/PaystackPayButton";
 
 type Props = {
   order: Order;
+  paystackEnabled?: boolean;
 };
 
 /**
- * For unpaid orders when Flutterwave is offline — customer can attest payment.
+ * Unpaid orders: Paystack checkout when configured, else manual attest.
  */
-export function OrderPaymentSection({ order }: Props) {
+export function OrderPaymentSection({
+  order,
+  paystackEnabled = false,
+}: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +43,33 @@ export function OrderPaymentSection({ order }: Props) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setBusy(false);
     }
+  }
+
+  if (paystackEnabled) {
+    return (
+      <div className="mt-6 rounded-xl border border-kay-gold/40 bg-kay-gold-light/25 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-kay-gold">
+          Complete payment
+        </p>
+        <p className="mt-2 text-[14px] text-kay-fg">
+          Total due:{" "}
+          <span className="font-semibold">
+            {formatNaira(order.pricing.grandTotal)}
+          </span>
+          . Pay securely with card, bank transfer, or USSD via Paystack.
+        </p>
+        {unpaid && (
+          <PaystackPayButton
+            kind="order"
+            id={order.id}
+            email={order.buyer.email}
+            className="mt-4"
+            label={`Pay ${formatNaira(order.pricing.grandTotal)}`}
+          />
+        )}
+        {error && <p className="mt-3 text-[13px] text-red-700">{error}</p>}
+      </div>
+    );
   }
 
   return (

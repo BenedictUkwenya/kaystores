@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { CheckoutStep } from "@/components/checkout/CheckoutStep";
 import { ManualPaymentConfirm } from "@/components/checkout/ManualPaymentConfirm";
+import { redirectToPaystackCheckout } from "@/components/payments/PaystackPayButton";
 import {
   IconArrowRight,
   IconGift,
@@ -28,6 +29,10 @@ import { SITE_ROUTES } from "@/lib/data/site-routes";
 import { useCheckoutPrefill } from "@/hooks/useCheckoutPrefill";
 import { CheckoutProcessing } from "@/components/checkout/CheckoutProcessing";
 import { AfterDarkPrivacyBanner } from "@/components/checkout/AfterDarkPrivacyBanner";
+
+const paystackEnabled = Boolean(
+  process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.trim(),
+);
 
 const emptyAddress = {
   line1: "",
@@ -180,7 +185,7 @@ export function CheckoutForm({
       }
     }
 
-    if (!paidConfirmed) {
+    if (!paystackEnabled && !paidConfirmed) {
       setError('Confirm “Yes, I have paid” before placing your order.');
       return;
     }
@@ -203,7 +208,7 @@ export function CheckoutForm({
           shippingQuoteToken: selectedShippingToken,
           buyer: { fullName, email: buyer.email, phone: buyer.phone },
           buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
-          paymentConfirmed: true,
+          paymentConfirmed: paystackEnabled ? false : true,
           gift:
             deliveryType === "gift"
               ? {
@@ -268,6 +273,21 @@ export function CheckoutForm({
         } catch {
           // Order succeeded — user can finish Reveal on the order page.
         }
+      }
+
+      if (paystackEnabled) {
+        await redirectToPaystackCheckout({
+          kind: "order",
+          id: order.id,
+          email: buyer.email.trim().toLowerCase(),
+        });
+        return;
+      }
+
+      if (
+        deliveryType === "gift" &&
+        (addReveal || revealVideo || revealPhoto || giftNote.trim())
+      ) {
         router.replace(`/order/${order.id}/reveal`);
         return;
       }
@@ -759,11 +779,24 @@ export function CheckoutForm({
           </CheckoutStep>
 
           <CheckoutStep step={3} title="Payment">
-            <ManualPaymentConfirm
-              confirmed={paidConfirmed}
-              onChange={setPaidConfirmed}
-              amountLabel={formatNaira(pricing.grandTotal)}
-            />
+            {paystackEnabled ? (
+              <div className="rounded-xl border border-kay-border bg-kay-surface/50 p-4 sm:p-5">
+                <p className="text-[15px] font-semibold text-kay-fg">
+                  Pay with Paystack
+                </p>
+                <p className="mt-1 text-[13px] text-kay-muted">
+                  After you place your order you’ll be redirected to Paystack to
+                  pay {formatNaira(pricing.grandTotal)} by card, transfer, or
+                  USSD.
+                </p>
+              </div>
+            ) : (
+              <ManualPaymentConfirm
+                confirmed={paidConfirmed}
+                onChange={setPaidConfirmed}
+                amountLabel={formatNaira(pricing.grandTotal)}
+              />
+            )}
           </CheckoutStep>
 
           {error && (
@@ -775,17 +808,29 @@ export function CheckoutForm({
           <div>
             <button
               type="submit"
-              disabled={submitting || !pricing.canCheckout || !paidConfirmed}
+              disabled={
+                submitting ||
+                !pricing.canCheckout ||
+                (!paystackEnabled && !paidConfirmed)
+              }
               className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kay-gold text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(184,154,106,0.4)] transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {submitting
-                ? "Placing order…"
+                ? paystackEnabled
+                  ? "Redirecting to Paystack…"
+                  : "Placing order…"
                 : pricing.canCheckout
                   ? isPrivateCheckout
-                    ? "Place private order"
-                    : "Place order"
+                    ? paystackEnabled
+                      ? "Place private order & pay"
+                      : "Place private order"
+                    : paystackEnabled
+                      ? "Place order & pay"
+                      : "Place order"
                   : "Minimum order not met"}
-              {!submitting && pricing.canCheckout && paidConfirmed && (
+              {!submitting &&
+                pricing.canCheckout &&
+                (paystackEnabled || paidConfirmed) && (
                 <IconArrowRight className="h-4 w-4" />
               )}
             </button>
