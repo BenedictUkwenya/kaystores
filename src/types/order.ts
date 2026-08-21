@@ -16,6 +16,11 @@ export type AddressDetails = {
   state: string;
   postalCode?: string;
   country: string;
+  /** Optional map pin from Google Places / Maps picker */
+  lat?: number;
+  lng?: number;
+  placeId?: string;
+  formattedAddress?: string;
 };
 
 export type GiftDetails = {

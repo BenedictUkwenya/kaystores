@@ -255,7 +255,7 @@
 
 - [x] **Manual payment confirm at checkout** (“Yes, I have paid” — fallback when online gateway is offline)
 
-- [ ] **Paystack live payments** — code + Vercel keys are in place; set Live Webhook URL to `https://www.shoponkay.com/api/webhooks/paystack`, sandbox-test a checkout, then mark complete
+- [x] **Paystack live payments** — initialize, verify, webhook URL, and Vercel keys configured
 
 - [x] **Vendor invite vs self-apply** — Kay invites choose instant access or profile-first (both auto-approved); self-apply collects NIN and stays pending admin review
 
@@ -268,6 +268,8 @@
 - [x] **Kay-owned product catalogue** — admin listings with no vendor payout, including product images, editing, and deletion
 
 - [x] **Premium admin & vendor portal redesign** — icon-led operations shell, richer overview/products/orders/onboarding, denser usable workspace
+
+- [x] **Checkout map address picker** — OpenStreetMap pin / search / current location / paste Maps link (no Google API key)
 
 - [ ] **Terminal Africa shipping activation** — live hub-to-customer rates, post-QC dispatch, and tracking are implemented; add Terminal keys, hub contact/address, webhook secret, product parcel measurements, migrate Supabase, then verify the sandbox flow before marking complete
 

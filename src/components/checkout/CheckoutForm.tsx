@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { CheckoutStep } from "@/components/checkout/CheckoutStep";
 import { ManualPaymentConfirm } from "@/components/checkout/ManualPaymentConfirm";
+import { AddressLocationPicker } from "@/components/checkout/AddressLocationPicker";
 import { redirectToPaystackCheckout } from "@/components/payments/PaystackPayButton";
 import {
   IconArrowRight,
@@ -18,7 +19,7 @@ import {
   IconPackage,
   IconUpload,
 } from "@/components/ui/Icons";
-import type { DeliveryType } from "@/types/order";
+import type { DeliveryType, AddressDetails } from "@/types/order";
 import { GIFT_NOTE_MAX_LENGTH } from "@/types/order";
 import {
   calculateOrderPricing,
@@ -34,7 +35,7 @@ const paystackEnabled = Boolean(
   process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.trim(),
 );
 
-const emptyAddress = {
+const emptyAddress: AddressDetails = {
   line1: "",
   line2: "",
   city: "",
@@ -446,63 +447,16 @@ export function CheckoutForm({
               />
 
               {deliveryType === "self" ? (
-                <>
-                  <Input
-                    variant="checkout"
-                    label={
-                      isPrivateCheckout
-                        ? "Discrete delivery address"
-                        : "Shipping Address"
-                    }
-                    value={buyerAddress.line1}
-                    onChange={(e) =>
-                      setBuyerAddress({ ...buyerAddress, line1: e.target.value })
-                    }
-                    className="sm:col-span-2"
-                    required
-                  />
-                  <Input
-                    variant="checkout"
-                    label="City"
-                    value={buyerAddress.city}
-                    onChange={(e) =>
-                      setBuyerAddress({ ...buyerAddress, city: e.target.value })
-                    }
-                    required
-                  />
-                  <Input
-                    variant="checkout"
-                    label="Postal Code"
-                    value={buyerAddress.postalCode}
-                    onChange={(e) =>
-                      setBuyerAddress({
-                        ...buyerAddress,
-                        postalCode: e.target.value,
-                      })
-                    }
-                  />
-                  <Input
-                    variant="checkout"
-                    label="State"
-                    value={buyerAddress.state}
-                    onChange={(e) =>
-                      setBuyerAddress({ ...buyerAddress, state: e.target.value })
-                    }
-                    required
-                  />
-                  <Input
-                    variant="checkout"
-                    label="Country"
-                    value={buyerAddress.country}
-                    onChange={(e) =>
-                      setBuyerAddress({
-                        ...buyerAddress,
-                        country: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                </>
+                <AddressLocationPicker
+                  value={buyerAddress}
+                  onChange={setBuyerAddress}
+                  label={
+                    isPrivateCheckout
+                      ? "Discrete delivery address"
+                      : "Shipping Address"
+                  }
+                  required
+                />
               ) : (
                 <>
                   <p className="sm:col-span-2 mt-2 text-[12px] font-medium uppercase tracking-[0.14em] text-kay-gold">
@@ -537,57 +491,15 @@ export function CheckoutForm({
                     onChange={(e) => setRecipientWhatsApp(e.target.value)}
                   />
 
-                  <Input
-                    variant="checkout"
+                  <AddressLocationPicker
+                    value={recipientAddress}
+                    onChange={setRecipientAddress}
                     label={
                       isPrivateCheckout
                         ? "Discrete delivery address"
                         : "Shipping address"
                     }
-                    value={recipientAddress.line1}
-                    onChange={(e) =>
-                      setRecipientAddress({
-                        ...recipientAddress,
-                        line1: e.target.value,
-                      })
-                    }
-                    className="sm:col-span-2"
-                    hint="Required — Kay delivers to the address you provide."
-                    required
-                  />
-                  <Input
-                    variant="checkout"
-                    label="City"
-                    value={recipientAddress.city}
-                    onChange={(e) =>
-                      setRecipientAddress({
-                        ...recipientAddress,
-                        city: e.target.value,
-                      })
-                    }
-                    required
-                  />
-                  <Input
-                    variant="checkout"
-                    label="Postal Code"
-                    value={recipientAddress.postalCode}
-                    onChange={(e) =>
-                      setRecipientAddress({
-                        ...recipientAddress,
-                        postalCode: e.target.value,
-                      })
-                    }
-                  />
-                  <Input
-                    variant="checkout"
-                    label="State"
-                    value={recipientAddress.state}
-                    onChange={(e) =>
-                      setRecipientAddress({
-                        ...recipientAddress,
-                        state: e.target.value,
-                      })
-                    }
+                    hint="Search or drop a pin — Kay delivers to this address."
                     required
                   />
 
