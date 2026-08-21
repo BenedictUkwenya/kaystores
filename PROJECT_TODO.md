@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-08-14
+**Last updated:** 2026-08-21
 
 ---
 
@@ -266,6 +266,10 @@
 - [x] **Kay-owned product catalogue** — admin listings with no vendor payout, including product images, editing, and deletion
 
 - [x] **Premium admin & vendor portal redesign** — icon-led operations shell, richer overview/products/orders/onboarding, denser usable workspace
+
+- [ ] **Terminal Africa shipping activation** — live hub-to-customer rates, post-QC dispatch, and tracking are implemented; add Terminal keys, hub contact/address, webhook secret, product parcel measurements, migrate Supabase, then verify the sandbox flow before marking complete
+
+- [ ] **Catalog attributes & discovery** — structured tags, size picker, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] Inventory sync
 

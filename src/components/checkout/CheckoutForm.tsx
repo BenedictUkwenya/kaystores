@@ -45,8 +45,18 @@ export function CheckoutForm({
 }) {
   const router = useRouter();
   const { items, clearCart } = useCart();
-  const pricing = useMemo(() => calculateOrderPricing(items), [items]);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("self");
+  const [shippingQuotes, setShippingQuotes] = useState<
+    {
+      token: string;
+      carrierName: string;
+      serviceName?: string;
+      amount: number;
+      deliveryEta?: string;
+    }[]
+  >([]);
+  const [selectedShippingToken, setSelectedShippingToken] = useState("");
+  const [quoting, setQuoting] = useState(false);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{
@@ -73,8 +83,57 @@ export function CheckoutForm({
   const revealPhotoRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${firstName} ${lastName}`.trim();
+  const selectedShipping = shippingQuotes.find(
+    (quote) => quote.token === selectedShippingToken,
+  );
+  const pricing = useMemo(
+    () => calculateOrderPricing(items, selectedShipping?.amount),
+    [items, selectedShipping?.amount],
+  );
 
   useCheckoutPrefill({ setFirstName, setLastName, setBuyer });
+
+  async function getDeliveryRates() {
+    setError("");
+    const destination =
+      deliveryType === "gift" ? recipientAddress : buyerAddress;
+    const recipient =
+      deliveryType === "gift"
+        ? {
+            fullName: recipientName,
+            email: recipientEmail,
+            phone: recipientWhatsApp || buyer.phone,
+          }
+        : { fullName, email: buyer.email, phone: buyer.phone };
+    if (
+      !destination.line1 ||
+      !destination.city ||
+      !destination.state ||
+      !recipient.fullName ||
+      !recipient.email ||
+      !recipient.phone
+    ) {
+      setError("Complete the delivery and contact details to see live delivery rates.");
+      return;
+    }
+    setQuoting(true);
+    setShippingQuotes([]);
+    setSelectedShippingToken("");
+    try {
+      const res = await fetch("/api/shipping/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, destination, recipient }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Could not retrieve delivery rates.");
+      setShippingQuotes(data.quotes ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not retrieve delivery rates.");
+    } finally {
+      setQuoting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -125,6 +184,10 @@ export function CheckoutForm({
       setError('Confirm “Yes, I have paid” before placing your order.');
       return;
     }
+    if (!selectedShippingToken) {
+      setError("Select a live delivery service before placing your order.");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -137,6 +200,7 @@ export function CheckoutForm({
           items,
           subtotal: pricing.productSubtotal,
           pricing: toPricingPayload(pricing),
+          shippingQuoteToken: selectedShippingToken,
           buyer: { fullName, email: buyer.email, phone: buyer.phone },
           buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
           paymentConfirmed: true,
@@ -640,7 +704,61 @@ export function CheckoutForm({
             </div>
           </CheckoutStep>
 
-          <CheckoutStep step={2} title="Payment">
+          <CheckoutStep step={2} title="Delivery service">
+            <div className="space-y-3">
+              <p className="text-[13px] leading-relaxed text-kay-muted">
+                Delivery is dispatched from the Kay hub after quality checks.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={getDeliveryRates}
+                disabled={quoting}
+              >
+                {quoting ? "Finding delivery services…" : "Get live delivery rates"}
+              </Button>
+              {shippingQuotes.length > 0 && (
+                <div className="space-y-2">
+                  {shippingQuotes.map((quote) => (
+                    <label
+                      key={quote.token}
+                      className={`flex cursor-pointer items-center justify-between gap-4 rounded-lg border p-3.5 transition-colors ${
+                        selectedShippingToken === quote.token
+                          ? "border-kay-gold bg-kay-gold-light/40"
+                          : "border-kay-border hover:border-kay-gold/40"
+                      }`}
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <input
+                          type="radio"
+                          name="shipping-rate"
+                          value={quote.token}
+                          checked={selectedShippingToken === quote.token}
+                          onChange={() => setSelectedShippingToken(quote.token)}
+                        />
+                        <span>
+                          <span className="block text-[13px] font-medium text-kay-fg">
+                            {quote.carrierName}
+                            {quote.serviceName ? ` · ${quote.serviceName}` : ""}
+                          </span>
+                          {quote.deliveryEta && (
+                            <span className="mt-0.5 block text-[11px] text-kay-muted">
+                              {quote.deliveryEta}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[13px] font-semibold text-kay-fg">
+                        {formatNaira(quote.amount)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CheckoutStep>
+
+          <CheckoutStep step={3} title="Payment">
             <ManualPaymentConfirm
               confirmed={paidConfirmed}
               onChange={setPaidConfirmed}
@@ -686,7 +804,11 @@ export function CheckoutForm({
         </div>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <OrderSummary items={items} isPrivateCheckout={isPrivateCheckout} />
+          <OrderSummary
+            items={items}
+            isPrivateCheckout={isPrivateCheckout}
+            pricing={pricing}
+          />
         </div>
       </div>
     </form>

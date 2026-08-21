@@ -16,6 +16,10 @@ import { getSupabaseConfig } from "@/lib/supabase/env";
 import { FALLBACK_PRODUCTS } from "@/lib/data/products-fallback";
 import { isAfterDarkCatalogProduct } from "@/lib/after-dark/catalog";
 import { findSimilarProducts } from "@/lib/ai/similarity";
+import {
+  expandSearchQuery,
+  matchesProductSearch,
+} from "@/lib/products/catalog-attributes";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -26,13 +30,7 @@ function applyFiltersLocally(
   let result = [...products];
 
   if (filters.search) {
-    const q = filters.search.toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q),
-    );
+    result = result.filter((p) => matchesProductSearch(p, filters.search!));
   }
 
   if (filters.brands?.length) {
@@ -140,10 +138,30 @@ export async function getProducts(
     let query = supabase.from("products").select("*", { count: "exact" }).eq("status", "live");
 
     if (filters.search) {
-      const q = `%${filters.search}%`;
-      query = query.or(
-        `name.ilike.${q},brand.ilike.${q},description.ilike.${q}`,
-      );
+      const terms = expandSearchQuery(filters.search);
+      // Broad OR across catalog fields + keyword array; refine with fuzzy locally
+      // when PostgREST returns a page that still needs typo tolerance.
+      const clauses = terms.flatMap((term) => {
+        const like = `%${term.replace(/[%_,]/g, "")}%`;
+        return [
+          `name.ilike.${like}`,
+          `brand.ilike.${like}`,
+          `description.ilike.${like}`,
+          `product_type.ilike.${like}`,
+          `master_category.ilike.${like}`,
+          `color.ilike.${like}`,
+          `condition.ilike.${like}`,
+          `audience.ilike.${like}`,
+        ];
+      });
+      // Prefer keyword overlap for exact synonym tokens when short enough for URL.
+      for (const term of terms.slice(0, 6)) {
+        const safe = term.replace(/[^a-z0-9-]/gi, "");
+        if (safe) clauses.push(`search_keywords.cs.{${safe}}`);
+      }
+      if (clauses.length) {
+        query = query.or(clauses.join(","));
+      }
     }
 
     if (filters.brands?.length) {
@@ -208,6 +226,24 @@ export async function getProducts(
 
     // Empty catalog is intentional after a wipe — do not resurrect seed fallbacks.
     if (!data || data.length === 0) {
+      // Soft fallback: broader fetch + local fuzzy/synonym match for typos.
+      if (filters.search) {
+        const { data: pool } = await supabase
+          .from("products")
+          .select("*")
+          .eq("status", "live")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (pool?.length) {
+          const tiers = await getMarkupTiers();
+          const marked = pool.map((row) =>
+            applyClientMarkupToProduct(mapProductRow(row), tiers),
+          );
+          const filtered = applyFiltersLocally(marked, filters);
+          const sorted = sortProducts(filtered, sort);
+          return paginateProducts(sorted, page, pageSize);
+        }
+      }
       return {
         products: [],
         total: count ?? 0,
@@ -217,12 +253,25 @@ export async function getProducts(
       };
     }
 
-    const total = count ?? data.length;
     const tiers = await getMarkupTiers();
+    let products = data.map((row) =>
+      applyClientMarkupToProduct(mapProductRow(row), tiers),
+    );
+
+    // Tighten DB-broad search with synonym + fuzzy local filter.
+    if (filters.search) {
+      products = products.filter((p) =>
+        matchesProductSearch(p, filters.search!),
+      );
+    }
+
+    const total =
+      filters.search && products.length < (count ?? products.length)
+        ? products.length
+        : (count ?? products.length);
+
     return {
-      products: data.map((row) =>
-        applyClientMarkupToProduct(mapProductRow(row), tiers),
-      ),
+      products,
       total,
       page,
       pageSize,

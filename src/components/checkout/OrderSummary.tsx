@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import type { CartItem } from "@/types/cart";
 import { calculateOrderPricing } from "@/lib/pricing/calculate";
+import type { OrderPricing } from "@/lib/pricing/calculate";
 import { formatNaira } from "@/lib/data/home";
 import { OrderPricingBreakdown } from "@/components/pricing/OrderPricingBreakdown";
 import { MovAlert } from "@/components/pricing/MovAlert";
@@ -19,14 +20,19 @@ import {
 type OrderSummaryProps = {
   items: CartItem[];
   isPrivateCheckout?: boolean;
+  pricing?: OrderPricing;
 };
 
 export function OrderSummary({
   items,
   isPrivateCheckout = false,
+  pricing: suppliedPricing,
 }: OrderSummaryProps) {
   const [promo, setPromo] = useState("");
-  const pricing = useMemo(() => calculateOrderPricing(items), [items]);
+  const pricing = useMemo(
+    () => suppliedPricing ?? calculateOrderPricing(items),
+    [items, suppliedPricing],
+  );
 
   return (
     <div>

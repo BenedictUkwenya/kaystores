@@ -10,6 +10,10 @@ import {
 import { notifyOrderEmails } from "@/lib/email/send";
 import { notifyVendorsForPaidOrder } from "@/lib/email/vendor-orders";
 import { getEmailSiteUrl } from "@/lib/site";
+import {
+  attachQuoteToOrder,
+  getSelectedQuoteAmount,
+} from "@/lib/shipping/terminal";
 import type { CreateOrderPayload } from "@/types/order";
 
 export async function POST(request: Request) {
@@ -34,7 +38,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const pricingCheck = validateOrderPricing(body.items, body.pricing);
+    if (!body.shippingQuoteToken) {
+      return NextResponse.json(
+        { error: "Select a live delivery service before placing your order." },
+        { status: 400 },
+      );
+    }
+    const deliveryFee = await getSelectedQuoteAmount(
+      body.shippingQuoteToken,
+      body.items,
+    );
+    const pricingCheck = validateOrderPricing(
+      body.items,
+      body.pricing,
+      deliveryFee,
+    );
     if (!pricingCheck.ok) {
       return NextResponse.json({ error: pricingCheck.error }, { status: 400 });
     }
@@ -106,6 +124,7 @@ export async function POST(request: Request) {
     let order;
     try {
       order = await createOrder(body, { userId });
+      await attachQuoteToOrder(order.id, body.shippingQuoteToken, body.items);
 
       const productIds = body.items.map((i) => i.productId);
       const vendorMap = await fetchProductVendorMap(productIds);

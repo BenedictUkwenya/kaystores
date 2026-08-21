@@ -1,3 +1,5 @@
+import type { AddressDetails } from "@/types/order";
+
 export type UserRole = "customer" | "vendor" | "admin";
 
 export type AccountStatus = "active" | "suspended" | "blocked";
@@ -87,6 +89,9 @@ export type Vendor = {
   inviteToken: string | null;
   approvedAt: string | null;
   createdAt: string;
+  /** Stored for a future direct-vendor shipping rollout; hub ships today. */
+  pickupAddress?: AddressDetails | null;
+  returnAddress?: AddressDetails | null;
 };
 
 export type VendorOrderItem = {

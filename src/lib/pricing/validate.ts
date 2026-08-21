@@ -5,8 +5,9 @@ import { calculateOrderPricing } from "@/lib/pricing/calculate";
 export function validateOrderPricing(
   items: CartItem[],
   payload: OrderPricingPayload,
+  deliveryFee?: number,
 ): { ok: true } | { ok: false; error: string } {
-  const computed = calculateOrderPricing(items);
+  const computed = calculateOrderPricing(items, deliveryFee);
 
   if (!computed.canCheckout) {
     return {

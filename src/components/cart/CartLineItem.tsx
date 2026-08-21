@@ -54,6 +54,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
             >
               {item.name}
             </Link>
+            {item.size && (
+              <p className="mt-0.5 text-[11px] text-kay-muted">Size {item.size}</p>
+            )}
             <button
               type="button"
               onClick={handleCompare}
@@ -64,7 +67,7 @@ export function CartLineItem({ item }: CartLineItemProps) {
           </div>
           <button
             type="button"
-            onClick={() => removeItem(item.productId)}
+            onClick={() => removeItem(item.productId, item.size)}
             aria-label={`Remove ${item.name}`}
             className="shrink-0 p-1 text-kay-subtle transition-colors hover:text-kay-fg"
           >
@@ -76,7 +79,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
           <div className="flex items-center rounded-full border border-kay-border">
             <button
               type="button"
-              onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+              onClick={() =>
+                updateQuantity(item.productId, item.quantity - 1, item.size)
+              }
               disabled={item.quantity <= 1}
               aria-label="Decrease quantity"
               className="flex h-8 w-8 items-center justify-center text-kay-muted transition-colors hover:text-kay-fg disabled:opacity-30"
@@ -88,7 +93,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
             </span>
             <button
               type="button"
-              onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+              onClick={() =>
+                updateQuantity(item.productId, item.quantity + 1, item.size)
+              }
               disabled={atMax}
               aria-label="Increase quantity"
               className="flex h-8 w-8 items-center justify-center text-kay-muted transition-colors hover:text-kay-fg disabled:opacity-30"

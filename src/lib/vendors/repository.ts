@@ -6,13 +6,14 @@ import type { Vendor, VendorOrderItem } from "@/types/dashboard";
 import { getProductSegment } from "@/lib/pricing/segment";
 import type { Product } from "@/types/product";
 import { mapProductRow } from "@/types/product";
-import type { OrderItem } from "@/types/order";
+import type { AddressDetails, OrderItem } from "@/types/order";
 import {
   formatDuplicateSlugError,
   isDuplicateSlugError,
 } from "@/lib/products/slug-availability";
 import { slugifyProductName } from "@/lib/products/slug";
 import { sanitizePlacementArrays } from "@/lib/shop/taxonomy";
+import { buildSearchKeywords } from "@/lib/products/catalog-attributes";
 import { scheduleProductEmbeddingRefresh } from "@/lib/ai/embeddings";
 import { isValidNin, normalizeNin } from "@/lib/vendor/nin";
 
@@ -195,6 +196,8 @@ export type VendorProductInput = {
   brand: string;
   price: number;
   compareAtPrice?: number | null;
+  /** Vendor payout unit price — independent of shop display/list price. */
+  vendorOriginalPrice?: number | null;
   images: string[];
   specs?: Record<string, string>;
   occasions?: string[];
@@ -205,6 +208,16 @@ export type VendorProductInput = {
   stockQuantity?: number;
   publish?: boolean;
   segment?: "gifting" | "after_dark";
+  shippingWeightKg?: number;
+  shippingLengthCm?: number;
+  shippingWidthCm?: number;
+  shippingHeightCm?: number;
+  productType?: string | null;
+  masterCategory?: string | null;
+  color?: string | null;
+  condition?: string | null;
+  audience?: string | null;
+  sizeOptions?: string[];
 };
 
 function mapProductWriteError(error: { message?: string; code?: string }, slug: string): Error {
@@ -239,6 +252,21 @@ export async function createVendorProduct(
     recipients: input.recipients,
     collections: input.collections,
   });
+  const searchKeywords = buildSearchKeywords({
+    productType: input.productType,
+    masterCategory: input.masterCategory,
+    color: input.color,
+    condition: input.condition,
+    audience: input.audience,
+    brand: input.brand,
+    name: input.name,
+    specs: input.specs,
+    sizeOptions: input.sizeOptions,
+  });
+  const vendorOriginalPrice =
+    input.vendorOriginalPrice != null && input.vendorOriginalPrice > 0
+      ? Math.floor(input.vendorOriginalPrice)
+      : Math.floor(input.price);
 
   const { data, error } = await supabase
     .from("products")
@@ -251,6 +279,7 @@ export async function createVendorProduct(
       brand: input.brand,
       price: input.price,
       compare_at_price: input.compareAtPrice ?? null,
+      vendor_original_price: vendorOriginalPrice,
       images: input.images,
       specs: input.specs ?? {},
       occasions: placement.occasions,
@@ -261,6 +290,17 @@ export async function createVendorProduct(
       stock_quantity: stockQuantity,
       status,
       segment,
+      shipping_weight_kg: input.shippingWeightKg ?? null,
+      shipping_length_cm: input.shippingLengthCm ?? null,
+      shipping_width_cm: input.shippingWidthCm ?? null,
+      shipping_height_cm: input.shippingHeightCm ?? null,
+      product_type: input.productType ?? null,
+      master_category: input.masterCategory ?? null,
+      color: input.color ?? null,
+      condition: input.condition ?? null,
+      audience: input.audience ?? null,
+      size_options: input.sizeOptions ?? [],
+      search_keywords: searchKeywords,
       ...(publish
         ? { reviewed_at: new Date().toISOString(), rejection_reason: null }
         : {}),
@@ -335,6 +375,78 @@ export async function updateVendorProduct(
     payload.in_stock = input.inStock;
   }
   if (input.segment != null) payload.segment = input.segment;
+  if (input.shippingWeightKg != null) payload.shipping_weight_kg = input.shippingWeightKg;
+  if (input.shippingLengthCm != null) payload.shipping_length_cm = input.shippingLengthCm;
+  if (input.shippingWidthCm != null) payload.shipping_width_cm = input.shippingWidthCm;
+  if (input.shippingHeightCm != null) payload.shipping_height_cm = input.shippingHeightCm;
+  if (input.vendorOriginalPrice !== undefined) {
+    payload.vendor_original_price =
+      input.vendorOriginalPrice != null && input.vendorOriginalPrice > 0
+        ? Math.floor(input.vendorOriginalPrice)
+        : input.price != null
+          ? Math.floor(input.price)
+          : null;
+  }
+  if (input.productType !== undefined) payload.product_type = input.productType;
+  if (input.masterCategory !== undefined)
+    payload.master_category = input.masterCategory;
+  if (input.color !== undefined) payload.color = input.color;
+  if (input.condition !== undefined) payload.condition = input.condition;
+  if (input.audience !== undefined) payload.audience = input.audience;
+  if (input.sizeOptions !== undefined) payload.size_options = input.sizeOptions;
+
+  const shouldRefreshKeywords =
+    input.name != null ||
+    input.brand != null ||
+    input.productType !== undefined ||
+    input.masterCategory !== undefined ||
+    input.color !== undefined ||
+    input.condition !== undefined ||
+    input.audience !== undefined ||
+    input.specs != null ||
+    input.sizeOptions !== undefined;
+
+  if (shouldRefreshKeywords) {
+    // Load current row so partial updates still rebuild a full keyword set.
+    let queryCurrent = supabase.from("products").select("*").eq("id", productId);
+    queryCurrent = vendorId
+      ? queryCurrent.eq("vendor_id", vendorId)
+      : queryCurrent.is("vendor_id", null);
+    const { data: current } = await queryCurrent.maybeSingle();
+    if (current) {
+      payload.search_keywords = buildSearchKeywords({
+        productType:
+          input.productType !== undefined
+            ? input.productType
+            : (current.product_type as string | null),
+        masterCategory:
+          input.masterCategory !== undefined
+            ? input.masterCategory
+            : (current.master_category as string | null),
+        color:
+          input.color !== undefined ? input.color : (current.color as string | null),
+        condition:
+          input.condition !== undefined
+            ? input.condition
+            : (current.condition as string | null),
+        audience:
+          input.audience !== undefined
+            ? input.audience
+            : (current.audience as string | null),
+        brand: input.brand ?? String(current.brand ?? ""),
+        name: input.name ?? String(current.name ?? ""),
+        specs:
+          input.specs ??
+          ((current.specs as Record<string, string> | null) ?? {}),
+        sizeOptions:
+          input.sizeOptions ??
+          (Array.isArray(current.size_options)
+            ? (current.size_options as string[])
+            : []),
+      });
+    }
+  }
+
   if (input.publish) {
     payload.status = "live";
     payload.rejection_reason = null;
@@ -463,7 +575,16 @@ export async function updateVendorFulfillment(
 export async function createVendorOrderItemsFromOrder(
   orderId: string,
   items: OrderItem[],
-  productVendorMap: Map<string, { vendorId: string | null; name: string; segment: string }>,
+  productVendorMap: Map<
+    string,
+    {
+      vendorId: string | null;
+      name: string;
+      segment: string;
+      vendorOriginalPrice: number | null;
+      listPrice: number;
+    }
+  >,
   options?: { paymentPaid?: boolean },
 ): Promise<void> {
   const admin = createAdminClient();
@@ -477,17 +598,25 @@ export async function createVendorOrderItemsFromOrder(
     .map((item) => {
       const meta = productVendorMap.get(item.productId);
       if (!meta?.vendorId) return null;
-      const lineTotal = item.price * item.quantity;
+      const payoutUnit =
+        meta.vendorOriginalPrice != null && meta.vendorOriginalPrice > 0
+          ? meta.vendorOriginalPrice
+          : meta.listPrice > 0
+            ? meta.listPrice
+            : item.price;
+      const vendorEarnings = payoutUnit * item.quantity;
+      const displayLine = item.price * item.quantity;
+      const sizeLabel = item.size ? ` (${item.size})` : "";
       return {
         order_id: orderId,
         vendor_id: meta.vendorId,
         product_id: item.productId,
-        product_name: item.name,
+        product_name: `${item.name}${sizeLabel}`,
         segment: item.segment === "after_dark" ? "after_dark" : "gifting",
         quantity: item.quantity,
         unit_price: item.price,
-        line_total: lineTotal,
-        vendor_earnings: lineTotal,
+        line_total: displayLine,
+        vendor_earnings: vendorEarnings,
         fulfillment_status: fulfillmentStatus,
       };
     })
@@ -498,7 +627,7 @@ export async function createVendorOrderItemsFromOrder(
   const { data: inserted, error } = await admin
     .from("vendor_order_items")
     .insert(rows)
-    .select("id, vendor_id, line_total");
+    .select("id, vendor_id, vendor_earnings");
 
   if (error) {
     console.error("[vendor_order_items]", error.message);
@@ -508,9 +637,9 @@ export async function createVendorOrderItemsFromOrder(
   const earnings = (inserted ?? []).map((row) => ({
     vendor_id: row.vendor_id,
     vendor_order_item_id: row.id,
-    gross_amount: row.line_total,
+    gross_amount: row.vendor_earnings,
     platform_fee: 0,
-    net_amount: row.line_total,
+    net_amount: row.vendor_earnings,
     status: "pending",
   }));
 
@@ -616,6 +745,8 @@ export async function updateVendorProfile(
     bankName: string;
     accountNumber: string;
     accountName: string;
+    pickupAddress: AddressDetails | null;
+    returnAddress: AddressDetails | null;
   }>,
 ): Promise<Vendor> {
   const supabase = await createClient();
@@ -629,6 +760,8 @@ export async function updateVendorProfile(
   if (update.bankName) payload.bank_name = update.bankName;
   if (update.accountNumber) payload.account_number = update.accountNumber;
   if (update.accountName) payload.account_name = update.accountName;
+  if (update.pickupAddress !== undefined) payload.pickup_address = update.pickupAddress;
+  if (update.returnAddress !== undefined) payload.return_address = update.returnAddress;
 
   const { data, error } = await supabase
     .from("vendors")
@@ -642,14 +775,34 @@ export async function updateVendorProfile(
 
 export async function fetchProductVendorMap(
   productIds: string[],
-): Promise<Map<string, { vendorId: string | null; name: string; segment: string }>> {
+): Promise<
+  Map<
+    string,
+    {
+      vendorId: string | null;
+      name: string;
+      segment: string;
+      vendorOriginalPrice: number | null;
+      listPrice: number;
+    }
+  >
+> {
   const admin = createAdminClient();
-  const map = new Map<string, { vendorId: string | null; name: string; segment: string }>();
+  const map = new Map<
+    string,
+    {
+      vendorId: string | null;
+      name: string;
+      segment: string;
+      vendorOriginalPrice: number | null;
+      listPrice: number;
+    }
+  >();
   if (!admin || productIds.length === 0) return map;
 
   const { data } = await admin
     .from("products")
-    .select("id, vendor_id, name, segment")
+    .select("id, vendor_id, name, segment, vendor_original_price, price")
     .in("id", productIds);
 
   for (const row of data ?? []) {
@@ -657,6 +810,11 @@ export async function fetchProductVendorMap(
       vendorId: row.vendor_id ? String(row.vendor_id) : null,
       name: String(row.name),
       segment: String(row.segment ?? "gifting"),
+      vendorOriginalPrice:
+        row.vendor_original_price != null
+          ? Number(row.vendor_original_price)
+          : null,
+      listPrice: Number(row.price ?? 0),
     });
   }
   return map;

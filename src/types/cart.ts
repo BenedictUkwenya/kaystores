@@ -12,6 +12,8 @@ export type CartItem = {
   vendorId?: string | null;
   /** Gifting vs After Dark — drives MOV and curation fee % */
   segment: CatalogSegment;
+  /** Selected size for footwear/clothing listings */
+  size?: string;
 };
 
 export type CartState = {

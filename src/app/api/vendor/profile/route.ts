@@ -22,6 +22,8 @@ export async function PATCH(request: Request) {
       bankName: body.bankName,
       accountNumber: body.accountNumber,
       accountName: body.accountName,
+      pickupAddress: body.pickupAddress,
+      returnAddress: body.returnAddress,
     });
     return Response.json({ vendor: updated });
   } catch (err) {

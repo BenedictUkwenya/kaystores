@@ -40,6 +40,7 @@ export type OrderItem = Pick<
   | "quantity"
   | "segment"
   | "vendorId"
+  | "size"
 >;
 
 export type OrderStatus =
@@ -97,6 +98,8 @@ export type CreateOrderPayload = {
   gift?: GiftDetails;
   /** Customer attests payment was made offline / manually. */
   paymentConfirmed?: boolean;
+  /** Server-issued Terminal rate selection, required for hub delivery. */
+  shippingQuoteToken?: string;
 };
 
 export const GIFT_NOTE_MAX_LENGTH = 200;

@@ -26,15 +26,27 @@ type CartContextValue = {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (product: Product, quantity?: number, options?: { openDrawer?: boolean }) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    options?: { openDrawer?: boolean; size?: string },
+  ) => void;
+  removeItem: (productId: string, size?: string) => void;
+  updateQuantity: (productId: string, quantity: number, size?: string) => void;
   clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function productToCartItem(product: Product, quantity: number): CartItem {
+function cartKey(productId: string, size?: string) {
+  return size ? `${productId}::${size}` : productId;
+}
+
+function productToCartItem(
+  product: Product,
+  quantity: number,
+  size?: string,
+): CartItem {
   return {
     productId: product.id,
     slug: product.slug,
@@ -46,6 +58,7 @@ function productToCartItem(product: Product, quantity: number): CartItem {
     maxStock: product.stock_quantity,
     vendorId: product.vendor_id ?? null,
     segment: getProductSegment(product),
+    ...(size ? { size } : {}),
   };
 }
 
@@ -77,39 +90,59 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const toggleCart = useCallback(() => setIsOpen((v) => !v), []);
 
   const addItem = useCallback(
-    (product: Product, quantity = 1, options?: { openDrawer?: boolean }) => {
+    (
+      product: Product,
+      quantity = 1,
+      options?: { openDrawer?: boolean; size?: string },
+    ) => {
       if (!product.in_stock || product.stock_quantity <= 0) return;
+      const sizes = product.size_options ?? [];
+      if (sizes.length > 0 && !options?.size) return;
+      const size = options?.size;
       setItems((prev) => {
-        const existing = prev.find((i) => i.productId === product.id);
+        const existing = prev.find(
+          (i) =>
+            cartKey(i.productId, i.size) === cartKey(product.id, size),
+        );
         const maxQty = product.stock_quantity;
         if (existing) {
           const nextQty = Math.min(existing.quantity + quantity, maxQty);
           if (nextQty === existing.quantity) return prev;
           return prev.map((i) =>
-            i.productId === product.id ? { ...i, quantity: nextQty } : i,
+            cartKey(i.productId, i.size) === cartKey(product.id, size)
+              ? { ...i, quantity: nextQty }
+              : i,
           );
         }
-        return [...prev, productToCartItem(product, Math.min(quantity, maxQty))];
+        return [
+          ...prev,
+          productToCartItem(product, Math.min(quantity, maxQty), size),
+        ];
       });
       if (options?.openDrawer !== false) setIsOpen(true);
     },
     [],
   );
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
-  }, []);
-
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity < 1) return;
+  const removeItem = useCallback((productId: string, size?: string) => {
     setItems((prev) =>
-      prev.map((i) => {
-        if (i.productId !== productId) return i;
-        const cap = i.maxStock ?? quantity;
-        return { ...i, quantity: Math.min(quantity, cap) };
-      }),
+      prev.filter((i) => cartKey(i.productId, i.size) !== cartKey(productId, size)),
     );
   }, []);
+
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number, size?: string) => {
+      if (quantity < 1) return;
+      setItems((prev) =>
+        prev.map((i) => {
+          if (cartKey(i.productId, i.size) !== cartKey(productId, size)) return i;
+          const cap = i.maxStock ?? quantity;
+          return { ...i, quantity: Math.min(quantity, cap) };
+        }),
+      );
+    },
+    [],
+  );
 
   const clearCart = useCallback(() => setItems([]), []);
 

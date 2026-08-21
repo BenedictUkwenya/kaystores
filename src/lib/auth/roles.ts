@@ -39,6 +39,14 @@ export function mapVendorRow(row: Record<string, unknown>): Vendor {
     inviteToken: row.invite_token != null ? String(row.invite_token) : null,
     approvedAt: row.approved_at != null ? String(row.approved_at) : null,
     createdAt: String(row.created_at),
+    pickupAddress:
+      row.pickup_address && typeof row.pickup_address === "object"
+        ? (row.pickup_address as Vendor["pickupAddress"])
+        : null,
+    returnAddress:
+      row.return_address && typeof row.return_address === "object"
+        ? (row.return_address as Vendor["returnAddress"])
+        : null,
   };
 }
 

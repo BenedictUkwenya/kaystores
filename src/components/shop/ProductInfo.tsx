@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Product } from "@/types/product";
 import { formatNaira } from "@/lib/data/home";
 import { IconSparkle } from "@/components/ui/Icons";
@@ -9,11 +10,19 @@ import {
   WishlistButton,
 } from "@/components/cart/AddToCartButton";
 import { CompareButton } from "@/components/compare/CompareButton";
+
 type ProductInfoProps = {
   product: Product;
 };
 
 export function ProductInfo({ product }: ProductInfoProps) {
+  const sizes = product.size_options ?? [];
+  const [selectedSize, setSelectedSize] = useState(
+    sizes.length === 1 ? sizes[0] : "",
+  );
+  const needsSize = sizes.length > 0;
+  const sizeReady = !needsSize || Boolean(selectedSize);
+
   const badge = product.tags.includes("bestseller")
     ? "Bestseller"
     : product.tags.includes("new")
@@ -38,6 +47,14 @@ export function ProductInfo({ product }: ProductInfoProps) {
         {product.name}
       </h1>
 
+      {(product.product_type || product.master_category) && (
+        <p className="mt-2 text-[12px] text-kay-muted">
+          {[product.master_category, product.product_type, product.color]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
+
       <div className="mt-4 flex items-baseline gap-3">
         <p className="text-[22px] font-semibold text-kay-fg">
           {formatNaira(product.price)}
@@ -53,6 +70,30 @@ export function ProductInfo({ product }: ProductInfoProps) {
       <p className="mt-5 text-[15px] leading-relaxed text-kay-muted">
         {product.description}
       </p>
+
+      {needsSize && (
+        <div className="mt-6">
+          <label
+            htmlFor="product-size"
+            className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle"
+          >
+            Size
+          </label>
+          <select
+            id="product-size"
+            value={selectedSize}
+            onChange={(e) => setSelectedSize(e.target.value)}
+            className="h-11 w-full max-w-xs rounded-lg border border-kay-border bg-kay-input-bg px-3.5 text-[13px] text-kay-fg outline-none focus:border-kay-fg"
+          >
+            <option value="">Select size</option>
+            {sizes.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {product.in_stock ? (
         <p className="mt-4 flex items-center gap-2 text-[13px] text-kay-muted">
@@ -80,13 +121,23 @@ export function ProductInfo({ product }: ProductInfoProps) {
       <div className="mt-8 flex flex-wrap gap-3">
         <AddToCartButton
           product={product}
+          size={selectedSize || undefined}
+          requireSize={needsSize}
           className="flex-1 sm:flex-none sm:min-w-[200px]"
         />
         <CompareButton product={product} />
         <WishlistButton />
       </div>
 
-      <BuyNowButton product={product} className="mt-3" />
+      <BuyNowButton
+        product={product}
+        size={selectedSize || undefined}
+        requireSize={needsSize}
+        className="mt-3"
+      />
+      {!sizeReady && product.in_stock && (
+        <p className="mt-2 text-[12px] text-kay-muted">Select a size to continue.</p>
+      )}
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">
           Free delivery on orders over ₦100,000

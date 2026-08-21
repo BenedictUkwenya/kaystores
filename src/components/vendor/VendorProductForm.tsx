@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { ProductImageUpload } from "@/components/vendor/ProductImageUpload";
 import { ProductPlacementPicker } from "@/components/vendor/ProductPlacementPicker";
 import {
+  CatalogAttributesFields,
+  type CatalogAttributeValues,
+} from "@/components/vendor/CatalogAttributesFields";
+import {
   compareAtPriceFromDiscount,
   discountPercentFromPrices,
 } from "@/lib/products/discount";
@@ -49,6 +53,9 @@ export function VendorProductForm({
   const [brand, setBrand] = useState(product?.brand ?? initialBrand ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(String(product?.price ?? ""));
+  const [vendorOriginalPrice, setVendorOriginalPrice] = useState(
+    String(product?.vendor_original_price ?? product?.price ?? ""),
+  );
   const [discountPercent, setDiscountPercent] = useState(
     String(
       discountPercentFromPrices(
@@ -60,6 +67,27 @@ export function VendorProductForm({
   const [stockQuantity, setStockQuantity] = useState(
     String(product?.stock_quantity ?? 0),
   );
+  const [shippingWeightKg, setShippingWeightKg] = useState(
+    String(product?.shipping_weight_kg ?? ""),
+  );
+  const [shippingLengthCm, setShippingLengthCm] = useState(
+    String(product?.shipping_length_cm ?? ""),
+  );
+  const [shippingWidthCm, setShippingWidthCm] = useState(
+    String(product?.shipping_width_cm ?? ""),
+  );
+  const [shippingHeightCm, setShippingHeightCm] = useState(
+    String(product?.shipping_height_cm ?? ""),
+  );
+  const [catalogAttrs, setCatalogAttrs] = useState<CatalogAttributeValues>({
+    productType: product?.product_type ?? "",
+    masterCategory: product?.master_category ?? "",
+    color: product?.color ?? "",
+    condition: product?.condition ?? "",
+    audience: product?.audience ?? "",
+    specs: product?.specs ?? {},
+    sizeOptions: product?.size_options ?? [],
+  });
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [placement, setPlacement] = useState({
     occasions: product?.occasions ?? [],
@@ -143,6 +171,32 @@ export function VendorProductForm({
       );
       return;
     }
+    const parcelValues = [
+      Number(shippingWeightKg),
+      Number(shippingLengthCm),
+      Number(shippingWidthCm),
+      Number(shippingHeightCm),
+    ];
+    if (publish && parcelValues.some((value) => !Number.isFinite(value) || value <= 0)) {
+      setError("Enter the packaged weight and dimensions before publishing.");
+      return;
+    }
+    if (
+      publish &&
+      (!catalogAttrs.masterCategory ||
+        !catalogAttrs.productType ||
+        !catalogAttrs.color ||
+        !catalogAttrs.condition ||
+        !catalogAttrs.audience)
+    ) {
+      setError("Complete searchable tags (category, type, color, condition, audience) before publishing.");
+      return;
+    }
+    const original = Number(vendorOriginalPrice);
+    if (!Number.isFinite(original) || original <= 0) {
+      setError("Enter the vendor original price used for payouts.");
+      return;
+    }
 
     if (images.length > MAX_PRODUCT_IMAGES) {
       setError(`Maximum ${MAX_PRODUCT_IMAGES} photos allowed.`);
@@ -170,12 +224,24 @@ export function VendorProductForm({
       description,
       price: salePrice,
       compareAtPrice,
+      vendorOriginalPrice: original,
       images,
       stockQuantity: qty,
       occasions: placement.occasions,
       recipients: placement.recipients,
       collections: placement.collections,
       segment: canListAfterDark ? segment : "gifting",
+      shippingWeightKg: Number(shippingWeightKg) || undefined,
+      shippingLengthCm: Number(shippingLengthCm) || undefined,
+      shippingWidthCm: Number(shippingWidthCm) || undefined,
+      shippingHeightCm: Number(shippingHeightCm) || undefined,
+      productType: catalogAttrs.productType || null,
+      masterCategory: catalogAttrs.masterCategory || null,
+      color: catalogAttrs.color || null,
+      condition: catalogAttrs.condition || null,
+      audience: catalogAttrs.audience || null,
+      specs: catalogAttrs.specs,
+      sizeOptions: catalogAttrs.sizeOptions,
       publish,
     };
 
@@ -245,6 +311,18 @@ export function VendorProductForm({
     stock: Number(stockQuantity) >= 1,
     placement: hasAnyPlacement(placement),
     price: salePrice > 0,
+    tags:
+      Boolean(catalogAttrs.masterCategory) &&
+      Boolean(catalogAttrs.productType) &&
+      Boolean(catalogAttrs.color) &&
+      Boolean(catalogAttrs.condition) &&
+      Boolean(catalogAttrs.audience),
+    original: Number(vendorOriginalPrice) > 0,
+    parcel:
+      Number(shippingWeightKg) > 0 &&
+      Number(shippingLengthCm) > 0 &&
+      Number(shippingWidthCm) > 0 &&
+      Number(shippingHeightCm) > 0,
   };
 
   return (
@@ -281,6 +359,21 @@ export function VendorProductForm({
         required
       />
 
+      <div className="border-t border-kay-border-light pt-5">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
+          Shipping parcel
+        </p>
+        <p className="mb-4 text-[12px] text-kay-muted">
+          Packaged measurements let Kay quote accurate hub-to-customer delivery.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Weight (kg)" type="number" min="0.01" step="0.01" value={shippingWeightKg} onChange={(e) => setShippingWeightKg(e.target.value)} required />
+          <Input label="Length (cm)" type="number" min="1" step="0.1" value={shippingLengthCm} onChange={(e) => setShippingLengthCm(e.target.value)} required />
+          <Input label="Width (cm)" type="number" min="1" step="0.1" value={shippingWidthCm} onChange={(e) => setShippingWidthCm(e.target.value)} required />
+          <Input label="Height (cm)" type="number" min="1" step="0.1" value={shippingHeightCm} onChange={(e) => setShippingHeightCm(e.target.value)} required />
+        </div>
+      </div>
+
       <ProductImageUpload
         vendorId={imageFolder}
         images={images}
@@ -289,14 +382,26 @@ export function VendorProductForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Input
-          label="Price (₦)"
+          label="Shop list price (₦)"
           type="number"
           min={0}
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          hint="Your list price — Kay adds markup for the customer-facing shop price"
+          hint="Base price Kay uses for customer-facing markup"
           required
         />
+        <Input
+          label="Vendor original price (₦)"
+          type="number"
+          min={0}
+          value={vendorOriginalPrice}
+          onChange={(e) => setVendorOriginalPrice(e.target.value)}
+          hint="What the vendor is owed per unit — payouts use this, not the shop price"
+          required
+        />
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
         <Input
           label="Promo discount (%)"
           type="number"
@@ -336,6 +441,8 @@ export function VendorProductForm({
         rows={4}
         required
       />
+
+      <CatalogAttributesFields value={catalogAttrs} onChange={setCatalogAttrs} />
 
       <ProductPlacementPicker
         value={placement}
@@ -439,6 +546,9 @@ export function VendorProductForm({
           <li>{publishReady.stock ? "✓" : "○"} Stock quantity set</li>
           <li>{publishReady.placement ? "✓" : "○"} Shop categories chosen</li>
           <li>{publishReady.price ? "✓" : "○"} Price set</li>
+          <li>{publishReady.original ? "✓" : "○"} Vendor original price set</li>
+          <li>{publishReady.tags ? "✓" : "○"} Searchable tags set</li>
+          <li>{publishReady.parcel ? "✓" : "○"} Parcel weight and dimensions set</li>
         </ul>
       </div>
 

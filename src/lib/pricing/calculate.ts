@@ -30,7 +30,10 @@ function segmentLineTotal(item: CartItem): number {
   return item.price * item.quantity;
 }
 
-export function calculateOrderPricing(items: CartItem[]): OrderPricing {
+export function calculateOrderPricing(
+  items: CartItem[],
+  deliveryFee?: number,
+): OrderPricing {
   const segmentTotals: Record<CatalogSegment, number> = {
     gifting: 0,
     after_dark: 0,
@@ -63,14 +66,15 @@ export function calculateOrderPricing(items: CartItem[]): OrderPricing {
   const productSubtotal = segments.reduce((s, x) => s + x.productSubtotal, 0);
   const curationFeeTotal = segments.reduce((s, x) => s + x.curationFee, 0);
 
-  const deliveryFee =
-    productSubtotal >= PRICING_CONFIG.delivery.freeProductSubtotalAbove
+  const resolvedDeliveryFee =
+    deliveryFee ??
+    (productSubtotal >= PRICING_CONFIG.delivery.freeProductSubtotalAbove
       ? 0
-      : PRICING_CONFIG.delivery.flatFee;
+      : PRICING_CONFIG.delivery.flatFee);
 
   const taxable = productSubtotal + curationFeeTotal;
   const tax = Math.round(taxable * PRICING_CONFIG.taxRate);
-  const grandTotal = taxable + deliveryFee + tax;
+  const grandTotal = taxable + resolvedDeliveryFee + tax;
 
   const movErrors = segments
     .filter((s) => !s.movMet)
@@ -83,7 +87,7 @@ export function calculateOrderPricing(items: CartItem[]): OrderPricing {
     segments,
     productSubtotal,
     curationFeeTotal,
-    deliveryFee,
+    deliveryFee: resolvedDeliveryFee,
     tax,
     grandTotal,
     movErrors,

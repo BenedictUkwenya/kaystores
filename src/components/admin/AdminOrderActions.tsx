@@ -46,6 +46,24 @@ export function AdminOrderActions({
     }
   }
 
+  async function arrangeTerminalDelivery() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/shipment`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Could not arrange delivery.");
+      }
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not arrange delivery.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-4 rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-6">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
@@ -93,6 +111,26 @@ export function AdminOrderActions({
         }
       >
             Mark payment paid
+          </Button>
+        </div>
+      )}
+
+      {paymentStatus === "paid" && !initialTracking && (
+        <div className="rounded-xl border border-kay-gold/25 bg-kay-gold-light/30 p-3">
+          <p className="text-[12px] font-medium text-kay-fg">
+            Terminal delivery
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-kay-muted">
+            Arrange the selected hub-to-customer delivery after every vendor item passes QC.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            disabled={loading}
+            className="mt-3 w-full sm:w-auto"
+            onClick={arrangeTerminalDelivery}
+          >
+            Arrange Terminal delivery
           </Button>
         </div>
       )}

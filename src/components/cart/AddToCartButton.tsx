@@ -14,6 +14,8 @@ type AddToCartButtonProps = {
   variant?: "primary" | "outline";
   className?: string;
   children?: React.ReactNode;
+  size?: string;
+  requireSize?: boolean;
 };
 
 export function AddToCartButton({
@@ -21,9 +23,12 @@ export function AddToCartButton({
   variant = "primary",
   className = "",
   children,
+  size,
+  requireSize = false,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const disabled = !product.in_stock || (requireSize && !size);
 
   const base =
     variant === "primary"
@@ -31,7 +36,8 @@ export function AddToCartButton({
       : "border-2 border-kay-fg text-kay-fg hover:bg-kay-fg hover:text-kay-accent-fg hover:-translate-y-0.5 hover:shadow-md disabled:hover:bg-transparent disabled:hover:text-kay-fg";
 
   function handleClick() {
-    addItem(product);
+    if (requireSize && !size) return;
+    addItem(product, 1, { size });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1800);
   }
@@ -39,7 +45,7 @@ export function AddToCartButton({
   return (
     <button
       type="button"
-      disabled={!product.in_stock}
+      disabled={disabled}
       onClick={handleClick}
       className={`inline-flex h-12 items-center justify-center gap-2 rounded-full px-8 text-[14px] font-medium disabled:opacity-50 ${interactive} ${base} ${added ? "ring-2 ring-kay-gold ring-offset-2" : ""} ${className}`}
     >
@@ -60,19 +66,25 @@ export function AddToCartButton({
 export function BuyNowButton({
   product,
   className = "",
+  size,
+  requireSize = false,
 }: {
   product: Product;
   className?: string;
+  size?: string;
+  requireSize?: boolean;
 }) {
   const { addItem } = useCart();
   const router = useRouter();
+  const disabled = !product.in_stock || (requireSize && !size);
 
   return (
     <button
       type="button"
-      disabled={!product.in_stock}
+      disabled={disabled}
       onClick={() => {
-        addItem(product, 1, { openDrawer: false });
+        if (requireSize && !size) return;
+        addItem(product, 1, { openDrawer: false, size });
         router.push("/checkout");
       }}
       className={`h-12 w-full rounded-full border-2 border-kay-fg text-[14px] font-medium text-kay-fg shadow-sm hover:-translate-y-0.5 hover:bg-kay-fg hover:text-kay-accent-fg hover:shadow-md disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-transparent disabled:hover:text-kay-fg disabled:hover:shadow-sm sm:w-auto sm:min-w-[200px] sm:px-8 ${interactive} ${className}`}

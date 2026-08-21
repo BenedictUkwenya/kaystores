@@ -20,6 +20,19 @@ export type Product = {
   status?: string;
   segment?: string;
   rejection_reason?: string | null;
+  shipping_weight_kg?: number | null;
+  shipping_length_cm?: number | null;
+  shipping_width_cm?: number | null;
+  shipping_height_cm?: number | null;
+  product_type?: string | null;
+  master_category?: string | null;
+  color?: string | null;
+  condition?: string | null;
+  audience?: string | null;
+  search_keywords?: string[];
+  /** Independent of display/list price — used for vendor payouts. */
+  vendor_original_price?: number | null;
+  size_options?: string[];
 };
 
 export type ProductSort =
@@ -94,5 +107,29 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     segment: row.segment != null ? String(row.segment) : undefined,
     rejection_reason:
       row.rejection_reason != null ? String(row.rejection_reason) : null,
+    shipping_weight_kg:
+      row.shipping_weight_kg != null ? Number(row.shipping_weight_kg) : null,
+    shipping_length_cm:
+      row.shipping_length_cm != null ? Number(row.shipping_length_cm) : null,
+    shipping_width_cm:
+      row.shipping_width_cm != null ? Number(row.shipping_width_cm) : null,
+    shipping_height_cm:
+      row.shipping_height_cm != null ? Number(row.shipping_height_cm) : null,
+    product_type: row.product_type != null ? String(row.product_type) : null,
+    master_category:
+      row.master_category != null ? String(row.master_category) : null,
+    color: row.color != null ? String(row.color) : null,
+    condition: row.condition != null ? String(row.condition) : null,
+    audience: row.audience != null ? String(row.audience) : null,
+    search_keywords: Array.isArray(row.search_keywords)
+      ? (row.search_keywords as string[])
+      : [],
+    vendor_original_price:
+      row.vendor_original_price != null
+        ? Number(row.vendor_original_price)
+        : null,
+    size_options: Array.isArray(row.size_options)
+      ? (row.size_options as string[])
+      : [],
   };
 }
