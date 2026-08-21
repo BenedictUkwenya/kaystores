@@ -54,7 +54,13 @@ export function CartLineItem({ item }: CartLineItemProps) {
             >
               {item.name}
             </Link>
-            {item.size && (
+            {item.variationOptionLabel && (
+              <p className="mt-0.5 text-[11px] text-kay-muted">
+                {item.variationLabel ? `${item.variationLabel}: ` : "Size "}
+                {item.variationOptionLabel}
+              </p>
+            )}
+            {!item.variationOptionLabel && item.size && (
               <p className="mt-0.5 text-[11px] text-kay-muted">Size {item.size}</p>
             )}
             <button
@@ -67,7 +73,9 @@ export function CartLineItem({ item }: CartLineItemProps) {
           </div>
           <button
             type="button"
-            onClick={() => removeItem(item.productId, item.size)}
+            onClick={() =>
+              removeItem(item.productId, item.variationOptionId ?? item.size)
+            }
             aria-label={`Remove ${item.name}`}
             className="shrink-0 p-1 text-kay-subtle transition-colors hover:text-kay-fg"
           >
@@ -80,7 +88,11 @@ export function CartLineItem({ item }: CartLineItemProps) {
             <button
               type="button"
               onClick={() =>
-                updateQuantity(item.productId, item.quantity - 1, item.size)
+                updateQuantity(
+                  item.productId,
+                  item.quantity - 1,
+                  item.variationOptionId ?? item.size,
+                )
               }
               disabled={item.quantity <= 1}
               aria-label="Decrease quantity"
@@ -94,7 +106,11 @@ export function CartLineItem({ item }: CartLineItemProps) {
             <button
               type="button"
               onClick={() =>
-                updateQuantity(item.productId, item.quantity + 1, item.size)
+                updateQuantity(
+                  item.productId,
+                  item.quantity + 1,
+                  item.variationOptionId ?? item.size,
+                )
               }
               disabled={atMax}
               aria-label="Increase quantity"

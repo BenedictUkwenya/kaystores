@@ -11,6 +11,9 @@ import {
   CatalogAttributesFields,
   type CatalogAttributeValues,
 } from "@/components/vendor/CatalogAttributesFields";
+import { ProductVariationEditor } from "@/components/vendor/ProductVariationEditor";
+import type { ProductVariation } from "@/lib/products/variations";
+import { variationTotalStock } from "@/lib/products/variations";
 import {
   compareAtPriceFromDiscount,
   discountPercentFromPrices,
@@ -86,8 +89,10 @@ export function VendorProductForm({
     condition: product?.condition ?? "",
     audience: product?.audience ?? "",
     specs: product?.specs ?? {},
-    sizeOptions: product?.size_options ?? [],
   });
+  const [variation, setVariation] = useState<ProductVariation | null>(
+    product?.variation ?? null,
+  );
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [placement, setPlacement] = useState({
     occasions: product?.occasions ?? [],
@@ -197,15 +202,36 @@ export function VendorProductForm({
       setError("Enter the vendor original price used for payouts.");
       return;
     }
+    if (variation) {
+      if (!variation.label.trim()) {
+        setError("Enter a variation name (e.g. Size or Length).");
+        return;
+      }
+      if (
+        variation.options.length === 0 ||
+        variation.options.some((o) => !o.label.trim())
+      ) {
+        setError("Add at least one variation option with a label.");
+        return;
+      }
+    }
 
     if (images.length > MAX_PRODUCT_IMAGES) {
       setError(`Maximum ${MAX_PRODUCT_IMAGES} photos allowed.`);
       return;
     }
 
-    const qty = Math.max(0, Math.floor(Number(stockQuantity) || 0));
+    const qtyFromVariation = variationTotalStock(variation);
+    const qty =
+      qtyFromVariation != null
+        ? qtyFromVariation
+        : Math.max(0, Math.floor(Number(stockQuantity) || 0));
     if (qty < 1) {
-      setError("Enter how many units you have in stock (at least 1).");
+      setError(
+        variation
+          ? "Set stock on at least one variation option (at least 1 total)."
+          : "Enter how many units you have in stock (at least 1).",
+      );
       return;
     }
 
@@ -241,7 +267,8 @@ export function VendorProductForm({
       condition: catalogAttrs.condition || null,
       audience: catalogAttrs.audience || null,
       specs: catalogAttrs.specs,
-      sizeOptions: catalogAttrs.sizeOptions,
+      sizeOptions: variation?.options.map((o) => o.label) ?? [],
+      variation,
       publish,
     };
 
@@ -424,16 +451,6 @@ export function VendorProductForm({
         </p>
       )}
 
-      <Input
-        label="Units in stock"
-        type="number"
-        min={0}
-        value={stockQuantity}
-        onChange={(e) => setStockQuantity(e.target.value)}
-        hint="Kay reduces this automatically when someone buys"
-        required
-      />
-
       <Textarea
         label="Description"
         value={description}
@@ -443,6 +460,20 @@ export function VendorProductForm({
       />
 
       <CatalogAttributesFields value={catalogAttrs} onChange={setCatalogAttrs} />
+
+      <ProductVariationEditor value={variation} onChange={setVariation} />
+
+      {!variation && (
+        <Input
+          label="Units in stock"
+          type="number"
+          min={0}
+          value={stockQuantity}
+          onChange={(e) => setStockQuantity(e.target.value)}
+          hint="Kay reduces this automatically when someone buys"
+          required
+        />
+      )}
 
       <ProductPlacementPicker
         value={placement}

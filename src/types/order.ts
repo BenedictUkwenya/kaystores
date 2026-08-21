@@ -41,6 +41,9 @@ export type OrderItem = Pick<
   | "segment"
   | "vendorId"
   | "size"
+  | "variationLabel"
+  | "variationOptionId"
+  | "variationOptionLabel"
 >;
 
 export type OrderStatus =

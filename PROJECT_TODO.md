@@ -269,7 +269,9 @@
 
 - [ ] **Terminal Africa shipping activation** — live hub-to-customer rates, post-QC dispatch, and tracking are implemented; add Terminal keys, hub contact/address, webhook secret, product parcel measurements, migrate Supabase, then verify the sandbox flow before marking complete
 
-- [ ] **Catalog attributes & discovery** — structured tags, size picker, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
+- [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
+
+- [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete
 
 - [ ] Inventory sync
 

@@ -10,18 +10,20 @@ import {
   WishlistButton,
 } from "@/components/cart/AddToCartButton";
 import { CompareButton } from "@/components/compare/CompareButton";
+import { findVariationOption } from "@/lib/products/variations";
 
 type ProductInfoProps = {
   product: Product;
 };
 
 export function ProductInfo({ product }: ProductInfoProps) {
-  const sizes = product.size_options ?? [];
-  const [selectedSize, setSelectedSize] = useState(
-    sizes.length === 1 ? sizes[0] : "",
+  const variation = product.variation ?? null;
+  const [selectedOptionId, setSelectedOptionId] = useState(
+    variation?.options.length === 1 ? variation.options[0].id : "",
   );
-  const needsSize = sizes.length > 0;
-  const sizeReady = !needsSize || Boolean(selectedSize);
+  const selected = findVariationOption(variation, selectedOptionId);
+  const needsVariation = Boolean(variation?.options.length);
+  const variationReady = !needsVariation || Boolean(selected && selected.stock > 0);
 
   const badge = product.tags.includes("bestseller")
     ? "Bestseller"
@@ -71,38 +73,53 @@ export function ProductInfo({ product }: ProductInfoProps) {
         {product.description}
       </p>
 
-      {needsSize && (
+      {needsVariation && variation && (
         <div className="mt-6">
-          <label
-            htmlFor="product-size"
-            className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle"
-          >
-            Size
-          </label>
-          <select
-            id="product-size"
-            value={selectedSize}
-            onChange={(e) => setSelectedSize(e.target.value)}
-            className="h-11 w-full max-w-xs rounded-lg border border-kay-border bg-kay-input-bg px-3.5 text-[13px] text-kay-fg outline-none focus:border-kay-fg"
-          >
-            <option value="">Select size</option>
-            {sizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-kay-subtle">
+              {variation.label || "Variations"}:
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {variation.options.map((opt) => {
+              const soldOut = opt.stock <= 0;
+              const active = selectedOptionId === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={soldOut}
+                  onClick={() => setSelectedOptionId(opt.id)}
+                  className={`relative min-w-[4.5rem] rounded-md border px-3 py-2.5 text-[13px] transition-colors ${
+                    soldOut
+                      ? "cursor-not-allowed border-kay-border text-kay-subtle"
+                      : active
+                        ? "border-kay-fg bg-kay-fg text-kay-accent-fg"
+                        : "border-kay-border text-kay-fg hover:border-kay-fg"
+                  }`}
+                >
+                  <span className={soldOut ? "line-through decoration-kay-subtle" : ""}>
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {product.in_stock ? (
         <p className="mt-4 flex items-center gap-2 text-[13px] text-kay-muted">
           <span className="h-2 w-2 rounded-full bg-green-600" />
-          {product.stock_quantity <= 5
-            ? `Only ${product.stock_quantity} left in stock`
-            : product.stock_quantity < 20
-              ? `${product.stock_quantity} in stock — order soon`
-              : "In stock and ready to ship"}
+          {selected
+            ? selected.stock <= 5
+              ? `Only ${selected.stock} left in this option`
+              : `${selected.stock} in stock for this option`
+            : product.stock_quantity <= 5
+              ? `Only ${product.stock_quantity} left in stock`
+              : product.stock_quantity < 20
+                ? `${product.stock_quantity} in stock — order soon`
+                : "In stock and ready to ship"}
         </p>
       ) : (
         <p className="mt-4 text-[13px] text-kay-subtle">Out of stock</p>
@@ -121,8 +138,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
       <div className="mt-8 flex flex-wrap gap-3">
         <AddToCartButton
           product={product}
-          size={selectedSize || undefined}
-          requireSize={needsSize}
+          variationOptionId={selected?.id}
+          requireVariation={needsVariation}
           className="flex-1 sm:flex-none sm:min-w-[200px]"
         />
         <CompareButton product={product} />
@@ -131,12 +148,14 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       <BuyNowButton
         product={product}
-        size={selectedSize || undefined}
-        requireSize={needsSize}
+        variationOptionId={selected?.id}
+        requireVariation={needsVariation}
         className="mt-3"
       />
-      {!sizeReady && product.in_stock && (
-        <p className="mt-2 text-[12px] text-kay-muted">Select a size to continue.</p>
+      {needsVariation && !variationReady && product.in_stock && (
+        <p className="mt-2 text-[12px] text-kay-muted">
+          Select an available {variation?.label.toLowerCase() || "option"} to continue.
+        </p>
       )}
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">

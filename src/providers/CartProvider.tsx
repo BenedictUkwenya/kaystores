@@ -17,6 +17,7 @@ import {
   loadCart,
   saveCart,
 } from "@/lib/cart/storage";
+import { findVariationOption } from "@/lib/products/variations";
 
 type CartContextValue = {
   items: CartItem[];
@@ -29,24 +30,33 @@ type CartContextValue = {
   addItem: (
     product: Product,
     quantity?: number,
-    options?: { openDrawer?: boolean; size?: string },
+    options?: { openDrawer?: boolean; variationOptionId?: string; size?: string },
   ) => void;
-  removeItem: (productId: string, size?: string) => void;
-  updateQuantity: (productId: string, quantity: number, size?: string) => void;
+  removeItem: (productId: string, variationOptionId?: string) => void;
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    variationOptionId?: string,
+  ) => void;
   clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function cartKey(productId: string, size?: string) {
-  return size ? `${productId}::${size}` : productId;
+function cartKey(productId: string, variationOptionId?: string) {
+  return variationOptionId ? `${productId}::${variationOptionId}` : productId;
+}
+
+function lineKey(item: CartItem) {
+  return cartKey(item.productId, item.variationOptionId ?? item.size);
 }
 
 function productToCartItem(
   product: Product,
   quantity: number,
-  size?: string,
+  variationOptionId?: string,
 ): CartItem {
+  const option = findVariationOption(product.variation, variationOptionId);
   return {
     productId: product.id,
     slug: product.slug,
@@ -55,10 +65,17 @@ function productToCartItem(
     price: product.price,
     image: product.images[0] ?? "/images/kay-hero-luxury-box.png",
     quantity,
-    maxStock: product.stock_quantity,
+    maxStock: option?.stock ?? product.stock_quantity,
     vendorId: product.vendor_id ?? null,
     segment: getProductSegment(product),
-    ...(size ? { size } : {}),
+    ...(option
+      ? {
+          variationLabel: product.variation?.label,
+          variationOptionId: option.id,
+          variationOptionLabel: option.label,
+          size: option.label,
+        }
+      : {}),
   };
 }
 
@@ -93,30 +110,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     (
       product: Product,
       quantity = 1,
-      options?: { openDrawer?: boolean; size?: string },
+      options?: {
+        openDrawer?: boolean;
+        variationOptionId?: string;
+        size?: string;
+      },
     ) => {
       if (!product.in_stock || product.stock_quantity <= 0) return;
-      const sizes = product.size_options ?? [];
-      if (sizes.length > 0 && !options?.size) return;
-      const size = options?.size;
+      const variation = product.variation;
+      const optionId =
+        options?.variationOptionId ||
+        (options?.size
+          ? variation?.options.find((o) => o.label === options.size)?.id
+          : undefined);
+      if (variation?.options.length && !optionId) return;
+      const option = findVariationOption(variation, optionId);
+      if (option && option.stock <= 0) return;
+
       setItems((prev) => {
-        const existing = prev.find(
-          (i) =>
-            cartKey(i.productId, i.size) === cartKey(product.id, size),
-        );
-        const maxQty = product.stock_quantity;
+        const key = cartKey(product.id, optionId);
+        const existing = prev.find((i) => lineKey(i) === key);
+        const maxQty = option?.stock ?? product.stock_quantity;
         if (existing) {
           const nextQty = Math.min(existing.quantity + quantity, maxQty);
           if (nextQty === existing.quantity) return prev;
           return prev.map((i) =>
-            cartKey(i.productId, i.size) === cartKey(product.id, size)
-              ? { ...i, quantity: nextQty }
-              : i,
+            lineKey(i) === key ? { ...i, quantity: nextQty } : i,
           );
         }
         return [
           ...prev,
-          productToCartItem(product, Math.min(quantity, maxQty), size),
+          productToCartItem(product, Math.min(quantity, maxQty), optionId),
         ];
       });
       if (options?.openDrawer !== false) setIsOpen(true);
@@ -124,18 +148,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const removeItem = useCallback((productId: string, size?: string) => {
-    setItems((prev) =>
-      prev.filter((i) => cartKey(i.productId, i.size) !== cartKey(productId, size)),
-    );
-  }, []);
+  const removeItem = useCallback(
+    (productId: string, variationOptionId?: string) => {
+      setItems((prev) =>
+        prev.filter((i) => lineKey(i) !== cartKey(productId, variationOptionId)),
+      );
+    },
+    [],
+  );
 
   const updateQuantity = useCallback(
-    (productId: string, quantity: number, size?: string) => {
+    (productId: string, quantity: number, variationOptionId?: string) => {
       if (quantity < 1) return;
       setItems((prev) =>
         prev.map((i) => {
-          if (cartKey(i.productId, i.size) !== cartKey(productId, size)) return i;
+          if (lineKey(i) !== cartKey(productId, variationOptionId)) return i;
           const cap = i.maxStock ?? quantity;
           return { ...i, quantity: Math.min(quantity, cap) };
         }),

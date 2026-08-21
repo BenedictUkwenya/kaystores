@@ -14,8 +14,8 @@ type AddToCartButtonProps = {
   variant?: "primary" | "outline";
   className?: string;
   children?: React.ReactNode;
-  size?: string;
-  requireSize?: boolean;
+  variationOptionId?: string;
+  requireVariation?: boolean;
 };
 
 export function AddToCartButton({
@@ -23,12 +23,13 @@ export function AddToCartButton({
   variant = "primary",
   className = "",
   children,
-  size,
-  requireSize = false,
+  variationOptionId,
+  requireVariation = false,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
-  const disabled = !product.in_stock || (requireSize && !size);
+  const disabled =
+    !product.in_stock || (requireVariation && !variationOptionId);
 
   const base =
     variant === "primary"
@@ -36,8 +37,8 @@ export function AddToCartButton({
       : "border-2 border-kay-fg text-kay-fg hover:bg-kay-fg hover:text-kay-accent-fg hover:-translate-y-0.5 hover:shadow-md disabled:hover:bg-transparent disabled:hover:text-kay-fg";
 
   function handleClick() {
-    if (requireSize && !size) return;
-    addItem(product, 1, { size });
+    if (requireVariation && !variationOptionId) return;
+    addItem(product, 1, { variationOptionId });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1800);
   }
@@ -66,25 +67,26 @@ export function AddToCartButton({
 export function BuyNowButton({
   product,
   className = "",
-  size,
-  requireSize = false,
+  variationOptionId,
+  requireVariation = false,
 }: {
   product: Product;
   className?: string;
-  size?: string;
-  requireSize?: boolean;
+  variationOptionId?: string;
+  requireVariation?: boolean;
 }) {
   const { addItem } = useCart();
   const router = useRouter();
-  const disabled = !product.in_stock || (requireSize && !size);
+  const disabled =
+    !product.in_stock || (requireVariation && !variationOptionId);
 
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={() => {
-        if (requireSize && !size) return;
-        addItem(product, 1, { openDrawer: false, size });
+        if (requireVariation && !variationOptionId) return;
+        addItem(product, 1, { openDrawer: false, variationOptionId });
         router.push("/checkout");
       }}
       className={`h-12 w-full rounded-full border-2 border-kay-fg text-[14px] font-medium text-kay-fg shadow-sm hover:-translate-y-0.5 hover:bg-kay-fg hover:text-kay-accent-fg hover:shadow-md disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-transparent disabled:hover:text-kay-fg disabled:hover:shadow-sm sm:w-auto sm:min-w-[200px] sm:px-8 ${interactive} ${className}`}

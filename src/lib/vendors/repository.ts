@@ -14,6 +14,10 @@ import {
 import { slugifyProductName } from "@/lib/products/slug";
 import { sanitizePlacementArrays } from "@/lib/shop/taxonomy";
 import { buildSearchKeywords } from "@/lib/products/catalog-attributes";
+import {
+  normalizeVariation,
+  variationTotalStock,
+} from "@/lib/products/variations";
 import { scheduleProductEmbeddingRefresh } from "@/lib/ai/embeddings";
 import { isValidNin, normalizeNin } from "@/lib/vendor/nin";
 
@@ -218,6 +222,7 @@ export type VendorProductInput = {
   condition?: string | null;
   audience?: string | null;
   sizeOptions?: string[];
+  variation?: import("@/lib/products/variations").ProductVariation | null;
 };
 
 function mapProductWriteError(error: { message?: string; code?: string }, slug: string): Error {
@@ -244,7 +249,6 @@ export async function createVendorProduct(
   const supabase = db ?? (await createClient());
   const segment = deriveSegment(input);
   const stockQuantity = Math.max(0, Math.floor(input.stockQuantity ?? 0));
-  const inStock = stockQuantity > 0;
   const publish = Boolean(input.publish);
   const status = publish ? "live" : "draft";
   const placement = sanitizePlacementArrays({
@@ -261,12 +265,18 @@ export async function createVendorProduct(
     brand: input.brand,
     name: input.name,
     specs: input.specs,
-    sizeOptions: input.sizeOptions,
+    sizeOptions:
+      input.variation?.options.map((o) => o.label) ?? input.sizeOptions,
   });
   const vendorOriginalPrice =
     input.vendorOriginalPrice != null && input.vendorOriginalPrice > 0
       ? Math.floor(input.vendorOriginalPrice)
       : Math.floor(input.price);
+  const variation = normalizeVariation(input.variation);
+  const variationStock = variationTotalStock(variation);
+  const resolvedStock =
+    variationStock != null ? variationStock : stockQuantity;
+  const inStockResolved = resolvedStock > 0;
 
   const { data, error } = await supabase
     .from("products")
@@ -286,8 +296,8 @@ export async function createVendorProduct(
       recipients: placement.recipients,
       collections: placement.collections,
       tags: [],
-      in_stock: inStock,
-      stock_quantity: stockQuantity,
+      in_stock: inStockResolved,
+      stock_quantity: resolvedStock,
       status,
       segment,
       shipping_weight_kg: input.shippingWeightKg ?? null,
@@ -299,7 +309,9 @@ export async function createVendorProduct(
       color: input.color ?? null,
       condition: input.condition ?? null,
       audience: input.audience ?? null,
-      size_options: input.sizeOptions ?? [],
+      size_options:
+        variation?.options.map((o) => o.label) ?? input.sizeOptions ?? [],
+      variation,
       search_keywords: searchKeywords,
       ...(publish
         ? { reviewed_at: new Date().toISOString(), rejection_reason: null }
@@ -394,6 +406,18 @@ export async function updateVendorProduct(
   if (input.condition !== undefined) payload.condition = input.condition;
   if (input.audience !== undefined) payload.audience = input.audience;
   if (input.sizeOptions !== undefined) payload.size_options = input.sizeOptions;
+  if (input.variation !== undefined) {
+    const variation = normalizeVariation(input.variation);
+    payload.variation = variation;
+    if (variation) {
+      payload.size_options = variation.options.map((o) => o.label);
+      const total = variationTotalStock(variation) ?? 0;
+      payload.stock_quantity = total;
+      payload.in_stock = total > 0;
+    } else {
+      payload.size_options = [];
+    }
+  }
 
   const shouldRefreshKeywords =
     input.name != null ||
@@ -404,7 +428,8 @@ export async function updateVendorProduct(
     input.condition !== undefined ||
     input.audience !== undefined ||
     input.specs != null ||
-    input.sizeOptions !== undefined;
+    input.sizeOptions !== undefined ||
+    input.variation !== undefined;
 
   if (shouldRefreshKeywords) {
     // Load current row so partial updates still rebuild a full keyword set.
@@ -414,6 +439,12 @@ export async function updateVendorProduct(
       : queryCurrent.is("vendor_id", null);
     const { data: current } = await queryCurrent.maybeSingle();
     if (current) {
+      const currentVariation = normalizeVariation(
+        input.variation !== undefined ? input.variation : current.variation,
+        Array.isArray(current.size_options)
+          ? (current.size_options as string[])
+          : [],
+      );
       payload.search_keywords = buildSearchKeywords({
         productType:
           input.productType !== undefined
@@ -439,6 +470,7 @@ export async function updateVendorProduct(
           input.specs ??
           ((current.specs as Record<string, string> | null) ?? {}),
         sizeOptions:
+          currentVariation?.options.map((o) => o.label) ??
           input.sizeOptions ??
           (Array.isArray(current.size_options)
             ? (current.size_options as string[])
@@ -606,7 +638,10 @@ export async function createVendorOrderItemsFromOrder(
             : item.price;
       const vendorEarnings = payoutUnit * item.quantity;
       const displayLine = item.price * item.quantity;
-      const sizeLabel = item.size ? ` (${item.size})` : "";
+      const sizeLabel =
+        item.variationOptionLabel || item.size
+          ? ` (${item.variationOptionLabel || item.size})`
+          : "";
       return {
         order_id: orderId,
         vendor_id: meta.vendorId,

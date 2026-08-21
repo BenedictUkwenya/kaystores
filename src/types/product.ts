@@ -1,3 +1,10 @@
+import {
+  normalizeVariation,
+  variationTotalStock,
+  type ProductVariation,
+  type ProductVariationOption,
+} from "@/lib/products/variations";
+
 export type Product = {
   id: string;
   sku: string;
@@ -32,8 +39,13 @@ export type Product = {
   search_keywords?: string[];
   /** Independent of display/list price — used for vendor payouts. */
   vendor_original_price?: number | null;
+  /** @deprecated Prefer `variation` — kept for older rows. */
   size_options?: string[];
+  /** One customizable variation axis (Size / Length / Storage / …). */
+  variation?: ProductVariation | null;
 };
+
+export type { ProductVariation, ProductVariationOption };
 
 export type ProductSort =
   | "newest"
@@ -68,6 +80,20 @@ export type ProductsResult = {
 };
 
 export function mapProductRow(row: Record<string, unknown>): Product {
+  const sizeOptions = Array.isArray(row.size_options)
+    ? (row.size_options as string[])
+    : [];
+  const stockQuantity =
+    row.stock_quantity != null
+      ? Number(row.stock_quantity)
+      : Boolean(row.in_stock ?? true)
+        ? 1
+        : 0;
+  const variation = normalizeVariation(row.variation, sizeOptions, stockQuantity);
+  const variationStock = variationTotalStock(variation);
+  const effectiveStock =
+    variationStock != null ? variationStock : stockQuantity;
+
   return {
     id: String(row.id),
     sku: String(row.sku),
@@ -91,16 +117,8 @@ export function mapProductRow(row: Record<string, unknown>): Product {
       ? (row.collections as string[])
       : [],
     tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-    stock_quantity:
-      row.stock_quantity != null
-        ? Number(row.stock_quantity)
-        : Boolean(row.in_stock ?? true)
-          ? 1
-          : 0,
-    in_stock:
-      row.stock_quantity != null
-        ? Number(row.stock_quantity) > 0
-        : Boolean(row.in_stock ?? true),
+    stock_quantity: effectiveStock,
+    in_stock: effectiveStock > 0,
     created_at: String(row.created_at ?? new Date().toISOString()),
     vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
     status: row.status != null ? String(row.status) : undefined,
@@ -128,8 +146,7 @@ export function mapProductRow(row: Record<string, unknown>): Product {
       row.vendor_original_price != null
         ? Number(row.vendor_original_price)
         : null,
-    size_options: Array.isArray(row.size_options)
-      ? (row.size_options as string[])
-      : [],
+    size_options: sizeOptions,
+    variation,
   };
 }
