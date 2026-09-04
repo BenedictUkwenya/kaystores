@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "crypto";
 import type { AddressDetails, BuyerDetails, Order, OrderItem } from "@/types/order";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveShippingHub, type ShippingHub } from "@/lib/shipping/hubs";
 
 const API_URL = "https://api.terminal.africa/v1";
 
@@ -52,33 +53,23 @@ export type ShippingQuote = {
   currency: string;
   deliveryEta?: string;
   deliveryDate?: string;
+  hubId?: string;
+  hubName?: string;
 };
 
-function config() {
-  const secret = process.env.TERMINAL_AFRICA_SECRET_KEY;
-  const pickup = process.env.TERMINAL_HUB_ADDRESS_JSON;
-  const name = process.env.TERMINAL_HUB_CONTACT_NAME;
-  const email = process.env.TERMINAL_HUB_CONTACT_EMAIL;
-  const phone = process.env.TERMINAL_HUB_CONTACT_PHONE;
-  if (!secret || !pickup || !name || !email || !phone) {
+function getSecretKey(): string {
+  const secret = process.env.TERMINAL_AFRICA_SECRET_KEY?.trim();
+  if (!secret) {
     throw new Error("Shipping is not configured. Please contact Kay Stores.");
   }
-
-  let address: AddressDetails;
-  try {
-    address = JSON.parse(pickup) as AddressDetails;
-  } catch {
-    throw new Error("Terminal hub address is invalid.");
-  }
-  return { secret, address, contact: { fullName: name, email, phone } };
+  return secret;
 }
 
 async function terminalFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const { secret } = config();
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${secret}`,
+      Authorization: `Bearer ${getSecretKey()}`,
       "Content-Type": "application/json",
       ...init?.headers,
     },
@@ -91,6 +82,14 @@ async function terminalFetch<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(body?.message ?? "Could not retrieve live delivery rates.");
   }
   return body.data;
+}
+
+function hubContact(hub: ShippingHub): BuyerDetails {
+  return {
+    fullName: hub.contactName,
+    email: hub.contactEmail,
+    phone: hub.contactPhone,
+  };
 }
 
 function toTerminalAddress(address: AddressDetails, contact: BuyerDetails): TerminalAddress {
@@ -171,17 +170,24 @@ export async function quoteTerminalShipping(input: {
   destination: AddressDetails;
   recipient: BuyerDetails;
 }): Promise<ShippingQuote[]> {
-  const { address, contact } = config();
+  getSecretKey();
+  const hub = await resolveShippingHub(input.destination.state);
+  const contact = hubContact(hub);
   const parcel = await getParcel(input.items);
   const shipment = await terminalFetch<TerminalShipment>("/shipments/quick", {
     method: "POST",
     body: JSON.stringify({
-      pickup_address: toTerminalAddress(address, contact),
-      return_address: toTerminalAddress(address, contact),
+      pickup_address: toTerminalAddress(hub.address, contact),
+      return_address: toTerminalAddress(hub.address, contact),
       delivery_address: toTerminalAddress(input.destination, input.recipient),
       parcel,
       shipment_purpose: "commercial",
-      metadata: { source: "kay-stores", cart_fingerprint: cartFingerprint(input.items) },
+      metadata: {
+        source: "kay-stores",
+        cart_fingerprint: cartFingerprint(input.items),
+        hub_id: hub.id,
+        hub_name: hub.name,
+      },
     }),
   });
   const shipmentId = shipment.shipment_id ?? shipment.id;
@@ -190,6 +196,7 @@ export async function quoteTerminalShipping(input: {
   const admin = createAdminClient();
   if (!admin) throw new Error("Shipping is temporarily unavailable.");
 
+  const hubIdForDb = hub.id === "env-default" ? null : hub.id;
   const quotes: ShippingQuote[] = [];
   for (const rate of rates) {
     const rateId = rate.rate_id ?? rate.id;
@@ -205,6 +212,7 @@ export async function quoteTerminalShipping(input: {
       delivery_date: rate.delivery_date ?? null,
       destination: input.destination,
       cart_fingerprint: cartFingerprint(input.items),
+      hub_id: hubIdForDb,
     }).select("token").single();
     if (error || !data) throw new Error("Could not save delivery rate.");
     quotes.push({
@@ -215,6 +223,8 @@ export async function quoteTerminalShipping(input: {
       currency: rate.currency || "NGN",
       deliveryEta: rate.delivery_time,
       deliveryDate: rate.delivery_date,
+      hubId: hub.id,
+      hubName: hub.name,
     });
   }
   return quotes.sort((a, b) => a.amount - b.amount);
@@ -284,6 +294,7 @@ export async function arrangeTerminalShipment(order: Order) {
     label_url: extras.shipping_label ?? null,
     status: shipment.status ?? "confirmed",
     arranged_at: new Date().toISOString(),
+    hub_id: quote.hub_id ?? null,
   });
   if (insertError) throw new Error("Could not save Terminal shipment.");
   await admin.from("orders").update({

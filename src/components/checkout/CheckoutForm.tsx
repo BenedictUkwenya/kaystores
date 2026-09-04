@@ -59,6 +59,7 @@ export function CheckoutForm({
       serviceName?: string;
       amount: number;
       deliveryEta?: string;
+      hubName?: string;
     }[]
   >([]);
   const [selectedShippingToken, setSelectedShippingToken] = useState("");
@@ -673,9 +674,11 @@ export function CheckoutForm({
                             {quote.carrierName}
                             {quote.serviceName ? ` · ${quote.serviceName}` : ""}
                           </span>
-                          {quote.deliveryEta && (
+                          {(quote.deliveryEta || quote.hubName) && (
                             <span className="mt-0.5 block text-[11px] text-kay-muted">
-                              {quote.deliveryEta}
+                              {[quote.hubName ? `From ${quote.hubName}` : null, quote.deliveryEta]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </span>
                           )}
                         </span>

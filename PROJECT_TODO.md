@@ -271,7 +271,7 @@
 
 - [x] **Checkout map address picker** — OpenStreetMap pin / search / current location / paste Maps link (no Google API key)
 
-- [ ] **Terminal Africa shipping activation** — live hub-to-customer rates, post-QC dispatch, and tracking are implemented; add Terminal keys, hub contact/address, webhook secret, product parcel measurements, migrate Supabase, then verify the sandbox flow before marking complete
+- [ ] **Terminal Africa multi-hub shipping** — Admin → Hubs + state routing + seed hubs (Kay Hub 1 Abuja / Kay Hub 2 Minna) implemented; run migrations `030` + `031`, keep `TERMINAL_AFRICA_SECRET_KEY` on Vercel, then mark complete
 
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
