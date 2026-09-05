@@ -5,6 +5,7 @@ import type { AddressDetails, BuyerDetails, Order, OrderItem } from "@/types/ord
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveShippingHub, type ShippingHub } from "@/lib/shipping/hubs";
 import { getShippingSettings } from "@/lib/shipping/settings";
+import { resolveTerminalCity } from "@/lib/shipping/terminal-cities";
 import {
   MANUAL_RATE_ID,
   MANUAL_SHIPMENT_ID,
@@ -60,6 +61,8 @@ export type ShippingQuote = {
   deliveryDate?: string;
   hubId?: string;
   hubName?: string;
+  /** manual = Kay delivery; terminal = live carrier */
+  kind?: "manual" | "terminal";
 };
 
 function getSecretKey(): string {
@@ -157,9 +160,14 @@ function toTerminalPhone(phone: string, countryCode: string): string {
   return phone.trim();
 }
 
-function toTerminalAddress(address: AddressDetails, contact: BuyerDetails): TerminalAddress {
+function toTerminalAddress(
+  address: AddressDetails,
+  contact: BuyerDetails,
+  cityOverride?: string,
+): TerminalAddress {
   const [firstName, ...rest] = contact.fullName.trim().split(/\s+/);
   const country = toTerminalCountry(address.country || "Nigeria");
+  const state = toTerminalState(address.state, country);
   return {
     name: contact.fullName,
     first_name: firstName || "Kay",
@@ -168,8 +176,8 @@ function toTerminalAddress(address: AddressDetails, contact: BuyerDetails): Term
     phone: toTerminalPhone(contact.phone, country),
     line1: address.line1,
     ...(address.line2 ? { line2: address.line2 } : {}),
-    city: address.city,
-    state: toTerminalState(address.state, country),
+    city: cityOverride?.trim() || address.city,
+    state,
     ...(address.postalCode ? { zip: address.postalCode } : {}),
     country,
     is_residential: true,
@@ -270,6 +278,7 @@ export async function createManualShippingQuote(input: {
     currency: "NGN",
     deliveryEta: settings.manualEta ?? undefined,
     hubName: "Kay",
+    kind: "manual",
   };
 }
 
@@ -295,13 +304,32 @@ export async function quoteTerminalShipping(input: {
   getSecretKey();
   const hub = await resolveShippingHub(input.destination.state);
   const contact = hubContact(hub);
+  const country = toTerminalCountry(input.destination.country || "Nigeria");
+  const state = toTerminalState(input.destination.state, country);
+  const [cityResolved, pickupCity] = await Promise.all([
+    resolveTerminalCity({
+      state,
+      city: input.destination.city,
+      countryCode: country,
+    }),
+    resolveTerminalCity({
+      state: toTerminalState(hub.address.state, "NG"),
+      city: hub.address.city,
+      countryCode: "NG",
+    }),
+  ]);
   const parcel = await getParcel(input.items);
+  const pickup = toTerminalAddress(hub.address, contact, pickupCity.city);
   const shipment = await terminalFetch<TerminalShipment>("/shipments/quick", {
     method: "POST",
     body: JSON.stringify({
-      pickup_address: toTerminalAddress(hub.address, contact),
-      return_address: toTerminalAddress(hub.address, contact),
-      delivery_address: toTerminalAddress(input.destination, input.recipient),
+      pickup_address: pickup,
+      return_address: pickup,
+      delivery_address: toTerminalAddress(
+        input.destination,
+        input.recipient,
+        cityResolved.city,
+      ),
       parcel,
       shipment_purpose: "commercial",
       metadata: {
@@ -309,6 +337,8 @@ export async function quoteTerminalShipping(input: {
         cart_fingerprint: cartFingerprint(input.items),
         hub_id: hub.id,
         hub_name: hub.name,
+        original_city: cityResolved.originalCity,
+        terminal_city: cityResolved.city,
       },
     }),
   });
@@ -347,6 +377,7 @@ export async function quoteTerminalShipping(input: {
       deliveryDate: rate.delivery_date,
       hubId: hub.id,
       hubName: hub.name,
+      kind: "terminal",
     });
   }
   return quotes.sort((a, b) => a.amount - b.amount);

@@ -60,10 +60,14 @@ export function CheckoutForm({
       amount: number;
       deliveryEta?: string;
       hubName?: string;
+      kind?: "manual" | "terminal";
     }[]
   >([]);
   const [selectedShippingToken, setSelectedShippingToken] = useState("");
   const [quoting, setQuoting] = useState(false);
+  const [quotingMode, setQuotingMode] = useState<
+    "manual" | "terminal" | "all" | null
+  >(null);
   const [terminalEnabled, setTerminalEnabled] = useState(true);
   const [manualEnabled, setManualEnabled] = useState(true);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
@@ -143,6 +147,7 @@ export function CheckoutForm({
       return;
     }
     setQuoting(true);
+    setQuotingMode(mode);
     setShippingQuotes([]);
     setSelectedShippingToken("");
     try {
@@ -166,6 +171,7 @@ export function CheckoutForm({
       setError(err instanceof Error ? err.message : "Could not retrieve delivery rates.");
     } finally {
       setQuoting(false);
+      setQuotingMode(null);
     }
   }
 
@@ -665,90 +671,166 @@ export function CheckoutForm({
           </CheckoutStep>
 
           <CheckoutStep step={2} title="Delivery service">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-[13px] leading-relaxed text-kay-muted">
-                Delivery is dispatched from the Kay hub after quality checks.
+                Choose how your order leaves the Kay hub after quality checks.
               </p>
-              <div className="flex flex-wrap gap-2">
+
+              <div className="grid gap-3 sm:grid-cols-2">
                 {manualEnabled && (
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
-                    onClick={() => getDeliveryRates("manual")}
                     disabled={quoting}
+                    onClick={() => getDeliveryRates("manual")}
+                    className={`rounded-xl border p-4 text-left transition-all disabled:opacity-60 ${
+                      shippingQuotes.some((q) => q.kind === "manual") &&
+                      selectedShippingToken &&
+                      shippingQuotes.find((q) => q.token === selectedShippingToken)
+                        ?.kind === "manual"
+                        ? "border-kay-gold bg-kay-gold-light/30"
+                        : "border-kay-border hover:border-kay-gold/50"
+                    }`}
                   >
-                    {quoting ? "Loading…" : "Use Kay delivery"}
-                  </Button>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-kay-gold">
+                      Kay delivery
+                    </p>
+                    <p className="mt-1 text-[14px] font-medium text-kay-fg">
+                      Manual / Kay-arranged
+                    </p>
+                    <p className="mt-1 text-[12px] text-kay-muted">
+                      Kay handles the last mile — no live courier quote needed.
+                    </p>
+                  </button>
                 )}
                 {terminalEnabled && (
-                  <Button
+                  <button
                     type="button"
-                    variant="outline"
+                    disabled={quoting}
                     onClick={() => getDeliveryRates("terminal")}
-                    disabled={quoting}
+                    className={`rounded-xl border p-4 text-left transition-all disabled:opacity-60 ${
+                      shippingQuotes.some((q) => q.kind === "terminal") &&
+                      selectedShippingToken &&
+                      shippingQuotes.find((q) => q.token === selectedShippingToken)
+                        ?.kind === "terminal"
+                        ? "border-kay-gold bg-kay-gold-light/30"
+                        : "border-kay-border hover:border-kay-gold/50"
+                    }`}
                   >
-                    {quoting ? "Finding carriers…" : "Get live carrier rates"}
-                  </Button>
-                )}
-                {manualEnabled && terminalEnabled && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => getDeliveryRates("all")}
-                    disabled={quoting}
-                  >
-                    Show all options
-                  </Button>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
+                      Terminal Africa
+                    </p>
+                    <p className="mt-1 text-[14px] font-medium text-kay-fg">
+                      Live carrier rates
+                    </p>
+                    <p className="mt-1 text-[12px] text-kay-muted">
+                      Compare courier prices to your address (GIG, DHL, etc.).
+                    </p>
+                  </button>
                 )}
               </div>
+
+              {manualEnabled && terminalEnabled && (
+                <button
+                  type="button"
+                  disabled={quoting}
+                  onClick={() => getDeliveryRates("all")}
+                  className="text-[12px] font-medium text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline disabled:opacity-50"
+                >
+                  Compare Kay delivery and carrier rates
+                </button>
+              )}
+
+              {quoting && (
+                <div className="flex items-center gap-3 rounded-xl border border-kay-border-light bg-kay-surface/60 px-4 py-3">
+                  <span
+                    className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-kay-gold border-t-transparent"
+                    aria-hidden
+                  />
+                  <div>
+                    <p className="text-[13px] font-medium text-kay-fg">
+                      {quotingMode === "manual"
+                        ? "Loading Kay delivery…"
+                        : quotingMode === "terminal"
+                          ? "Finding live carrier rates…"
+                          : "Loading delivery options…"}
+                    </p>
+                    <p className="text-[11px] text-kay-muted">
+                      This can take a few seconds.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {!manualEnabled && !terminalEnabled && (
                 <p className="text-[13px] text-amber-800">
                   Delivery options are temporarily unavailable. Please contact Kay.
                 </p>
               )}
-              {shippingQuotes.length > 0 && (
+
+              {!quoting && shippingQuotes.length > 0 && (
                 <div className="space-y-2">
-                  {shippingQuotes.map((quote) => (
-                    <label
-                      key={quote.token}
-                      className={`flex cursor-pointer items-center justify-between gap-4 rounded-lg border p-3.5 transition-colors ${
-                        selectedShippingToken === quote.token
-                          ? "border-kay-gold bg-kay-gold-light/40"
-                          : "border-kay-border hover:border-kay-gold/40"
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center gap-3">
-                        <input
-                          type="radio"
-                          name="shipping-rate"
-                          value={quote.token}
-                          checked={selectedShippingToken === quote.token}
-                          onChange={() => setSelectedShippingToken(quote.token)}
-                        />
-                        <span>
-                          <span className="block text-[13px] font-medium text-kay-fg">
-                            {quote.carrierName}
-                            {quote.serviceName ? ` · ${quote.serviceName}` : ""}
-                          </span>
-                          {(quote.deliveryEta || quote.hubName) && (
-                            <span className="mt-0.5 block text-[11px] text-kay-muted">
-                              {[
-                                quote.hubName ? `From ${quote.hubName}` : null,
-                                quote.deliveryEta,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
+                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle">
+                    Select a rate
+                  </p>
+                  {shippingQuotes.map((quote) => {
+                    const isManual = quote.kind === "manual";
+                    return (
+                      <label
+                        key={quote.token}
+                        className={`flex cursor-pointer items-center justify-between gap-4 rounded-lg border p-3.5 transition-colors ${
+                          selectedShippingToken === quote.token
+                            ? "border-kay-gold bg-kay-gold-light/40"
+                            : "border-kay-border hover:border-kay-gold/40"
+                        }`}
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <input
+                            type="radio"
+                            name="shipping-rate"
+                            value={quote.token}
+                            checked={selectedShippingToken === quote.token}
+                            onChange={() => setSelectedShippingToken(quote.token)}
+                          />
+                          <span>
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                  isManual
+                                    ? "bg-kay-gold-light/60 text-kay-fg"
+                                    : "bg-sky-100 text-sky-800"
+                                }`}
+                              >
+                                {isManual ? "Kay" : "Carrier"}
+                              </span>
+                              <span className="text-[13px] font-medium text-kay-fg">
+                                {quote.carrierName}
+                                {quote.serviceName ? ` · ${quote.serviceName}` : ""}
+                              </span>
                             </span>
-                          )}
+                            {(quote.deliveryEta || quote.hubName) && (
+                              <span className="mt-0.5 block text-[11px] text-kay-muted">
+                                {[
+                                  quote.hubName
+                                    ? isManual
+                                      ? null
+                                      : `From ${quote.hubName}`
+                                    : null,
+                                  quote.deliveryEta,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            )}
+                          </span>
                         </span>
-                      </span>
-                      <span className="shrink-0 text-[13px] font-semibold text-kay-fg">
-                        {quote.amount === 0
-                          ? "Complimentary"
-                          : formatNaira(quote.amount)}
-                      </span>
-                    </label>
-                  ))}
+                        <span className="shrink-0 text-[13px] font-semibold text-kay-fg">
+                          {quote.amount === 0
+                            ? "Complimentary"
+                            : formatNaira(quote.amount)}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>
