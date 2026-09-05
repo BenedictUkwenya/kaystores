@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-08-21
+**Last updated:** 2026-09-05
 
 ---
 
@@ -137,7 +137,7 @@
 
 - [x] Order confirmation / thank-you page
 
-- [x] **MOV + curation fees** — Gifting ₦50k / 30%, After Dark ₦20k / 40%, delivery + tax; cart, checkout, API validation
+- [x] **MOV + pricing** — Gifting ₦50k / After Dark ₦20k MOV; delivery from live quote + tax; curation fee retired (list price is product price)
 
 
 
@@ -335,7 +335,7 @@
 
 | Privacy / John Doe (After Dark) | Partial | 18+ gate, `/after-dark`; encrypted aliases TBD |
 
-| MOV + curation fees | Done | Enforced at cart & checkout; server-validated |
+| MOV + pricing | Done | MOV enforced; curation fee off; delivery quote + tax |
 
 | 72hr delivery / 3-point vetting | Content | Policy pages live; ops not automated |
 

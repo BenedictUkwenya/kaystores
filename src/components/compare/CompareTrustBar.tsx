@@ -3,8 +3,8 @@ import { IconPackage, IconShield, IconTruck } from "@/components/ui/Icons";
 const TRUST_ITEMS = [
   {
     icon: IconTruck,
-    title: "Complimentary delivery",
-    description: "On orders over ₦100,000",
+    title: "Tracked delivery",
+    description: "Live courier rates at checkout",
   },
   {
     icon: IconShield,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createOrder } from "@/lib/orders/store";
 import { validateOrderPricing } from "@/lib/pricing/validate";
+import { isTestCheckoutMode } from "@/lib/pricing/config";
 import { reserveStockForOrder, restoreStockForOrder } from "@/lib/products/stock";
 import {
   createVendorOrderItemsFromOrder,
@@ -46,10 +47,11 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const deliveryFee = await getSelectedQuoteAmount(
+    const quoteDeliveryFee = await getSelectedQuoteAmount(
       body.shippingQuoteToken,
       body.items,
     );
+    const deliveryFee = isTestCheckoutMode() ? 0 : quoteDeliveryFee;
     const pricingCheck = validateOrderPricing(
       body.items,
       body.pricing,

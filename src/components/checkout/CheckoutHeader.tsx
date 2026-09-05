@@ -18,7 +18,7 @@ export function CheckoutHeader() {
         Checkout
       </h1>
 
-      <p className="mt-2 flex items-center gap-2 text-[13px] text-emerald-700">
+      <p className="checkout-secure-note mt-2 flex items-center gap-2 text-[13px]">
         <IconLock className="h-3.5 w-3.5 shrink-0" />
         Your transaction is protected with end-to-end encryption
       </p>

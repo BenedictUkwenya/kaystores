@@ -70,11 +70,16 @@ export function nominatimToAddress(
   fallback: AddressDetails,
 ): AddressDetails {
   const a = result.address ?? {};
+  const street = [a.house_number, a.road || a.pedestrian]
+    .filter(Boolean)
+    .join(" ");
+  const area =
+    a.neighbourhood || a.suburb || a.village || a.town || a.city_district;
+  // Prefer a usable street/area line; fall back to the first part of the full label.
   const line1 =
-    [a.house_number, a.road || a.pedestrian].filter(Boolean).join(" ") ||
-    a.neighbourhood ||
-    a.suburb ||
-    result.display_name.split(",")[0]?.trim() ||
+    street ||
+    area ||
+    result.display_name.split(",").slice(0, 2).join(",").trim() ||
     fallback.line1;
 
   const city =

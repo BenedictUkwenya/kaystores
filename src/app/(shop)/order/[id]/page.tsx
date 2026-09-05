@@ -165,10 +165,12 @@ export default async function OrderConfirmationPage({
                   <dt>Products</dt>
                   <dd>{formatNaira(seg.productSubtotal)}</dd>
                 </div>
-                <div className="flex justify-between text-kay-muted">
-                  <dt>Curation ({Math.round(seg.curationRate * 100)}%)</dt>
-                  <dd>{formatNaira(seg.curationFee)}</dd>
-                </div>
+                {seg.curationFee > 0 && (
+                  <div className="flex justify-between text-kay-muted">
+                    <dt>Curation</dt>
+                    <dd>{formatNaira(seg.curationFee)}</dd>
+                  </div>
+                )}
               </div>
             ))}
             <div className="flex justify-between text-kay-muted">
@@ -179,10 +181,12 @@ export default async function OrderConfirmationPage({
                   : formatNaira(pricing.deliveryFee)}
               </dd>
             </div>
-            <div className="flex justify-between text-kay-muted">
-              <dt>Tax</dt>
-              <dd>{formatNaira(pricing.tax)}</dd>
-            </div>
+            {pricing.tax > 0 && (
+              <div className="flex justify-between text-kay-muted">
+                <dt>Tax</dt>
+                <dd>{formatNaira(pricing.tax)}</dd>
+              </div>
+            )}
             <div className="flex justify-between border-t border-kay-border-light pt-3 text-[16px] font-semibold text-kay-fg">
               <dt>{paid ? "Total paid" : "Total due"}</dt>
               <dd>{formatNaira(pricing.grandTotal)}</dd>

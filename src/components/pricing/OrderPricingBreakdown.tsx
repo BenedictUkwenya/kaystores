@@ -33,6 +33,8 @@ export function OrderPricingBreakdown({
       ? DISCREET_SEGMENT_LABEL
       : PRICING_CONFIG[segment].label;
 
+  const showCuration = curationFeeTotal > 0;
+
   return (
     <div className={compact ? "space-y-2 text-[12px]" : "space-y-2.5 text-[13px]"}>
       {drawer ? (
@@ -41,17 +43,12 @@ export function OrderPricingBreakdown({
             <span>Products</span>
             <span>{formatNaira(productSubtotal)}</span>
           </div>
-          <div className="flex justify-between text-kay-muted">
-            <span>
-              Curation
-              {segments.length > 1
-                ? ` (${segments.map((s) => `${Math.round(s.curationRate * 100)}%`).join(" + ")})`
-                : segments[0]
-                  ? ` (${Math.round(segments[0].curationRate * 100)}%)`
-                  : ""}
-            </span>
-            <span>{formatNaira(curationFeeTotal)}</span>
-          </div>
+          {showCuration && (
+            <div className="flex justify-between text-kay-muted">
+              <span>Curation</span>
+              <span>{formatNaira(curationFeeTotal)}</span>
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -66,28 +63,16 @@ export function OrderPricingBreakdown({
                 <span>Products</span>
                 <span>{formatNaira(seg.productSubtotal)}</span>
               </div>
-              <div className="flex justify-between text-kay-muted">
-                <span>Curation fee ({Math.round(seg.curationRate * 100)}%)</span>
-                <span>{formatNaira(seg.curationFee)}</span>
-              </div>
+              {seg.curationFee > 0 && (
+                <div className="flex justify-between text-kay-muted">
+                  <span>Curation</span>
+                  <span>{formatNaira(seg.curationFee)}</span>
+                </div>
+              )}
             </div>
           ))}
 
-          {segments.length > 1 && !compact && (
-            <>
-              <div className="border-t border-kay-border-light/60 pt-2" />
-              <div className="flex justify-between font-medium text-kay-fg">
-                <span>Products subtotal</span>
-                <span>{formatNaira(productSubtotal)}</span>
-              </div>
-              <div className="flex justify-between font-medium text-kay-fg">
-                <span>Curation total</span>
-                <span>{formatNaira(curationFeeTotal)}</span>
-              </div>
-            </>
-          )}
-
-          {segments.length > 1 && compact && !drawer && (
+          {segments.length > 1 && showCuration && (
             <>
               <div className="border-t border-kay-border-light/60 pt-2" />
               <div className="flex justify-between font-medium text-kay-fg">
@@ -111,10 +96,12 @@ export function OrderPricingBreakdown({
           <span>{formatNaira(deliveryFee)}</span>
         )}
       </div>
-      <div className="flex justify-between text-kay-muted">
-        <span>Estimated tax</span>
-        <span>{formatNaira(tax)}</span>
-      </div>
+      {tax > 0 && (
+        <div className="flex justify-between text-kay-muted">
+          <span>Tax</span>
+          <span>{formatNaira(tax)}</span>
+        </div>
+      )}
 
       <div
         className={`flex items-baseline justify-between border-t border-kay-border-light pt-3 ${
@@ -132,15 +119,6 @@ export function OrderPricingBreakdown({
           {formatNaira(grandTotal)}
         </span>
       </div>
-
-      {!compact && (
-        <p className="text-[11px] leading-relaxed text-kay-subtle">
-          Curation covers luxury packaging, hub vetting, and white-glove
-          handling. MOV: {formatNaira(PRICING_CONFIG.gifting.mov)} gifting ·{" "}
-          {formatNaira(PRICING_CONFIG.after_dark.mov)}{" "}
-          {discreet ? DISCREET_SEGMENT_LABEL : "After Dark"}.
-        </p>
-      )}
     </div>
   );
 }

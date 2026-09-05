@@ -69,7 +69,7 @@ export function PaymentMethodSelect({
               <span className="text-[15px] font-semibold text-kay-fg">
                 Bank transfer
               </span>
-              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-medium text-sky-700">
+              <span className="rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[10px] font-medium text-sky-600">
                 Paystack
               </span>
             </div>

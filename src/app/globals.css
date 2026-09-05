@@ -827,34 +827,34 @@ html[data-splash-boot="1"] body::before {
   pointer-events: none;
 }
 
-/* Checkout — cream page + light cards (readable in both themes) */
+/* Checkout — follows site theme (light or After Dark) */
 .checkout-page {
-  background-color: #f9f7f2;
-  color: #000000;
+  background-color: var(--kay-bg);
+  color: var(--kay-fg);
+}
+
+.checkout-secure-note {
+  color: #047857; /* emerald-700 */
+}
+
+[data-theme="after-dark"] .checkout-secure-note {
+  color: #34d399; /* emerald-400 */
 }
 
 /* After Dark — full private checkout (cart is After Dark only) */
 .after-dark-private-checkout {
-  background-color: #0a0a0a;
-  color: #ededed;
+  background-color: var(--kay-bg);
+  color: var(--kay-fg);
 }
 
 .after-dark-private-checkout .checkout-card {
-  --kay-fg: #ededed;
-  --kay-muted: #a3a3a3;
-  --kay-subtle: #737373;
-  --kay-border: #2a2a2a;
-  --kay-border-light: #1f1f1f;
-  --kay-input-bg: #141414;
-  --kay-surface: #111111;
-  --kay-gold-light: #2a2418;
-  background-color: #111111;
-  color: #ededed;
-  border: 1px solid #2a2a2a;
+  background-color: var(--kay-surface-elevated);
+  color: var(--kay-fg);
+  border: 1px solid var(--kay-border);
 }
 
 .after-dark-private-checkout .checkout-step-title {
-  color: #ededed;
+  color: var(--kay-fg);
 }
 
 .after-dark-private-checkout input,
@@ -863,18 +863,20 @@ html[data-splash-boot="1"] body::before {
   color-scheme: dark;
 }
 
-
 .checkout-page .checkout-card {
-  --kay-fg: #000000;
-  --kay-muted: #5c5c5c;
-  --kay-subtle: #8a8a8a;
-  --kay-border: #e0ddd6;
-  --kay-border-light: #eceae4;
-  --kay-input-bg: #ffffff;
-  --kay-surface: #f3f0ea;
-  --kay-gold-light: #e8dfd0;
-  background-color: #ffffff;
-  color: #000000;
+  background-color: var(--kay-surface-elevated);
+  color: var(--kay-fg);
+  border: 1px solid var(--kay-border-light);
+  box-shadow: var(--kay-card-shadow);
+}
+
+[data-theme="after-dark"] .checkout-page input,
+[data-theme="after-dark"] .checkout-page textarea,
+[data-theme="after-dark"] .checkout-page select,
+.after-dark-private-checkout input,
+.after-dark-private-checkout textarea,
+.after-dark-private-checkout select {
+  color-scheme: dark;
 }
 
 /* Compare page — editorial luxury matrix */

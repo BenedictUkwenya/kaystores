@@ -41,6 +41,17 @@ export function AddressLocationPicker({
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
   const [mapReady, setMapReady] = useState(false);
+  const [locationSource, setLocationSource] = useState<
+    "gps" | "map" | "search" | "link" | null
+  >(null);
+
+  function flyMapTo(lat: number, lng: number) {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+    marker.setLatLng([lat, lng]);
+    map.flyTo([lat, lng], 16, { duration: 0.8 });
+  }
 
   useEffect(() => {
     valueRef.current = value;
@@ -100,9 +111,12 @@ export function AddressLocationPicker({
           );
           const data = await res.json();
           if (data.result) {
-            onChangeRef.current(
-              nominatimToAddress(data.result as NominatimResult, valueRef.current),
+            const next = nominatimToAddress(
+              data.result as NominatimResult,
+              valueRef.current,
             );
+            onChangeRef.current(next);
+            setLocationSource("map");
             return;
           }
         } catch {
@@ -113,6 +127,7 @@ export function AddressLocationPicker({
           lat,
           lng,
         });
+        setLocationSource("map");
       }
 
       map.on("click", (e: { latlng: { lat: number; lng: number } }) => {
@@ -146,8 +161,8 @@ export function AddressLocationPicker({
     if (!map || !marker) return;
     const current = marker.getLatLng();
     if (
-      Math.abs(current.lat - value.lat) < 1e-6 &&
-      Math.abs(current.lng - value.lng) < 1e-6
+      Math.abs(current.lat - value.lat) < 1e-5 &&
+      Math.abs(current.lng - value.lng) < 1e-5
     ) {
       return;
     }
@@ -192,11 +207,15 @@ export function AddressLocationPicker({
     onChange(next);
     setQuery(result.display_name);
     setSuggestions([]);
+    setLocationSource("search");
+    if (next.lat != null && next.lng != null) {
+      flyMapTo(next.lat, next.lng);
+    }
   }
 
   async function useMyLocation() {
     if (!navigator.geolocation) {
-      setError("Location is not available on this device.");
+      setError("Location is not available on this device/browser.");
       return;
     }
     setLocating(true);
@@ -205,27 +224,47 @@ export function AddressLocationPicker({
       async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        flyMapTo(lat, lng);
         try {
           const res = await fetch(
             `/api/maps/reverse?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}`,
           );
           const data = await res.json();
           if (data.result) {
-            onChange(nominatimToAddress(data.result as NominatimResult, value));
+            const next = nominatimToAddress(
+              data.result as NominatimResult,
+              valueRef.current,
+            );
+            onChange(next);
+            setQuery(next.formattedAddress || next.line1);
+            setLocationSource("gps");
           } else {
-            onChange({ ...value, lat, lng });
+            onChange({
+              ...valueRef.current,
+              lat,
+              lng,
+              formattedAddress: `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+            });
+            setLocationSource("gps");
           }
         } catch {
-          onChange({ ...value, lat, lng });
+          onChange({ ...valueRef.current, lat, lng });
+          setLocationSource("gps");
         } finally {
           setLocating(false);
         }
       },
-      () => {
-        setError("Could not get your location. Allow location access or drop a pin.");
+      (geoError) => {
+        const msg =
+          geoError.code === geoError.PERMISSION_DENIED
+            ? "Location permission blocked. Allow location for this site, or drop a pin on the map."
+            : geoError.code === geoError.TIMEOUT
+              ? "Location request timed out. Try again or drop a pin."
+              : "Could not get your location. Drop a pin on the map instead.";
+        setError(msg);
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 12000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   }
 
@@ -236,21 +275,32 @@ export function AddressLocationPicker({
       return;
     }
     setError("");
+    flyMapTo(coords.lat, coords.lng);
     try {
       const res = await fetch(
         `/api/maps/reverse?lat=${encodeURIComponent(String(coords.lat))}&lng=${encodeURIComponent(String(coords.lng))}`,
       );
       const data = await res.json();
       if (data.result) {
-        onChange(nominatimToAddress(data.result as NominatimResult, value));
+        const next = nominatimToAddress(
+          data.result as NominatimResult,
+          value,
+        );
+        onChange(next);
+        setQuery(next.formattedAddress || next.line1);
+        setLocationSource("link");
       } else {
         onChange({ ...value, lat: coords.lat, lng: coords.lng });
+        setLocationSource("link");
       }
       setPaste("");
     } catch {
       onChange({ ...value, lat: coords.lat, lng: coords.lng });
+      setLocationSource("link");
     }
   }
+
+  const pinSaved = value.lat != null && value.lng != null;
 
   return (
     <div className="sm:col-span-2 space-y-4">
@@ -299,7 +349,7 @@ export function AddressLocationPicker({
             disabled={locating}
             className="inline-flex h-10 items-center rounded-full border border-kay-border px-4 text-[12px] font-medium text-kay-fg hover:border-kay-fg disabled:opacity-60"
           >
-            {locating ? "Locating…" : "Use my current location"}
+            {locating ? "Getting GPS…" : "Use my current location"}
           </button>
         </div>
 
@@ -327,10 +377,24 @@ export function AddressLocationPicker({
           className="h-56 w-full overflow-hidden rounded-xl border border-kay-border bg-kay-surface sm:h-64"
           aria-label="Map to choose delivery location"
         />
-        {value.lat != null && value.lng != null && (
-          <p className="text-[11px] text-kay-subtle">
-            Pin set · {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-            {value.formattedAddress ? ` · ${value.formattedAddress}` : ""}
+        {pinSaved ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 text-[12px] text-emerald-900">
+            <p className="font-medium">
+              {locationSource === "gps"
+                ? "GPS location saved for this checkout"
+                : "Delivery pin saved for this checkout"}
+            </p>
+            <p className="mt-0.5 text-emerald-800/90">
+              {value.lat!.toFixed(5)}, {value.lng!.toFixed(5)}
+              {value.formattedAddress ? ` · ${value.formattedAddress}` : ""}
+            </p>
+            <p className="mt-1 text-[11px] text-emerald-800/80">
+              You can still edit the address fields below if the street name looks incomplete.
+            </p>
+          </div>
+        ) : (
+          <p className="text-[12px] text-kay-muted">
+            No pin yet — use GPS, search, paste a link, or tap the map.
           </p>
         )}
       </div>
@@ -343,6 +407,7 @@ export function AddressLocationPicker({
           onChange={(e) => patch({ line1: e.target.value })}
           className="sm:col-span-2"
           required={required}
+          hint="Editable — add street / estate if GPS only found the area name."
         />
         <Input
           variant="checkout"

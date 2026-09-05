@@ -1,5 +1,9 @@
 import type { CartItem } from "@/types/cart";
-import { PRICING_CONFIG, type CatalogSegment } from "@/lib/pricing/config";
+import {
+  PRICING_CONFIG,
+  isTestCheckoutMode,
+  type CatalogSegment,
+} from "@/lib/pricing/config";
 
 function naira(amount: number) {
   return `₦${amount.toLocaleString("en-NG")}`;
@@ -66,11 +70,9 @@ export function calculateOrderPricing(
   const productSubtotal = segments.reduce((s, x) => s + x.productSubtotal, 0);
   const curationFeeTotal = segments.reduce((s, x) => s + x.curationFee, 0);
 
-  const resolvedDeliveryFee =
-    deliveryFee ??
-    (productSubtotal >= PRICING_CONFIG.delivery.freeProductSubtotalAbove
-      ? 0
-      : PRICING_CONFIG.delivery.flatFee);
+  const resolvedDeliveryFee = isTestCheckoutMode()
+    ? 0
+    : (deliveryFee ?? PRICING_CONFIG.delivery.flatFee);
 
   const taxable = productSubtotal + curationFeeTotal;
   const tax = Math.round(taxable * PRICING_CONFIG.taxRate);

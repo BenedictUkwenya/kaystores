@@ -157,13 +157,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
           Select an available {variation?.label.toLowerCase() || "option"} to continue.
         </p>
       )}
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">
-          Free delivery on orders over ₦100,000
-        </div>
-        <div className="rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">
-          Kay luxury gift packaging included
-        </div>
+      <div className="mt-8 rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">
+        Kay luxury gift packaging included
       </div>
 
       <div className="mt-6 flex items-start gap-2 rounded-lg bg-kay-surface px-4 py-3">

@@ -1,9 +1,15 @@
 type Props = {
   orderNumber?: string;
   isPrivate?: boolean;
+  /** When true, copy explains redirect to Paystack (not a dead-end confirm screen). */
+  paystackRedirect?: boolean;
 };
 
-export function CheckoutProcessing({ orderNumber, isPrivate }: Props) {
+export function CheckoutProcessing({
+  orderNumber,
+  isPrivate,
+  paystackRedirect = false,
+}: Props) {
   return (
     <div
       className={`mx-auto max-w-lg py-20 text-center ${
@@ -29,17 +35,29 @@ export function CheckoutProcessing({ orderNumber, isPrivate }: Props) {
           isPrivate ? "text-ad-amber/90" : "text-kay-gold"
         }`}
       >
-        {isPrivate ? "Private processing" : "Processing"}
+        {paystackRedirect
+          ? "Secure payment"
+          : isPrivate
+            ? "Private processing"
+            : "Processing"}
       </p>
       <h2 className="mt-3 font-serif text-[32px] text-kay-fg sm:text-[36px]">
-        {isPrivate ? "Securing your private order" : "Confirming your order"}
+        {paystackRedirect
+          ? "Opening Paystack…"
+          : isPrivate
+            ? "Securing your private order"
+            : "Confirming your order"}
       </h2>
       <p className="mx-auto mt-4 max-w-sm text-[14px] leading-relaxed text-kay-muted">
-        {orderNumber
-          ? isPrivate
-            ? `Reference ${orderNumber} is being confirmed discreetly. Redirecting…`
-            : `Order ${orderNumber} is being confirmed. You'll be redirected in a moment.`
-          : "Please wait while we secure your order and prepare your confirmation."}
+        {paystackRedirect
+          ? orderNumber
+            ? `Order ${orderNumber} is ready. Taking you to Paystack to complete payment — this only takes a moment.`
+            : "Preparing your secure Paystack checkout…"
+          : orderNumber
+            ? isPrivate
+              ? `Reference ${orderNumber} is being confirmed discreetly. Redirecting…`
+              : `Order ${orderNumber} is being confirmed. You'll be redirected in a moment.`
+            : "Please wait while we secure your order and prepare your confirmation."}
       </p>
       <p className="mt-8 text-[12px] text-kay-subtle">Do not close this page.</p>
     </div>

@@ -17,6 +17,7 @@ import {
   IconArrowRight,
   IconGift,
   IconPackage,
+  IconSparkle,
   IconUpload,
 } from "@/components/ui/Icons";
 import type { DeliveryType, AddressDetails } from "@/types/order";
@@ -269,48 +270,14 @@ export function CheckoutForm({
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
       clearCart();
 
-      if (
-        deliveryType === "gift" &&
-        (addReveal || revealVideo || revealPhoto || giftNote.trim())
-      ) {
-        try {
-          const { uploadRevealFileDirect } = await import(
-            "@/lib/reveal/client-upload"
-          );
-          let videoPath: string | undefined;
-          let photoPath: string | undefined;
-          if (revealVideo) {
-            videoPath = await uploadRevealFileDirect({
-              orderId: order.id,
-              buyerEmail: buyer.email.trim().toLowerCase(),
-              file: revealVideo,
-              kind: "video",
-            });
-          }
-          if (revealPhoto) {
-            photoPath = await uploadRevealFileDirect({
-              orderId: order.id,
-              buyerEmail: buyer.email.trim().toLowerCase(),
-              file: revealPhoto,
-              kind: "photo",
-            });
-          }
-          await fetch(`/api/orders/${order.id}/reveal`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              buyerEmail: buyer.email.trim().toLowerCase(),
-              note: giftNote,
-              videoPath,
-              photoPath,
-            }),
-          });
-        } catch {
-          // Order succeeded — user can finish Reveal on the order page.
-        }
-      }
-
+      // Pay first — don't block redirect on optional Reveal media upload.
       if (paystackEnabled) {
+        if (
+          deliveryType === "gift" &&
+          (addReveal || revealVideo || revealPhoto || giftNote.trim())
+        ) {
+          void uploadRevealForOrder(order.id, buyer.email.trim().toLowerCase());
+        }
         await redirectToPaystackCheckout({
           kind: "order",
           id: order.id,
@@ -323,6 +290,11 @@ export function CheckoutForm({
         deliveryType === "gift" &&
         (addReveal || revealVideo || revealPhoto || giftNote.trim())
       ) {
+        try {
+          await uploadRevealForOrder(order.id, buyer.email.trim().toLowerCase());
+        } catch {
+          // Order succeeded — user can finish Reveal on the order page.
+        }
         router.replace(`/order/${order.id}/reveal`);
         return;
       }
@@ -334,11 +306,46 @@ export function CheckoutForm({
     }
   }
 
+  async function uploadRevealForOrder(orderId: string, buyerEmail: string) {
+    const { uploadRevealFileDirect } = await import(
+      "@/lib/reveal/client-upload"
+    );
+    let videoPath: string | undefined;
+    let photoPath: string | undefined;
+    if (revealVideo) {
+      videoPath = await uploadRevealFileDirect({
+        orderId,
+        buyerEmail,
+        file: revealVideo,
+        kind: "video",
+      });
+    }
+    if (revealPhoto) {
+      photoPath = await uploadRevealFileDirect({
+        orderId,
+        buyerEmail,
+        file: revealPhoto,
+        kind: "photo",
+      });
+    }
+    await fetch(`/api/orders/${orderId}/reveal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        buyerEmail,
+        note: giftNote,
+        videoPath,
+        photoPath,
+      }),
+    });
+  }
+
   if (placedOrder || submitting) {
     return (
       <CheckoutProcessing
         orderNumber={placedOrder?.orderNumber}
         isPrivate={isPrivateCheckout}
+        paystackRedirect={paystackEnabled}
       />
     );
   }
@@ -556,114 +563,162 @@ export function CheckoutForm({
                     />
                   </div>
 
-                  <div className="sm:col-span-2 rounded-xl border border-kay-gold/25 bg-kay-beta-bg/40 p-4">
-                    <Toggle
-                      label="Add a Kay Reveal"
-                      description="Optional video, photo, or note behind a Kay QR on the box. You can finish this after checkout too."
-                      checked={addReveal}
-                      onChange={setAddReveal}
-                    />
-                    {addReveal && (
-                      <div className="mt-4 space-y-3 border-t border-kay-border-light pt-4">
-                        <p className="text-[13px] font-medium text-kay-fg">
-                          Choose what goes behind the QR
+                  <div
+                    className={`sm:col-span-2 overflow-hidden rounded-2xl border-2 transition-colors ${
+                      addReveal
+                        ? "border-kay-gold bg-kay-gold-light/35 shadow-[0_0_0_1px_rgba(184,154,106,0.35)]"
+                        : "border-kay-gold/70 bg-gradient-to-br from-kay-gold-light/50 via-kay-surface-elevated to-kay-surface"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 border-b border-kay-gold/25 bg-kay-gold/10 px-4 py-3.5 sm:px-5">
+                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-kay-gold text-white">
+                        <IconSparkle className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
+                          Signature gift moment
                         </p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <input
-                              ref={revealVideoRef}
-                              type="file"
-                              accept="video/mp4,video/webm,video/quicktime"
-                              className="sr-only"
-                              onChange={(e) =>
-                                setRevealVideo(e.target.files?.[0] ?? null)
-                              }
-                            />
-                            <button
-                              type="button"
-                              onClick={() => revealVideoRef.current?.click()}
-                              className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
-                            >
-                              <IconUpload className="h-4 w-4 text-kay-gold" />
-                              <span className="text-[13px] font-medium text-kay-fg">
-                                {revealVideo ? "Change video" : "Select video"}
-                              </span>
-                              <span className="text-[11px] text-kay-muted">
-                                MP4, WebM, or MOV
-                              </span>
-                            </button>
-                            {revealVideo && (
-                              <div className="mt-2 flex items-center justify-between gap-2">
-                                <p className="truncate text-[12px] text-kay-muted">
-                                  {revealVideo.name}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRevealVideo(null);
-                                    if (revealVideoRef.current) {
-                                      revealVideoRef.current.value = "";
-                                    }
-                                  }}
-                                  className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <input
-                              ref={revealPhotoRef}
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp"
-                              className="sr-only"
-                              onChange={(e) =>
-                                setRevealPhoto(e.target.files?.[0] ?? null)
-                              }
-                            />
-                            <button
-                              type="button"
-                              onClick={() => revealPhotoRef.current?.click()}
-                              className="flex h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-kay-gold/50 bg-kay-surface px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-surface-elevated"
-                            >
-                              <IconUpload className="h-4 w-4 text-kay-gold" />
-                              <span className="text-[13px] font-medium text-kay-fg">
-                                {revealPhoto ? "Change photo" : "Select photo"}
-                              </span>
-                              <span className="text-[11px] text-kay-muted">
-                                PNG, JPG, or WebP
-                              </span>
-                            </button>
-                            {revealPhoto && (
-                              <div className="mt-2 flex items-center justify-between gap-2">
-                                <p className="truncate text-[12px] text-kay-muted">
-                                  {revealPhoto.name}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRevealPhoto(null);
-                                    if (revealPhotoRef.current) {
-                                      revealPhotoRef.current.value = "";
-                                    }
-                                  }}
-                                  className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-kay-subtle">
-                          Gift note above is included in the Reveal. After placing
-                          your order you can also record a video on the next
-                          screen.
+                        <h3 className="mt-1 font-serif text-[22px] leading-tight text-kay-fg sm:text-[24px]">
+                          Kay Reveal
+                        </h3>
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-kay-muted">
+                          Add a video, photo, or note. We print a{" "}
+                          <span className="font-medium text-kay-fg">
+                            Kay QR sticker
+                          </span>{" "}
+                          on the box — they scan it and your message plays.
                         </p>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+                      <Toggle
+                        bare
+                        id="add-kay-reveal"
+                        label={
+                          addReveal
+                            ? "Kay Reveal is on for this gift"
+                            : "Turn on Kay Reveal"
+                        }
+                        description={
+                          addReveal
+                            ? "Upload media below, or finish after checkout on the order page."
+                            : "Optional — but it’s the magic that makes a Kay gift unforgettable."
+                        }
+                        checked={addReveal}
+                        onChange={setAddReveal}
+                      />
+
+                      {!addReveal && (
+                        <p className="flex items-center gap-2 rounded-lg border border-dashed border-kay-gold/40 bg-kay-surface/60 px-3 py-2.5 text-[12px] text-kay-muted">
+                          <IconGift className="h-3.5 w-3.5 shrink-0 text-kay-gold" />
+                          Flip the switch to attach a personal video or photo to
+                          the QR on the box.
+                        </p>
+                      )}
+
+                      {addReveal && (
+                        <div className="space-y-3 border-t border-kay-gold/20 pt-4">
+                          <p className="text-[13px] font-medium text-kay-fg">
+                            Choose what goes behind the QR
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <input
+                                ref={revealVideoRef}
+                                type="file"
+                                accept="video/mp4,video/webm,video/quicktime"
+                                className="sr-only"
+                                onChange={(e) =>
+                                  setRevealVideo(e.target.files?.[0] ?? null)
+                                }
+                              />
+                              <button
+                                type="button"
+                                onClick={() => revealVideoRef.current?.click()}
+                                className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-kay-gold/60 bg-kay-surface-elevated px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-gold-light/30"
+                              >
+                                <IconUpload className="h-5 w-5 text-kay-gold" />
+                                <span className="text-[13px] font-semibold text-kay-fg">
+                                  {revealVideo ? "Change video" : "Add video"}
+                                </span>
+                                <span className="text-[11px] text-kay-muted">
+                                  MP4, WebM, or MOV
+                                </span>
+                              </button>
+                              {revealVideo && (
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                  <p className="truncate text-[12px] text-kay-muted">
+                                    {revealVideo.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRevealVideo(null);
+                                      if (revealVideoRef.current) {
+                                        revealVideoRef.current.value = "";
+                                      }
+                                    }}
+                                    className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <input
+                                ref={revealPhotoRef}
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="sr-only"
+                                onChange={(e) =>
+                                  setRevealPhoto(e.target.files?.[0] ?? null)
+                                }
+                              />
+                              <button
+                                type="button"
+                                onClick={() => revealPhotoRef.current?.click()}
+                                className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-kay-gold/60 bg-kay-surface-elevated px-3 text-center transition-colors hover:border-kay-gold hover:bg-kay-gold-light/30"
+                              >
+                                <IconUpload className="h-5 w-5 text-kay-gold" />
+                                <span className="text-[13px] font-semibold text-kay-fg">
+                                  {revealPhoto ? "Change photo" : "Add photo"}
+                                </span>
+                                <span className="text-[11px] text-kay-muted">
+                                  PNG, JPG, or WebP
+                                </span>
+                              </button>
+                              {revealPhoto && (
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                  <p className="truncate text-[12px] text-kay-muted">
+                                    {revealPhoto.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRevealPhoto(null);
+                                      if (revealPhotoRef.current) {
+                                        revealPhotoRef.current.value = "";
+                                      }
+                                    }}
+                                    className="shrink-0 text-[12px] text-kay-subtle underline-offset-2 hover:text-kay-fg hover:underline"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-kay-muted">
+                            Your gift note above is included in the Reveal. You
+                            can also finish or change media after checkout on
+                            the order page.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
@@ -716,7 +771,7 @@ export function CheckoutForm({
                         : "border-kay-border hover:border-kay-gold/50"
                     }`}
                   >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-500">
                       Terminal Africa
                     </p>
                     <p className="mt-1 text-[14px] font-medium text-kay-fg">
@@ -762,7 +817,7 @@ export function CheckoutForm({
               )}
 
               {!manualEnabled && !terminalEnabled && (
-                <p className="text-[13px] text-amber-800">
+                <p className="text-[13px] text-amber-600">
                   Delivery options are temporarily unavailable. Please contact Kay.
                 </p>
               )}
@@ -797,7 +852,7 @@ export function CheckoutForm({
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                                   isManual
                                     ? "bg-kay-gold-light/60 text-kay-fg"
-                                    : "bg-sky-100 text-sky-800"
+                                    : "bg-sky-500/15 text-sky-600"
                                 }`}
                               >
                                 {isManual ? "Kay" : "Carrier"}
@@ -843,10 +898,18 @@ export function CheckoutForm({
                   Pay with Paystack
                 </p>
                 <p className="mt-1 text-[13px] text-kay-muted">
-                  After you place your order you’ll be redirected to Paystack to
-                  pay {formatNaira(pricing.grandTotal)} by card, transfer, or
-                  USSD.
+                  Tap <span className="font-medium text-kay-fg">Pay with Paystack</span>{" "}
+                  below — we create your order, then open Paystack so you can pay{" "}
+                  {formatNaira(pricing.grandTotal)} by card, transfer, or USSD.
                 </p>
+                {process.env.NEXT_PUBLIC_KAY_TEST_CHECKOUT === "1" && (
+                  <p className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-700">
+                    Test checkout mode is on — MOV and fees are waived so totals stay
+                    near product price. Turn off{" "}
+                    <code className="text-[11px]">NEXT_PUBLIC_KAY_TEST_CHECKOUT</code>{" "}
+                    when you&apos;re done.
+                  </p>
+                )}
               </div>
             ) : (
               <ManualPaymentConfirm
@@ -858,7 +921,7 @@ export function CheckoutForm({
           </CheckoutStep>
 
           {error && (
-            <p className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+            <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-[13px] text-red-500">
               {error}
             </p>
           )}
@@ -880,10 +943,10 @@ export function CheckoutForm({
                 : pricing.canCheckout
                   ? isPrivateCheckout
                     ? paystackEnabled
-                      ? "Place private order & pay"
+                      ? "Pay privately with Paystack"
                       : "Place private order"
                     : paystackEnabled
-                      ? "Place order & pay"
+                      ? "Pay with Paystack"
                       : "Place order"
                   : "Minimum order not met"}
               {!submitting &&
