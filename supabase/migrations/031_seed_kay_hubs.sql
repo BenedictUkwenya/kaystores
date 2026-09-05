@@ -19,7 +19,7 @@ values
     jsonb_build_object(
       'line1', 'Behind Eco Fitness Hub, Lokogoma',
       'city', 'Abuja',
-      'state', 'FCT',
+      'state', 'Abuja',
       'country', 'Nigeria'
     ),
     'Chris Junior Attah',

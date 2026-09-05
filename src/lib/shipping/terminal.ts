@@ -99,6 +99,39 @@ function toTerminalCountry(country: string): string {
   return country.trim().toUpperCase();
 }
 
+/** Map free-text NG states to Terminal’s exact list (e.g. FCT → Abuja). */
+function toTerminalState(state: string, countryCode: string): string {
+  if (countryCode !== "NG") return state.trim();
+  const n = state
+    .trim()
+    .toLowerCase()
+    .replace(/\s+state$/, "")
+    .replace(/\s+/g, " ");
+
+  const aliases: Record<string, string> = {
+    abuja: "Abuja",
+    fct: "Abuja",
+    "abuja fct": "Abuja",
+    "federal capital territory": "Abuja",
+    "port harcourt": "Rivers",
+    portharcourt: "Rivers",
+    ph: "Rivers",
+    rivers: "Rivers",
+    "akwa ibom": "Akwa Ibom",
+    "cross river": "Cross River",
+  };
+
+  if (aliases[n]) return aliases[n];
+
+  // Title-case unknown states (Lagos, Niger, …)
+  return state
+    .trim()
+    .replace(/\s+state$/i, "")
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 /** Terminal expects E.164 for NG, e.g. +2348012345678 */
 function toTerminalPhone(phone: string, countryCode: string): string {
   const digits = phone.replace(/[^\d+]/g, "").trim();
@@ -131,7 +164,7 @@ function toTerminalAddress(address: AddressDetails, contact: BuyerDetails): Term
     line1: address.line1,
     ...(address.line2 ? { line2: address.line2 } : {}),
     city: address.city,
-    state: address.state,
+    state: toTerminalState(address.state, country),
     ...(address.postalCode ? { zip: address.postalCode } : {}),
     country,
     is_residential: true,
