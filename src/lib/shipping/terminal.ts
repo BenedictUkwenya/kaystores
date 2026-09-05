@@ -92,20 +92,48 @@ function hubContact(hub: ShippingHub): BuyerDetails {
   };
 }
 
+function toTerminalCountry(country: string): string {
+  const c = country.trim().toLowerCase();
+  if (!c || c === "nigeria" || c === "nga" || c === "ng") return "NG";
+  if (c.length === 2) return c.toUpperCase();
+  return country.trim().toUpperCase();
+}
+
+/** Terminal expects E.164 for NG, e.g. +2348012345678 */
+function toTerminalPhone(phone: string, countryCode: string): string {
+  const digits = phone.replace(/[^\d+]/g, "").trim();
+  if (!digits) return phone;
+
+  if (countryCode === "NG") {
+    let n = digits.replace(/^\+/, "");
+    if (n.startsWith("234")) {
+      return `+${n}`;
+    }
+    if (n.startsWith("0")) {
+      n = n.slice(1);
+    }
+    return `+234${n}`;
+  }
+
+  if (digits.startsWith("+")) return digits;
+  return phone.trim();
+}
+
 function toTerminalAddress(address: AddressDetails, contact: BuyerDetails): TerminalAddress {
   const [firstName, ...rest] = contact.fullName.trim().split(/\s+/);
+  const country = toTerminalCountry(address.country || "Nigeria");
   return {
     name: contact.fullName,
     first_name: firstName || "Kay",
     last_name: rest.join(" ") || firstName || "Customer",
     email: contact.email,
-    phone: contact.phone,
+    phone: toTerminalPhone(contact.phone, country),
     line1: address.line1,
     ...(address.line2 ? { line2: address.line2 } : {}),
     city: address.city,
     state: address.state,
     ...(address.postalCode ? { zip: address.postalCode } : {}),
-    country: address.country === "Nigeria" ? "NGA" : address.country,
+    country,
     is_residential: true,
   };
 }
