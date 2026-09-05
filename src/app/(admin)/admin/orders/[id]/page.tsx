@@ -52,6 +52,16 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           <p className="mt-4 text-[13px] text-kay-muted">
             {order.buyer.fullName} · {order.buyer.email} · {order.buyer.phone}
           </p>
+          {order.anonymousPackaging && (
+            <p className="mt-2 rounded-lg border border-kay-gold/40 bg-kay-gold-light/30 px-3 py-2 text-[12px] text-kay-fg">
+              Anonymous packaging — plain outer wrap, no product names outside.
+            </p>
+          )}
+          {order.gift?.anonymous && (
+            <p className="mt-2 text-[12px] text-kay-muted">
+              Gift sent anonymously (sender name hidden on recipient materials).
+            </p>
+          )}
           <ul className="mt-6 space-y-2 border-t border-kay-border-light pt-4">
             {order.items.map((item) => (
               <li key={item.productId} className="flex justify-between text-[13px]">

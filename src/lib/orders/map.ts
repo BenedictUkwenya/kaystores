@@ -22,6 +22,7 @@ export type OrderRow = {
   buyer: BuyerDetails;
   buyer_address: AddressDetails | null;
   gift: GiftDetails | null;
+  anonymous_packaging?: boolean | null;
   handover_token: string | null;
   handover_status: string;
   recipient_address: AddressDetails | null;
@@ -57,6 +58,13 @@ export function mapOrderRow(row: OrderRow): Order {
       segments: [],
     } as OrderPricingPayload);
 
+  const rawBuyer = row.buyer as BuyerDetails & {
+    anonymousPackaging?: boolean;
+  };
+  const anonymousPackaging = Boolean(
+    row.anonymous_packaging ?? rawBuyer.anonymousPackaging,
+  );
+
   return {
     id: row.id,
     orderNumber: row.order_number,
@@ -66,9 +74,14 @@ export function mapOrderRow(row: OrderRow): Order {
     items: row.items,
     subtotal: row.subtotal,
     pricing,
-    buyer: row.buyer,
+    buyer: {
+      fullName: rawBuyer.fullName,
+      email: rawBuyer.email,
+      phone: rawBuyer.phone,
+    },
     buyerAddress: row.buyer_address ?? undefined,
     gift: row.gift ?? undefined,
+    anonymousPackaging,
     handoverToken: row.handover_token ?? undefined,
     handoverStatus: row.handover_status as Order["handoverStatus"],
     recipientAddress: row.recipient_address ?? undefined,
@@ -125,12 +138,20 @@ export function buildOrderInsert(row: {
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;
+  anonymousPackaging?: boolean;
   handoverToken?: string;
   handoverStatus: Order["handoverStatus"];
   paymentStatus?: Order["paymentStatus"];
   paymentReference?: string | null;
   paidAt?: string | null;
 }) {
+  // Prefer dedicated column when migration 034 is applied; also embed in buyer
+  // jsonb so checkout works before the column exists.
+  const buyer = {
+    ...row.buyer,
+    ...(row.anonymousPackaging ? { anonymousPackaging: true } : {}),
+  };
+
   return {
     id: row.id,
     order_number: row.orderNumber,
@@ -140,7 +161,7 @@ export function buildOrderInsert(row: {
     items: row.items,
     subtotal: row.subtotal,
     pricing: row.pricing,
-    buyer: row.buyer,
+    buyer,
     buyer_address: row.buyerAddress ?? null,
     gift: row.gift ?? null,
     handover_token: row.handoverToken ?? null,

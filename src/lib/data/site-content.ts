@@ -68,7 +68,12 @@ export const FAQ_ITEMS = [
   {
     question: "Can I send a gift anonymously?",
     answer:
-      "Yes. At checkout, choose \"Sending as a Gift\" and enable the Anonymous option. Recipient-facing labels and packing slips won't include your name — only what you choose to share in your gift note.",
+      "Yes. At checkout, turn on Anonymous packaging for plain outer wrap with no product names outside — available for every order, not only After Dark. For gifts, also enable “Send anonymously” so recipient-facing labels and packing slips omit your name.",
+  },
+  {
+    question: "Can I order anonymously for myself?",
+    answer:
+      "Yes. Choose “Delivering to Myself” and enable Anonymous packaging. Your parcel ships in plain outer wrap with no product names on the outside.",
   },
   {
     question: "How long does delivery take?",

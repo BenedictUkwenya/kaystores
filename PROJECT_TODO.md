@@ -128,7 +128,8 @@
 
 - [x] Gift flow: recipient note (with character limit)
 
-- [x] Gift flow: **Anonymous** toggle (strip buyer data from labels/slips)
+- [x] Gift flow: **Anonymous sender** toggle (strip buyer name from labels/slips)
+- [x] **Anonymous packaging for everyone** — plain outer wrap option on all checkouts (self + gift, not After Dark only)
 
 - [x] Kay Reveal QR (video/photo/note, custom QR sticker, `/reveal/[token]`)
 

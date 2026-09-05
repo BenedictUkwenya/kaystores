@@ -89,6 +89,9 @@ export function CheckoutForm({
   const [recipientWhatsApp, setRecipientWhatsApp] = useState("");
   const [giftNote, setGiftNote] = useState("");
   const [anonymous, setAnonymous] = useState(false);
+  const [anonymousPackaging, setAnonymousPackaging] = useState(
+    isPrivateCheckout,
+  );
   const [recipientAddress, setRecipientAddress] = useState(emptyAddress);
   const [addReveal, setAddReveal] = useState(false);
   const [revealVideo, setRevealVideo] = useState<File | null>(null);
@@ -106,6 +109,10 @@ export function CheckoutForm({
   );
 
   useCheckoutPrefill({ setFirstName, setLastName, setBuyer });
+
+  useEffect(() => {
+    if (isPrivateCheckout) setAnonymousPackaging(true);
+  }, [isPrivateCheckout]);
 
   useEffect(() => {
     void (async () => {
@@ -245,6 +252,7 @@ export function CheckoutForm({
           buyer: { fullName, email: buyer.email, phone: buyer.phone },
           buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
           paymentConfirmed: paystackEnabled ? false : true,
+          anonymousPackaging,
           gift:
             deliveryType === "gift"
               ? {
@@ -421,10 +429,27 @@ export function CheckoutForm({
                   <p className="text-[11px] text-kay-muted">
                     {isPrivateCheckout
                       ? "Anonymous option · Discreet notification"
-                      : "Note & anonymous options"}
+                      : "Note, Reveal & anonymous options"}
                   </p>
                 </div>
               </button>
+            </div>
+
+            <div
+              className={`mb-5 rounded-xl border p-4 transition-colors ${
+                anonymousPackaging
+                  ? "border-kay-gold bg-kay-gold-light/30"
+                  : "border-kay-border bg-kay-surface/40"
+              }`}
+            >
+              <Toggle
+                bare
+                id="anonymous-packaging"
+                label="Anonymous packaging"
+                description="Plain outer wrap — no product names or brand labels on the outside. Available for every Kay order."
+                checked={anonymousPackaging}
+                onChange={setAnonymousPackaging}
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -557,7 +582,7 @@ export function CheckoutForm({
                   <div className="sm:col-span-2">
                     <Toggle
                       label="Send anonymously"
-                      description="Your name won't appear on the gift card or packing slip."
+                      description="Your name won't appear on the gift card, packing slip, or Kay Reveal."
                       checked={anonymous}
                       onChange={setAnonymous}
                     />

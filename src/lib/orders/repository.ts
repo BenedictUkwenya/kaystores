@@ -45,6 +45,7 @@ export async function insertOrder(
     buyer: payload.buyer,
     buyerAddress: payload.buyerAddress,
     gift: payload.gift,
+    anonymousPackaging: payload.anonymousPackaging,
     handoverToken: meta.handoverToken,
     handoverStatus: meta.handoverStatus,
     paymentStatus: meta.paymentStatus,

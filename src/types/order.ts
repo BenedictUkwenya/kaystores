@@ -79,6 +79,8 @@ export type Order = {
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;
+  /** Plain outer packaging — available for any order, not only After Dark. */
+  anonymousPackaging?: boolean;
   handoverToken?: string;
   handoverStatus: "not_required" | "pending" | "completed";
   recipientAddress?: AddressDetails;
@@ -104,6 +106,8 @@ export type CreateOrderPayload = {
   buyer: BuyerDetails;
   buyerAddress?: AddressDetails;
   gift?: GiftDetails;
+  /** Plain outer packaging for any delivery type. */
+  anonymousPackaging?: boolean;
   /** Customer attests payment was made offline / manually. */
   paymentConfirmed?: boolean;
   /** Server-issued Terminal rate selection, required for hub delivery. */

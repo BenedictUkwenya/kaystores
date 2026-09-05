@@ -52,6 +52,7 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
     buyer: payload.buyer,
     buyerAddress: payload.buyerAddress,
     gift,
+    anonymousPackaging: Boolean(payload.anonymousPackaging),
     handoverStatus: "not_required",
     paymentStatus: paid ? "paid" : "unpaid",
     paymentReference: paid ? "manual-confirm" : null,

@@ -164,8 +164,8 @@ export function ProductInfo({ product }: ProductInfoProps) {
       <div className="mt-6 flex items-start gap-2 rounded-lg bg-kay-surface px-4 py-3">
         <IconSparkle className="mt-0.5 shrink-0 text-kay-gold" />
         <p className="text-[12px] leading-relaxed text-kay-muted">
-          Sending as a gift? Add at checkout — recipient note, anonymous delivery,
-          and address collection available.
+          Sending as a gift? Add at checkout — recipient note, anonymous packaging,
+          and Kay Reveal available.
         </p>
       </div>
     </div>

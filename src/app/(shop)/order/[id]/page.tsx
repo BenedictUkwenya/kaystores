@@ -118,10 +118,15 @@ export default async function OrderConfirmationPage({
               ? "Sending as a Gift"
               : "Delivering to Myself"}
           </p>
+          {order.anonymousPackaging && (
+            <p className="mt-1 text-[13px] text-kay-muted">
+              Anonymous packaging · plain outer wrap, no product names outside
+            </p>
+          )}
           {order.deliveryType === "gift" && order.gift && (
             <p className="mt-1 text-[13px] text-kay-muted">
               For {order.gift.recipientName}
-              {order.gift.anonymous && " · Sent anonymously"}
+              {order.gift.anonymous && " · Sender name hidden"}
             </p>
           )}
         </div>
