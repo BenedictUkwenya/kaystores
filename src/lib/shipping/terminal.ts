@@ -4,6 +4,11 @@ import { createHash } from "crypto";
 import type { AddressDetails, BuyerDetails, Order, OrderItem } from "@/types/order";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveShippingHub, type ShippingHub } from "@/lib/shipping/hubs";
+import { getShippingSettings } from "@/lib/shipping/settings";
+import {
+  MANUAL_RATE_ID,
+  MANUAL_SHIPMENT_ID,
+} from "@/types/shipping-settings";
 
 const API_URL = "https://api.terminal.africa/v1";
 
@@ -226,11 +231,67 @@ function cartFingerprint(items: OrderItem[]) {
     .digest("hex");
 }
 
+export async function createManualShippingQuote(input: {
+  items: OrderItem[];
+  destination: AddressDetails;
+}): Promise<ShippingQuote> {
+  const settings = await getShippingSettings();
+  if (!settings.manualEnabled) {
+    throw new Error("Kay delivery is not available right now.");
+  }
+  const admin = createAdminClient();
+  if (!admin) throw new Error("Shipping is temporarily unavailable.");
+
+  const { data, error } = await admin
+    .from("shipping_quotes")
+    .insert({
+      terminal_shipment_id: MANUAL_SHIPMENT_ID,
+      terminal_rate_id: MANUAL_RATE_ID,
+      carrier_name: settings.manualLabel,
+      service_name: settings.manualEta,
+      amount: settings.manualFee,
+      currency: "NGN",
+      delivery_eta: settings.manualEta,
+      delivery_date: null,
+      destination: input.destination,
+      cart_fingerprint: cartFingerprint(input.items),
+      hub_id: null,
+    })
+    .select("token")
+    .single();
+
+  if (error || !data) throw new Error("Could not create Kay delivery option.");
+
+  return {
+    token: data.token,
+    carrierName: settings.manualLabel,
+    serviceName: settings.manualEta ?? undefined,
+    amount: settings.manualFee,
+    currency: "NGN",
+    deliveryEta: settings.manualEta ?? undefined,
+    hubName: "Kay",
+  };
+}
+
+export function isManualShippingQuote(quote: {
+  terminal_shipment_id?: string | null;
+  terminal_rate_id?: string | null;
+}): boolean {
+  return (
+    quote.terminal_shipment_id === MANUAL_SHIPMENT_ID ||
+    quote.terminal_rate_id === MANUAL_RATE_ID
+  );
+}
+
 export async function quoteTerminalShipping(input: {
   items: OrderItem[];
   destination: AddressDetails;
   recipient: BuyerDetails;
 }): Promise<ShippingQuote[]> {
+  const settings = await getShippingSettings();
+  if (!settings.terminalEnabled) {
+    throw new Error("Live carrier rates are turned off. Choose Kay delivery instead.");
+  }
   getSecretKey();
   const hub = await resolveShippingHub(input.destination.state);
   const contact = hubContact(hub);
@@ -333,6 +394,39 @@ export async function arrangeTerminalShipment(order: Order) {
     .eq("order_id", order.id)
     .maybeSingle();
   if (error || !quote) throw new Error("No selected Terminal delivery rate was found.");
+
+  if (isManualShippingQuote(quote)) {
+    const { error: insertError } = await admin.from("shipments").insert({
+      order_id: order.id,
+      shipping_quote_id: quote.id,
+      terminal_shipment_id: `${MANUAL_SHIPMENT_ID}-${order.id}`,
+      terminal_rate_id: MANUAL_RATE_ID,
+      carrier_name: quote.carrier_name,
+      tracking_number: null,
+      tracking_url: null,
+      label_url: null,
+      status: "manual",
+      arranged_at: new Date().toISOString(),
+      hub_id: null,
+    });
+    if (insertError) throw new Error("Could not mark Kay delivery as arranged.");
+    await admin
+      .from("orders")
+      .update({
+        status: "shipped",
+        tracking_carrier: quote.carrier_name,
+      })
+      .eq("id", order.id);
+    await admin
+      .from("vendor_order_items")
+      .update({
+        fulfillment_status: "dispatched",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("order_id", order.id)
+      .eq("fulfillment_status", "qc_passed");
+    return;
+  }
 
   const shipment = await terminalFetch<TerminalShipment>("/shipments/pickup", {
     method: "POST",

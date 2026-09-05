@@ -118,10 +118,11 @@ export function AdminOrderActions({
       {paymentStatus === "paid" && !initialTracking && (
         <div className="rounded-xl border border-kay-gold/25 bg-kay-gold-light/30 p-3">
           <p className="text-[12px] font-medium text-kay-fg">
-            Terminal delivery
+            Arrange outbound delivery
           </p>
           <p className="mt-1 text-[11px] leading-relaxed text-kay-muted">
-            Arrange the selected hub-to-customer delivery after every vendor item passes QC.
+            After every vendor item passes QC: arrange Terminal pickup, or mark
+            Kay delivery as dispatched.
           </p>
           <Button
             type="button"
@@ -130,7 +131,7 @@ export function AdminOrderActions({
             className="mt-3 w-full sm:w-auto"
             onClick={arrangeTerminalDelivery}
           >
-            Arrange Terminal delivery
+            Arrange delivery
           </Button>
         </div>
       )}

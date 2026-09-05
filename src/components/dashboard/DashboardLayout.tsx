@@ -373,7 +373,7 @@ export const ADMIN_NAV: DashboardNavItem[] = [
   { href: "/admin/products", label: "Products", exact: true, icon: "tag" },
   { href: "/admin/products/import", label: "Import", icon: "import" },
   { href: "/admin/pricing", label: "Pricing", icon: "percent" },
-  { href: "/admin/hubs", label: "Hubs", icon: "store" },
+  { href: "/admin/hubs", label: "Shipping", icon: "store" },
   { href: "/admin/payouts", label: "Payouts", icon: "wallet" },
   {
     href: "/admin/concierge",

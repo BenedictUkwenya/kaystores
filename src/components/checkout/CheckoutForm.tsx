@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/providers/CartProvider";
@@ -64,6 +64,8 @@ export function CheckoutForm({
   >([]);
   const [selectedShippingToken, setSelectedShippingToken] = useState("");
   const [quoting, setQuoting] = useState(false);
+  const [terminalEnabled, setTerminalEnabled] = useState(true);
+  const [manualEnabled, setManualEnabled] = useState(true);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{
@@ -100,7 +102,22 @@ export function CheckoutForm({
 
   useCheckoutPrefill({ setFirstName, setLastName, setBuyer });
 
-  async function getDeliveryRates() {
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/shipping/quote");
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.settings) {
+          setTerminalEnabled(data.settings.terminalEnabled !== false);
+          setManualEnabled(data.settings.manualEnabled !== false);
+        }
+      } catch {
+        // keep defaults
+      }
+    })();
+  }, []);
+
+  async function getDeliveryRates(mode: "terminal" | "manual" | "all" = "all") {
     setError("");
     const destination =
       deliveryType === "gift" ? recipientAddress : buyerAddress;
@@ -120,7 +137,9 @@ export function CheckoutForm({
       !recipient.email ||
       !recipient.phone
     ) {
-      setError("Complete the delivery and contact details to see live delivery rates.");
+      setError(
+        "Complete the delivery and contact details to see delivery options.",
+      );
       return;
     }
     setQuoting(true);
@@ -130,11 +149,19 @@ export function CheckoutForm({
       const res = await fetch("/api/shipping/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, destination, recipient }),
+        body: JSON.stringify({ items, destination, recipient, mode }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Could not retrieve delivery rates.");
-      setShippingQuotes(data.quotes ?? []);
+      if (data.settings) {
+        setTerminalEnabled(data.settings.terminalEnabled !== false);
+        setManualEnabled(data.settings.manualEnabled !== false);
+      }
+      const quotes = data.quotes ?? [];
+      setShippingQuotes(quotes);
+      if (quotes.length === 1) {
+        setSelectedShippingToken(quotes[0].token);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not retrieve delivery rates.");
     } finally {
@@ -642,14 +669,43 @@ export function CheckoutForm({
               <p className="text-[13px] leading-relaxed text-kay-muted">
                 Delivery is dispatched from the Kay hub after quality checks.
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={getDeliveryRates}
-                disabled={quoting}
-              >
-                {quoting ? "Finding delivery services…" : "Get live delivery rates"}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                {manualEnabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => getDeliveryRates("manual")}
+                    disabled={quoting}
+                  >
+                    {quoting ? "Loading…" : "Use Kay delivery"}
+                  </Button>
+                )}
+                {terminalEnabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => getDeliveryRates("terminal")}
+                    disabled={quoting}
+                  >
+                    {quoting ? "Finding carriers…" : "Get live carrier rates"}
+                  </Button>
+                )}
+                {manualEnabled && terminalEnabled && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => getDeliveryRates("all")}
+                    disabled={quoting}
+                  >
+                    Show all options
+                  </Button>
+                )}
+              </div>
+              {!manualEnabled && !terminalEnabled && (
+                <p className="text-[13px] text-amber-800">
+                  Delivery options are temporarily unavailable. Please contact Kay.
+                </p>
+              )}
               {shippingQuotes.length > 0 && (
                 <div className="space-y-2">
                   {shippingQuotes.map((quote) => (
@@ -676,7 +732,10 @@ export function CheckoutForm({
                           </span>
                           {(quote.deliveryEta || quote.hubName) && (
                             <span className="mt-0.5 block text-[11px] text-kay-muted">
-                              {[quote.hubName ? `From ${quote.hubName}` : null, quote.deliveryEta]
+                              {[
+                                quote.hubName ? `From ${quote.hubName}` : null,
+                                quote.deliveryEta,
+                              ]
                                 .filter(Boolean)
                                 .join(" · ")}
                             </span>
@@ -684,7 +743,9 @@ export function CheckoutForm({
                         </span>
                       </span>
                       <span className="shrink-0 text-[13px] font-semibold text-kay-fg">
-                        {formatNaira(quote.amount)}
+                        {quote.amount === 0
+                          ? "Complimentary"
+                          : formatNaira(quote.amount)}
                       </span>
                     </label>
                   ))}
