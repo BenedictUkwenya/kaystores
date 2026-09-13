@@ -17,6 +17,11 @@ import { OrderPaymentSection } from "@/components/payments/OrderPaymentSection";
 import { PaymentReturnVerifier } from "@/components/payments/PaystackPayButton";
 import { buildTxRef, isPaystackConfigured } from "@/lib/payments/config";
 import { IconLock } from "@/components/ui/Icons";
+import { OrderSupportChat } from "@/components/orders/OrderSupportChat";
+import {
+  formatAddressLines,
+  getDeliveryAddress,
+} from "@/lib/orders/address";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -50,6 +55,8 @@ export default async function OrderConfirmationPage({
   const discreet = isDiscreetOrder(order.items);
   const handoverUrl =
     order.handoverToken && absoluteUrl(`/handover/${order.handoverToken}`);
+  const deliveryAddress = getDeliveryAddress(order);
+  const deliveryLines = formatAddressLines(deliveryAddress);
 
   return (
     <div
@@ -105,6 +112,10 @@ export default async function OrderConfirmationPage({
         <OrderTrackingTimeline order={order} />
       </div>
 
+      <div className="mt-8">
+        <OrderSupportChat orderId={order.id} viewerRole="customer" />
+      </div>
+
       {reference && !paid && <PaymentReturnVerifier reference={reference} />}
       <OrderPaymentSection order={order} paystackEnabled={paystackEnabled} />
 
@@ -127,6 +138,11 @@ export default async function OrderConfirmationPage({
             <p className="mt-1 text-[13px] text-kay-muted">
               For {order.gift.recipientName}
               {order.gift.anonymous && " · Sender name hidden"}
+            </p>
+          )}
+          {deliveryLines.length > 0 && (
+            <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-kay-fg">
+              {deliveryLines.join("\n")}
             </p>
           )}
         </div>

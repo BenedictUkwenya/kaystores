@@ -29,7 +29,7 @@ export default function TermsPage() {
           </p>
           <p>
             <strong className="text-kay-fg">Orders:</strong> minimum order
-            values apply (₦50,000 for gifting, ₦20,000 for After Dark). Prices
+            values apply (₦20,000 for gifting, ₦20,000 for After Dark). Prices
             include our curation and service fees as shown at checkout. Orders
             are confirmed upon successful payment.
           </p>

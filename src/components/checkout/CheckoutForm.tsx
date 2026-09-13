@@ -963,7 +963,7 @@ export function CheckoutForm({
             >
               {submitting
                 ? paystackEnabled
-                  ? "Redirecting to Paystack…"
+                  ? "Opening checkout…"
                   : "Placing order…"
                 : pricing.canCheckout
                   ? isPrivateCheckout

@@ -1,7 +1,7 @@
 type Props = {
   orderNumber?: string;
   isPrivate?: boolean;
-  /** When true, copy explains redirect to Paystack (not a dead-end confirm screen). */
+  /** When true, copy explains redirect to the payment checkout (not a dead-end confirm screen). */
   paystackRedirect?: boolean;
 };
 
@@ -43,7 +43,7 @@ export function CheckoutProcessing({
       </p>
       <h2 className="mt-3 font-serif text-[32px] text-kay-fg sm:text-[36px]">
         {paystackRedirect
-          ? "Opening Paystack…"
+          ? "Opening checkout…"
           : isPrivate
             ? "Securing your private order"
             : "Confirming your order"}
@@ -51,8 +51,8 @@ export function CheckoutProcessing({
       <p className="mx-auto mt-4 max-w-sm text-[14px] leading-relaxed text-kay-muted">
         {paystackRedirect
           ? orderNumber
-            ? `Order ${orderNumber} is ready. Taking you to Paystack to complete payment — this only takes a moment.`
-            : "Preparing your secure Paystack checkout…"
+            ? `Order ${orderNumber} is ready. Taking you to checkout to complete payment — this only takes a moment.`
+            : "Preparing your secure checkout…"
           : orderNumber
             ? isPrivate
               ? `Reference ${orderNumber} is being confirmed discreetly. Redirecting…`

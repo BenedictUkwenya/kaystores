@@ -83,7 +83,7 @@ export const FAQ_ITEMS = [
   {
     question: "What is your minimum order value?",
     answer:
-      "Luxury gifting orders start from ₦50,000. After Dark orders start from ₦20,000. These thresholds help us maintain premium packaging, vetting, and service standards.",
+      "Luxury gifting orders start from ₦20,000. After Dark orders start from ₦20,000. These thresholds help us maintain premium packaging, vetting, and service standards.",
   },
   {
     question: "What is your returns policy?",

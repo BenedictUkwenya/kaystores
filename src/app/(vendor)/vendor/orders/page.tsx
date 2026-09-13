@@ -121,6 +121,12 @@ export default async function VendorOrdersPage() {
                     Ref {item.orderNumber} · Qty {item.quantity} ·{" "}
                     {formatNaira(item.lineTotal)}
                   </p>
+                  <Link
+                    href={`/vendor/orders/${item.orderId}`}
+                    className="mt-2 inline-block text-[12px] font-medium text-kay-fg underline underline-offset-2"
+                  >
+                    Open order & support
+                  </Link>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <StatusBadge status={item.fulfillmentStatus} />
                     {item.paymentStatus && (

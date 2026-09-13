@@ -16,7 +16,7 @@ const testMode = isTestCheckoutMode();
 export const PRICING_CONFIG = {
   gifting: {
     label: "Luxury gifting",
-    mov: testMode ? 200 : 50_000,
+    mov: testMode ? 200 : 20_000,
     /** Curation fee retired — product price is the listed price. */
     curationFeeRate: 0,
   },

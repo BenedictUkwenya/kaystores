@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-05
+**Last updated:** 2026-09-13
 
 ---
 
@@ -138,7 +138,7 @@
 
 - [x] Order confirmation / thank-you page
 
-- [x] **MOV + pricing** — Gifting ₦50k / After Dark ₦20k MOV; delivery from live quote + tax; curation fee retired (list price is product price)
+- [x] **MOV + pricing** — Gifting ₦20k / After Dark ₦20k MOV; delivery from live quote + tax; curation fee retired (list price is product price)
 
 
 
@@ -249,6 +249,7 @@
 - [x] SKU-based product catalog in Supabase
 
 - [x] Order management (gift metadata, anonymous flag, recipient data)
+- [x] **Admin order ship-to + order support chat** — delivery address on admin order, per-order chat for admin / vendor / signed-in customer (migration `035`)
 
 - [x] Digital Handover workflow (generate + track recipient links)
 
