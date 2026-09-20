@@ -68,6 +68,7 @@ type Payload =
   | {
       type: "concierge";
       appUrl: string;
+      adminEmails?: string[];
       request: {
         referenceNumber: string;
         productName: string;
@@ -152,6 +153,7 @@ type Payload =
       recipientName?: string;
       alertTitle?: string;
       alertDetail?: string;
+      adminEmails?: string[];
       vendor?: {
         contactName: string;
         contactEmail: string;
@@ -167,10 +169,81 @@ type Payload =
         quotedPrice?: number;
         statusUrl?: string;
       };
+    }
+  | {
+      type: "table_request";
+      appUrl: string;
+      adminEmails?: string[];
+      request: {
+        reference: string;
+        contactName: string;
+        contactEmail: string;
+        contactPhone?: string;
+        category: string;
+        occasion?: string;
+        servings?: string;
+        flavourNotes?: string;
+        styleNotes?: string;
+        neededBy?: string;
+        fulfillmentMethod?: string;
+        city?: string;
+        state?: string;
+        pickupHubName?: string;
+        statusUrl?: string;
+      };
+    }
+  | {
+      type: "table_quote_ready";
+      appUrl: string;
+      request: {
+        reference: string;
+        contactName: string;
+        contactEmail: string;
+        quoteAmount?: number;
+        quoteNote?: string;
+        statusUrl?: string;
+      };
+    }
+  | {
+      type: "table_vendor_assigned";
+      appUrl: string;
+      vendor: {
+        contactName: string;
+        contactEmail: string;
+        businessName: string;
+      };
+      request: {
+        reference: string;
+        contactName: string;
+        category: string;
+        occasion?: string;
+        servings?: string;
+        flavourNotes?: string;
+        styleNotes?: string;
+        neededBy?: string;
+        fulfillmentMethod?: string;
+        city?: string;
+        state?: string;
+        pickupHubName?: string;
+        quoteAmount?: number;
+        quoteNote?: string;
+      };
     };
 
 function defaultReplyTo(): string | undefined {
   return Deno.env.get("KAY_REPLY_TO_EMAIL") ?? Deno.env.get("KAY_TEAM_EMAIL") ?? undefined;
+}
+
+/** Merge listed admin inboxes with KAY_TEAM_EMAIL (unique, lowercased). */
+function teamRecipients(adminEmails?: string[]): string[] | null {
+  const set = new Set<string>();
+  for (const raw of adminEmails ?? []) {
+    const email = raw.trim().toLowerCase();
+    if (email) set.add(email);
+  }
+  const teamEmail = Deno.env.get("KAY_TEAM_EMAIL")?.trim().toLowerCase();
+  if (teamEmail) set.add(teamEmail);
+  return set.size ? [...set] : null;
 }
 
 function naira(amount: number) {
@@ -649,9 +722,9 @@ function buildMessage(
       };
     }
     case "concierge_admin_alert": {
-      const { request, appUrl, alertTitle, alertDetail } = payload;
-      const teamEmail = Deno.env.get("KAY_TEAM_EMAIL");
-      if (!teamEmail) return null;
+      const { request, appUrl, alertTitle, alertDetail, adminEmails } = payload;
+      const recipients = teamRecipients(adminEmails);
+      if (!recipients) return null;
       const detailBlock = alertDetail
         ? `<p style="color:#5c5c5c;line-height:1.6;white-space:pre-wrap">${alertDetail}</p>`
         : "";
@@ -663,12 +736,66 @@ function buildMessage(
         <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/admin/concierge">Open admin concierge</a></p>`,
       );
       return {
-        to: [teamEmail],
+        to: recipients,
         subject: `[Concierge] ${alertTitle ?? "Action needed"} — ${request.referenceNumber}`,
         html,
         text: stripHtml(html),
         replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "concierge_admin_alert" }],
+      };
+    }
+    case "table_quote_ready": {
+      const { request, appUrl } = payload;
+      if (!request.contactEmail) return null;
+      const amount =
+        request.quoteAmount != null ? naira(request.quoteAmount) : "your quote";
+      const noteBlock = request.quoteNote?.trim()
+        ? `<p style="color:#5c5c5c;line-height:1.6;white-space:pre-wrap">${request.quoteNote.trim()}</p>`
+        : "";
+      const statusBlock = request.statusUrl
+        ? ctaButton(request.statusUrl, "View your Kay Kitchen request")
+        : "";
+      const html = layout(
+        "Your Kay Kitchen quote is ready",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${request.contactName}, we've prepared a quote for your request <strong>${request.reference}</strong>.</p>
+        <p style="font-size:18px;color:#000"><strong>${amount}</strong></p>
+        ${noteBlock}
+        ${statusBlock}`,
+      );
+      return {
+        to: [request.contactEmail],
+        subject: `Kay Kitchen quote — ${request.reference}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "table_quote_ready" }],
+      };
+    }
+    case "table_vendor_assigned": {
+      const { vendor, request, appUrl } = payload;
+      if (!vendor?.contactEmail) return null;
+      const fulfilment =
+        request.fulfillmentMethod === "pickup"
+          ? `Pickup — ${request.pickupHubName || "Kay hub"}`
+          : `Kay delivery — ${[request.city, request.state].filter(Boolean).join(", ") || "TBC"}`;
+      const html = layout(
+        "New Kay Kitchen brief assigned",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, you've been assigned <strong>${request.reference}</strong> (${request.category}).</p>
+        <p style="color:#5c5c5c;line-height:1.6">Client: ${request.contactName}<br/>
+        Servings: ${request.servings || "—"} · Needed by: ${request.neededBy || "—"}<br/>
+        Flavours: ${request.flavourNotes || "—"}<br/>
+        Style: ${request.styleNotes || "—"}<br/>
+        Fulfilment: ${fulfilment}
+        ${request.quoteAmount != null ? `<br/>Quote: ${naira(request.quoteAmount)}` : ""}</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/table">Open vendor Kay Kitchen</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `Kay Kitchen assigned — ${request.reference}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "table_vendor_assigned" }],
       };
     }
     case "role_invite": {
@@ -886,8 +1013,8 @@ Deno.serve(async (req) => {
       }
       if (buyer.id) results.push(buyer.id);
 
-      const teamEmail = Deno.env.get("KAY_TEAM_EMAIL");
-      if (teamEmail) {
+      const recipients = teamRecipients(payload.adminEmails);
+      if (recipients) {
         const teamHtml = layout(
             "New concierge request",
             `<p style="color:#5c5c5c"><strong>${request.productName}</strong> (${request.brand || "No brand"})<br/>
@@ -898,12 +1025,75 @@ Deno.serve(async (req) => {
           );
         const team = await sendResend({
           from,
-          to: [teamEmail],
+          to: recipients,
           subject: `[Concierge] ${request.referenceNumber} — ${request.productName}`,
           html: teamHtml,
           text: stripHtml(teamHtml),
           replyTo: defaultReplyTo(),
           tags: [{ name: "category", value: "concierge_team" }],
+        });
+        if (team.id) results.push(team.id);
+      }
+
+      return new Response(JSON.stringify({ ok: true, id: results[0] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (payload.type === "table_request") {
+      const { request, appUrl, adminEmails } = payload;
+      const results: string[] = [];
+
+      const statusBlock = request.statusUrl
+        ? ctaButton(request.statusUrl, "Track your request")
+        : "";
+      const buyerHtml = layout(
+        "We've received your Kay Kitchen request",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${request.contactName}, our kitchen team will review your ${request.category} brief and follow up shortly.</p>
+        <p style="color:#8a8a8a;font-size:12px">Reference: ${request.reference}</p>
+        ${statusBlock}`,
+      );
+      const buyer = await sendResend({
+        from,
+        to: [request.contactEmail],
+        subject: `Kay Kitchen request received — ${request.reference}`,
+        html: buyerHtml,
+        text: stripHtml(buyerHtml),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "table_request_client" }],
+      });
+      if (buyer.error) {
+        return new Response(JSON.stringify({ ok: false, error: buyer.error }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (buyer.id) results.push(buyer.id);
+
+      const recipients = teamRecipients(adminEmails);
+      if (recipients) {
+        const fulfilment =
+          request.fulfillmentMethod === "pickup"
+            ? `Pickup — ${request.pickupHubName || "Kay hub"}`
+            : `Kay delivery — ${[request.city, request.state].filter(Boolean).join(", ") || "TBC"}`;
+        const teamHtml = layout(
+          "New Kay Kitchen request",
+          `<p style="color:#5c5c5c"><strong>${request.reference}</strong> · ${request.category}<br/>
+          ${request.contactName} — ${request.contactEmail}${request.contactPhone ? ` · ${request.contactPhone}` : ""}</p>
+          <p style="color:#5c5c5c;line-height:1.6">Servings: ${request.servings || "—"} · Needed by: ${request.neededBy || "—"}<br/>
+          Flavours: ${request.flavourNotes || "—"}<br/>
+          Style: ${request.styleNotes || "—"}<br/>
+          Fulfilment: ${fulfilment}</p>
+          <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/admin/table">Open admin Kay Kitchen</a></p>`,
+        );
+        const team = await sendResend({
+          from,
+          to: recipients,
+          subject: `[Kay Kitchen] ${request.reference} — ${request.category}`,
+          html: teamHtml,
+          text: stripHtml(teamHtml),
+          replyTo: defaultReplyTo(),
+          tags: [{ name: "category", value: "table_request_admin" }],
         });
         if (team.id) results.push(team.id);
       }

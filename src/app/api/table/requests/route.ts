@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, getAuthContext } from "@/lib/auth/roles";
+import { notifyTableRequestSubmitted } from "@/lib/email/table";
 import { createTableRequest } from "@/lib/table/repository";
 import type {
   TableFulfillmentMethod,
@@ -80,6 +81,8 @@ export async function POST(request: Request) {
       category,
       userId: ctx?.userId ?? null,
     });
+
+    void notifyTableRequestSubmitted(created);
 
     return NextResponse.json({ request: created });
   } catch (err) {

@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-19
+**Last updated:** 2026-09-20
 
 ---
 
@@ -177,7 +177,9 @@
 
 - [x] Concierge inquiry form (discrete link from footer / About)
 
-- [x] Automated email to internal team on concierge submission
+- [x] Automated email to **every admin** (+ team inbox) on concierge submission
+
+- [x] **Kay Kitchen emails** — admins on new cake/edible request; client + assigned baker after quote/assign
 
 - [x] **Admin → vendor concierge dispatch** (send to all or selected vendors; vendor portal to respond with availability & quote)
 
@@ -256,7 +258,7 @@
 
 - [x] Digital Handover workflow (generate + track recipient links)
 
-- [x] Email notifications (concierge, order updates, recipient link)
+- [x] Email notifications (concierge, Kay Kitchen, order updates, recipient link)
 
 - [x] **Manual payment confirm at checkout** (“Yes, I have paid” — fallback when online gateway is offline)
 

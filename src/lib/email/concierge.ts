@@ -1,3 +1,4 @@
+import { listAdminEmails } from "@/lib/email/admins";
 import { sendKayEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
 import type { ConciergeRequest } from "@/types/concierge";
@@ -117,11 +118,13 @@ export async function notifyConciergeAdminAlert(
   alertTitle: string,
   alertDetail?: string,
 ) {
+  const adminEmails = await listAdminEmails();
   await sendKayEmail({
     type: "concierge_admin_alert",
     appUrl: getEmailSiteUrl(),
     alertTitle,
     alertDetail,
+    adminEmails,
     request: {
       referenceNumber: request.referenceNumber,
       productName: request.productName,

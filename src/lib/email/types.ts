@@ -26,7 +26,53 @@ export type ConciergeEmailPayload = {
   type: "concierge";
   appUrl: string;
   request: ConciergeRequest;
+  /** Every admin inbox; edge also merges KAY_TEAM_EMAIL. */
+  adminEmails?: string[];
 };
+
+export type TableRequestSummary = {
+  reference: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  category: string;
+  occasion?: string;
+  servings?: string;
+  flavourNotes?: string;
+  styleNotes?: string;
+  neededBy?: string;
+  fulfillmentMethod?: string;
+  city?: string;
+  state?: string;
+  pickupHubName?: string;
+  quoteAmount?: number;
+  quoteNote?: string;
+  assignedVendorName?: string;
+  statusUrl?: string;
+};
+
+export type TableEmailPayload =
+  | {
+      type: "table_request";
+      appUrl: string;
+      adminEmails?: string[];
+      request: TableRequestSummary;
+    }
+  | {
+      type: "table_quote_ready";
+      appUrl: string;
+      request: TableRequestSummary;
+    }
+  | {
+      type: "table_vendor_assigned";
+      appUrl: string;
+      vendor: {
+        contactName: string;
+        contactEmail: string;
+        businessName: string;
+      };
+      request: TableRequestSummary;
+    };
 
 export type ContactEmailPayload = {
   type: "contact";
@@ -96,6 +142,8 @@ export type ConciergeOfferEmailPayload = {
   recipientName?: string;
   alertTitle?: string;
   alertDetail?: string;
+  /** Every admin inbox for concierge_admin_alert; edge also merges KAY_TEAM_EMAIL. */
+  adminEmails?: string[];
   vendor?: {
     contactName: string;
     contactEmail: string;
@@ -138,6 +186,7 @@ export type KayEmailPayload =
   | OrderEmailPayload
   | ConciergeEmailPayload
   | ConciergeOfferEmailPayload
+  | TableEmailPayload
   | ContactEmailPayload
   | VendorEmailPayload
   | RoleEmailPayload

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getSessionUser } from "@/lib/auth/roles";
 import { createConciergeRequest } from "@/lib/concierge/repository";
+import { listAdminEmails } from "@/lib/email/admins";
 import { sendKayEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
 import { uploadConciergeAttachments } from "@/lib/storage/concierge-attachments";
@@ -59,11 +60,14 @@ export async function POST(request: Request) {
       user?.id,
     );
 
-    void sendKayEmail({
-      type: "concierge",
-      appUrl: getEmailSiteUrl(),
-      request: created,
-    });
+    void listAdminEmails().then((adminEmails) =>
+      sendKayEmail({
+        type: "concierge",
+        appUrl: getEmailSiteUrl(),
+        request: created,
+        adminEmails,
+      }),
+    );
 
     return NextResponse.json({
       id: created.id,

@@ -69,8 +69,10 @@ Auth OTP uses the **`send-auth-email`** hook. Configure the same verified domain
 
 | Event | Recipient |
 |-------|-----------|
-| New concierge request | Client + **team** (`KAY_TEAM_EMAIL`) |
-| Offers ready / client revision | **Team** admin alert |
+| New concierge request | Client + **every admin** (+ `KAY_TEAM_EMAIL`) |
+| New Kay Kitchen / cake request | Client + **every admin** (+ `KAY_TEAM_EMAIL`) |
+| Admin quotes / assigns baker | **Client** (quote) + **assigned vendor** |
+| Offers ready / client revision | **Every admin** (+ team inbox) |
 | Admin dispatches to vendors | **Each assigned vendor** |
 | Client pays shop order | Buyer + team + **each vendor** on the order |
 | Concierge recommendation | Client |

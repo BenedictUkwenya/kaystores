@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth/roles";
 import {
+  notifyTableQuoteReady,
+  notifyTableVendorAssigned,
+} from "@/lib/email/table";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  getTableRequestById,
   insertTableRequestMessage,
   listTableRequests,
   updateTableRequest,
@@ -41,6 +47,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Request id required." }, { status: 400 });
     }
 
+    const before = await getTableRequestById(id);
+    if (!before) {
+      return NextResponse.json({ error: "Request not found." }, { status: 404 });
+    }
+
     const status =
       body.status && STATUSES.has(body.status)
         ? (body.status as TableRequestStatus)
@@ -76,6 +87,41 @@ export async function PATCH(request: Request) {
         senderName: ctx.profile.fullName?.trim() || "Kay admin",
         body: String(body.note).trim(),
       });
+    }
+
+    if (
+      updated.assignedVendorId &&
+      updated.assignedVendorId !== before.assignedVendorId
+    ) {
+      const db = createAdminClient();
+      if (db) {
+        const { data: vendor } = await db
+          .from("vendors")
+          .select("contact_name, contact_email, business_name")
+          .eq("id", updated.assignedVendorId)
+          .maybeSingle();
+        if (vendor?.contact_email) {
+          void notifyTableVendorAssigned(
+            {
+              contactName: String(vendor.contact_name || "Partner"),
+              contactEmail: String(vendor.contact_email),
+              businessName: String(vendor.business_name || "Baker"),
+            },
+            updated,
+          );
+        }
+      }
+    }
+
+    const quoteChanged =
+      updated.quoteAmount != null &&
+      updated.quoteAmount > 0 &&
+      (before.quoteAmount !== updated.quoteAmount ||
+        (before.quoteNote ?? "") !== (updated.quoteNote ?? "") ||
+        (status === "quoted" && before.status !== "quoted"));
+
+    if (quoteChanged) {
+      void notifyTableQuoteReady(updated);
     }
 
     return NextResponse.json({ request: updated });
