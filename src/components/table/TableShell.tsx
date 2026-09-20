@@ -6,7 +6,7 @@ import "@/components/table/table-experience.css";
 
 export function TableShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="table-experience force-motion min-h-screen">
+    <div className="table-experience force-motion min-h-screen bg-kay-bg text-kay-fg">
       <TableHeader />
       <main>{children}</main>
       <TableFooter />

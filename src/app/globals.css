@@ -1060,12 +1060,12 @@ html[data-splash-boot="1"] body::before {
   color: #ffffff;
 }
 
-/* Kay Kitchen — edible gifts tokens */
+/* Kay Kitchen — aliases onto main Kay theme tokens */
 .table-experience {
-  --table-bg: #f8f5f0;
-  --table-paper: #fffcf8;
-  --table-ink: #111111;
-  --table-accent: #9a6b4f;
+  --table-bg: var(--kay-bg);
+  --table-paper: var(--kay-bg);
+  --table-ink: var(--kay-fg);
+  --table-accent: var(--kay-gold);
 }
 
 .after-dark-contact-form {

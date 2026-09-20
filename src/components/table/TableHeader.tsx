@@ -29,7 +29,7 @@ export function TableHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--table-line)] bg-[color-mix(in_srgb,var(--table-paper)_92%,transparent)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-kay-border-light/80 bg-kay-bg/95 backdrop-blur-md">
       <div className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between gap-2 px-4 sm:px-6 lg:px-10">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-baseline">
@@ -126,7 +126,7 @@ export function TableHeader() {
           >
             <IconBag className="h-4 w-4" />
             {itemCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--table-ink)] px-1 text-[9px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-kay-accent px-1 text-[9px] font-bold text-kay-accent-fg">
                 {itemCount > 9 ? "9+" : itemCount}
               </span>
             )}

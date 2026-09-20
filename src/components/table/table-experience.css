@@ -1,23 +1,31 @@
-/* Kay Kitchen — edible gifts (aligned with Kay luxury, warmer paper) */
+/* Kay Kitchen — uses the same Kay theme tokens as the main storefront */
 
 .table-experience {
-  --table-bg: #f8f5f0;
-  --table-paper: #fffcf8;
-  --table-ink: #111111;
-  --table-muted: #5c5c5c;
-  --table-subtle: #8a8a8a;
-  --table-line: rgba(17, 17, 17, 0.1);
-  --table-accent: #9a6b4f;
-  --table-gold: #b89a6a;
-  background-color: var(--table-bg);
-  color: var(--table-ink);
+  --table-bg: var(--kay-bg);
+  --table-paper: var(--kay-bg);
+  --table-ink: var(--kay-fg);
+  --table-muted: var(--kay-muted);
+  --table-subtle: var(--kay-subtle);
+  --table-line: var(--kay-border);
+  --table-accent: var(--kay-gold);
+  --table-gold: var(--kay-gold);
+  background-color: var(--kay-bg);
+  color: var(--kay-fg);
 }
 
 .table-paper-grain {
   background:
-    radial-gradient(ellipse 70% 55% at 85% 30%, rgba(184, 154, 106, 0.12), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(154, 107, 79, 0.06), transparent 55%),
-    linear-gradient(180deg, #fffcf8 0%, #f8f5f0 100%);
+    radial-gradient(
+      ellipse 70% 55% at 85% 30%,
+      color-mix(in srgb, var(--kay-gold) 14%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 10% 80%,
+      color-mix(in srgb, var(--kay-gold) 8%, transparent),
+      transparent 55%
+    ),
+    var(--kay-bg);
 }
 
 .table-animate-fade-up {
@@ -55,29 +63,28 @@
 }
 
 .table-product-card:hover .table-product-image-wrap {
-  box-shadow: 0 10px 28px rgba(17, 17, 17, 0.08);
+  box-shadow: var(--kay-card-shadow);
   transform: translateY(-2px);
 }
 
-/* Primary / secondary CTAs — specificity beats generic `a` color */
+/* Match main-site accent buttons */
 .table-experience a.table-cta,
 .table-experience button.table-cta,
 .table-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--table-ink);
-  color: #fffcf8 !important;
-  border: 1px solid var(--table-ink);
+  background: var(--kay-accent);
+  color: var(--kay-accent-fg) !important;
+  border: 1px solid var(--kay-accent);
   text-decoration: none;
 }
 
 .table-experience a.table-cta:hover,
 .table-experience button.table-cta:hover,
 .table-cta:hover {
-  background: #2c2c2c;
-  border-color: #2c2c2c;
-  color: #fffcf8 !important;
+  opacity: 0.88;
+  color: var(--kay-accent-fg) !important;
 }
 
 .table-experience a.table-cta-secondary,
@@ -87,22 +94,22 @@
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: var(--table-ink) !important;
-  border: 1px solid rgba(17, 17, 17, 0.28);
+  color: var(--kay-fg) !important;
+  border: 1px solid var(--kay-border);
   text-decoration: none;
 }
 
 .table-experience a.table-cta-secondary:hover,
 .table-experience button.table-cta-secondary:hover,
 .table-cta-secondary:hover {
-  border-color: var(--table-ink);
-  background: rgba(17, 17, 17, 0.03);
-  color: var(--table-ink) !important;
+  border-color: var(--kay-fg);
+  background: var(--kay-surface);
+  color: var(--kay-fg) !important;
 }
 
 .table-cta,
 .table-cta-secondary {
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
