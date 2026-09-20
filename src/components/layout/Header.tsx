@@ -8,6 +8,7 @@ import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { AfterDarkDiscreetStrip } from "@/components/layout/AfterDarkDiscreetStrip";
+import { TableEntryStrip } from "@/components/layout/TableEntryStrip";
 import { Logo } from "@/components/brand/Logo";
 import { useCart } from "@/providers/CartProvider";
 import {
@@ -131,6 +132,12 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <Link
+            href="/table"
+            className="hidden items-center whitespace-nowrap text-[11px] font-medium tracking-[0.04em] text-[#6b4536] transition-opacity hover:opacity-70 xl:inline-flex"
+          >
+            Kay Table
+          </Link>
           <div className="relative flex items-center">
             {searchOpen ? (
               <form
@@ -235,6 +242,13 @@ export function Header() {
               >
                 After Dark
               </Link>
+              <Link
+                href="/table"
+                onClick={() => setMenuOpen(false)}
+                className="mt-1.5 block text-[13px] font-medium tracking-wide text-[#6b4536]"
+              >
+                Kay Table
+              </Link>
             </div>
             <ThemeToggle />
           </div>
@@ -306,6 +320,7 @@ export function Header() {
           </ul>
         </nav>
       )}
+      <TableEntryStrip />
       <AfterDarkDiscreetStrip />
     </header>
   );

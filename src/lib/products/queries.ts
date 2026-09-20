@@ -20,8 +20,11 @@ import {
   expandSearchQuery,
   matchesProductSearch,
 } from "@/lib/products/catalog-attributes";
+import { shuffleItems } from "@/lib/products/shuffle";
 
 const DEFAULT_PAGE_SIZE = 12;
+/** Pool size for random discovery so more of the catalogue gets shown. */
+const RANDOM_POOL_SIZE = 500;
 
 function applyFiltersLocally(
   products: Product[],
@@ -75,6 +78,8 @@ function applyFiltersLocally(
 function sortProducts(products: Product[], sort: GetProductsParams["sort"]) {
   const sorted = [...products];
   switch (sort) {
+    case "random":
+      return shuffleItems(sorted);
     case "price-asc":
       return sorted.sort((a, b) => a.price - b.price);
     case "price-desc":
@@ -116,7 +121,7 @@ async function getProductsFromFallback(
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const marked = await applyClientMarkupToProducts(FALLBACK_PRODUCTS);
   const filtered = applyFiltersLocally(marked, params.filters ?? {});
-  const sorted = sortProducts(filtered, params.sort ?? "newest");
+  const sorted = sortProducts(filtered, params.sort ?? "random");
   return paginateProducts(sorted, page, pageSize);
 }
 
@@ -126,7 +131,7 @@ export async function getProducts(
   const { isConfigured } = getSupabaseConfig();
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
-  const sort = params.sort ?? "newest";
+  const sort = params.sort ?? "random";
   const filters = params.filters ?? {};
 
   if (!isConfigured) {
@@ -198,6 +203,42 @@ export async function getProducts(
 
     if (filters.tags?.length === 1) {
       query = query.contains("tags", [filters.tags[0]]);
+    }
+
+    // Random: pull a pool, shuffle per request, then paginate locally so every
+    // visit gives different products a chance at the top.
+    if (sort === "random") {
+      query = query.order("created_at", { ascending: false }).limit(RANDOM_POOL_SIZE);
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("getProducts:", error.message);
+        return getProductsFromFallback(params);
+      }
+
+      if (!data || data.length === 0) {
+        return {
+          products: [],
+          total: count ?? 0,
+          page,
+          pageSize,
+          totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+        };
+      }
+
+      const tiers = await getMarkupTiers();
+      let products = data.map((row) =>
+        applyClientMarkupToProduct(mapProductRow(row), tiers),
+      );
+
+      if (filters.search) {
+        products = products.filter((p) =>
+          matchesProductSearch(p, filters.search!),
+        );
+      }
+
+      const shuffled = shuffleItems(products);
+      return paginateProducts(shuffled, page, pageSize);
     }
 
     switch (sort) {
@@ -327,11 +368,12 @@ export async function getDistinctBrands(): Promise<string[]> {
 }
 
 export async function getCuratedProducts(limit = 5): Promise<Product[]> {
+  const poolSize = Math.min(RANDOM_POOL_SIZE, Math.max(limit * 8, 40));
   const { products } = await getProducts({
-    sort: "newest",
-    pageSize: limit,
+    sort: "random",
+    pageSize: poolSize,
   });
-  return products;
+  return products.slice(0, limit);
 }
 
 export async function getAfterDarkProducts(
@@ -340,7 +382,7 @@ export async function getAfterDarkProducts(
   const { isConfigured } = getSupabaseConfig();
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? 24;
-  const sort = params.sort ?? "newest";
+  const sort = params.sort ?? "random";
 
   if (!isConfigured) {
     const filtered = await applyClientMarkupToProducts(
@@ -353,6 +395,44 @@ export async function getAfterDarkProducts(
   return getProducts({
     ...params,
     filters: { collections: ["after-dark"] },
+    page,
+    pageSize,
+    sort,
+  });
+}
+
+export async function getTableProducts(
+  params: Omit<GetProductsParams, "filters"> & {
+    filters?: Omit<ProductFilters, "collections"> & { tags?: string[] };
+  } = {},
+): Promise<ProductsResult> {
+  const { isConfigured } = getSupabaseConfig();
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? 24;
+  const sort = params.sort ?? "random";
+  const tagFilters = params.filters?.tags;
+
+  if (!isConfigured) {
+    const { isTableCatalogProduct } = await import("@/lib/table/catalog");
+    let filtered = await applyClientMarkupToProducts(
+      FALLBACK_PRODUCTS.filter(isTableCatalogProduct),
+    );
+    if (tagFilters?.length) {
+      filtered = filtered.filter((p) =>
+        tagFilters.some((t) => p.tags.includes(t)),
+      );
+    }
+    const sorted = sortProducts(filtered, sort);
+    return paginateProducts(sorted, page, pageSize);
+  }
+
+  return getProducts({
+    ...params,
+    filters: {
+      ...params.filters,
+      collections: ["table"],
+      tags: tagFilters,
+    },
     page,
     pageSize,
     sort,

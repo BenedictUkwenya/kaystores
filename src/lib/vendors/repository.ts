@@ -295,7 +295,7 @@ export async function createVendorProduct(
       occasions: placement.occasions,
       recipients: placement.recipients,
       collections: placement.collections,
-      tags: [],
+      tags: input.tags ?? [],
       in_stock: inStockResolved,
       stock_quantity: resolvedStock,
       status,
@@ -379,6 +379,7 @@ export async function updateVendorProduct(
     payload.recipients = placement.recipients;
     payload.collections = placement.collections;
   }
+  if (input.tags != null) payload.tags = input.tags;
   if (input.stockQuantity != null) {
     const stockQuantity = Math.max(0, Math.floor(input.stockQuantity));
     payload.stock_quantity = stockQuantity;

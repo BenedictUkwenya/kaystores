@@ -37,7 +37,7 @@ export default async function AdminVendorDetailPage({ params }: Props) {
       nav={ADMIN_NAV}
       eyebrow="Partner profile"
       title={vendor.businessName}
-      description={`${vendor.contactName} · ${vendor.onboardingSource.replace(/_/g, " ")} · After Dark ${vendor.canListAfterDark ? "trusted" : "not trusted"}`}
+      description={`${vendor.contactName} · ${vendor.onboardingSource.replace(/_/g, " ")} · After Dark ${vendor.canListAfterDark ? "trusted" : "not trusted"} · Table ${vendor.canListTable ? "allowed" : "not allowed"}`}
       badge="Admin"
       actions={
         vendor.status === "approved" ? (
@@ -102,6 +102,14 @@ export default async function AdminVendorDetailPage({ params }: Props) {
               </dt>
               <dd className="mt-1 text-kay-fg">
                 {vendor.canListAfterDark ? "Trusted" : "Not trusted"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-kay-subtle">
+                Kay Table
+              </dt>
+              <dd className="mt-1 text-kay-fg">
+                {vendor.canListTable ? "Allowed" : "Not allowed"}
               </dd>
             </div>
           </dl>

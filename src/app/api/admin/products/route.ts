@@ -26,6 +26,17 @@ export async function POST(request: Request) {
           { status: 403 },
         );
       }
+
+      if (
+        Array.isArray(body.collections) &&
+        body.collections.includes("table") &&
+        !vendor.canListTable
+      ) {
+        return Response.json(
+          { error: "Kay Table listings require admin approval." },
+          { status: 403 },
+        );
+      }
     }
 
     if (body.images && body.images.length > 3) {

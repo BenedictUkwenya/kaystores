@@ -4,8 +4,13 @@ import { AfterDarkHero } from "@/components/after-dark/AfterDarkHero";
 import { MidnightCuratedBox } from "@/components/after-dark/MidnightCuratedBox";
 import { getAfterDarkProducts } from "@/lib/products/queries";
 
+export const dynamic = "force-dynamic";
+
 export default async function AfterDarkPage() {
-  const { products } = await getAfterDarkProducts({ pageSize: 24 });
+  const { products } = await getAfterDarkProducts({
+    pageSize: 24,
+    sort: "random",
+  });
 
   return (
     <>

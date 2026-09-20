@@ -55,7 +55,7 @@ export const MAIN_CATALOG: CollectionConfig = {
   slug: "gifts",
   title: "All Gifts",
   description:
-    "Discover our full collection of luxury gifts, beautifully curated for every occasion.",
+    "A fresh mix of luxury gifts every time you visit — discover something new alongside the classics.",
   breadcrumbs: [
     { label: "Home", href: "/" },
     { label: "Gifts", href: "/gifts" },

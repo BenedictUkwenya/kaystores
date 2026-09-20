@@ -382,6 +382,11 @@ export const ADMIN_NAV: DashboardNavItem[] = [
     attentionLabel: "Concierge requests need attention",
   },
   {
+    href: "/admin/table",
+    label: "Kay Table",
+    icon: "tag",
+  },
+  {
     href: "/admin/support",
     label: "Support",
     icon: "support",
@@ -403,6 +408,11 @@ export const VENDOR_NAV: DashboardNavItem[] = [
     label: "Concierge",
     icon: "concierge",
     attentionLabel: "Concierge requests need your response",
+  },
+  {
+    href: "/vendor/table",
+    label: "Kay Table",
+    icon: "tag",
   },
   { href: "/vendor/wallet", label: "Wallet", icon: "wallet" },
   { href: "/vendor/settings", label: "Settings", icon: "settings" },

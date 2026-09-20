@@ -36,6 +36,7 @@ export default async function EditVendorProductPage({ params }: Props) {
         product={product}
         vendorId={vendor.id}
         canListAfterDark={vendor.canListAfterDark}
+        canListTable={vendor.canListTable}
       />
     </DashboardLayout>
   );

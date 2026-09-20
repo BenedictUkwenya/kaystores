@@ -19,7 +19,12 @@ export async function PATCH(request: Request, { params }: Ctx) {
 
     switch (action) {
       case "approve":
-        await approveVendor(id, ctx.userId, Boolean(body.canListAfterDark));
+        await approveVendor(
+          id,
+          ctx.userId,
+          Boolean(body.canListAfterDark),
+          Boolean(body.canListTable),
+        );
         {
           const vendor = await fetchVendorById(id);
           if (vendor) {
@@ -53,6 +58,15 @@ export async function PATCH(request: Request, { params }: Ctx) {
         await admin
           .from("vendors")
           .update({ can_list_after_dark: Boolean(body.canListAfterDark) })
+          .eq("id", id);
+        break;
+      }
+      case "toggle_table": {
+        const admin = createAdminClient();
+        if (!admin) throw new Error("Admin not configured");
+        await admin
+          .from("vendors")
+          .update({ can_list_table: Boolean(body.canListTable) })
           .eq("id", id);
         break;
       }

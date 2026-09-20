@@ -19,6 +19,7 @@ export default async function NewVendorProductPage() {
       <VendorProductForm
         vendorId={vendor.id}
         canListAfterDark={vendor.canListAfterDark}
+        canListTable={vendor.canListTable}
       />
     </DashboardLayout>
   );

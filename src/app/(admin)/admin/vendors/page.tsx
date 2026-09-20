@@ -116,6 +116,16 @@ export default async function AdminVendorsPage() {
                   <span className="text-kay-subtle">—</span>
                 ),
             },
+            {
+              key: "table",
+              header: "Kay Table",
+              render: (v) =>
+                v.canListTable ? (
+                  <span className="font-medium text-[#6b4536]">Yes</span>
+                ) : (
+                  <span className="text-kay-subtle">—</span>
+                ),
+            },
           ]}
         />
       )}

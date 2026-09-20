@@ -43,6 +43,17 @@ export async function PATCH(request: Request, { params }: Ctx) {
       );
     }
 
+    if (
+      Array.isArray(body.collections) &&
+      body.collections.includes("table") &&
+      !vendor.canListTable
+    ) {
+      return Response.json(
+        { error: "Kay Table listings require admin approval." },
+        { status: 403 },
+      );
+    }
+
     if (body.images && body.images.length > 3) {
       return Response.json(
         { error: "Maximum 3 product images allowed." },

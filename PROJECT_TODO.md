@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-13
+**Last updated:** 2026-09-19
 
 ---
 
@@ -86,6 +86,8 @@
 
 - [x] **Corporate Gifting**
 
+- [x] **Kay Table** (`/table` — edible gifts, custom cake requests, vendor/admin inbox)
+
 - [x] Category: For Her
 
 - [x] Category: For Him
@@ -116,7 +118,8 @@
 
 - [x] Slide-out **cart drawer**
 
-- [x] Cart state (add / remove / update qty)
+- [x] **Random product discovery** — home + gifts + After Dark mix the catalogue per visit (default sort Discover), so every product gets a fair shot
+
 
 - [x] **Checkout page** — “Delivering to Myself” vs “Sending as a Gift” fork
 
@@ -299,7 +302,7 @@
 
 | Design system     | 6    | 7     |
 
-| Shop pages        | 15   | 15    |
+| Shop pages        | 16   | 16    |
 
 | Cart & checkout   | 12   | 12    |
 
@@ -313,7 +316,7 @@
 
 
 
-**Overall:** 74 / 79 checklist items complete
+**Overall:** 75 / 80 checklist items complete
 
 
 

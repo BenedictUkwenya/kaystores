@@ -83,6 +83,7 @@ export type Vendor = {
   onboardingSource: VendorOnboardingSource;
   status: VendorStatus;
   canListAfterDark: boolean;
+  canListTable: boolean;
   bankName: string | null;
   accountNumber: string | null;
   accountName: string | null;

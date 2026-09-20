@@ -207,6 +207,12 @@ export function VendorSettingsForm({ vendor }: Props) {
         </p>
       )}
 
+      {vendor.canListTable && (
+        <p className="rounded-lg border border-[#6b3f2a]/30 bg-[#6b3f2a]/10 px-4 py-3 text-[13px] text-kay-fg">
+          Kay Table vendor — you may list edible gifts (cakes, chocolates, hampers) and respond to custom cake requests.
+        </p>
+      )}
+
       {error && <p className="text-[13px] text-red-600">{error}</p>}
       {saved && <p className="text-[13px] text-emerald-700">Settings saved.</p>}
 

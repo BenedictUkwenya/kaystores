@@ -33,6 +33,7 @@ export function mapVendorRow(row: Record<string, unknown>): Vendor {
       row.onboarding_source === "invite" ? "invite" : "self_apply",
     status: row.status as Vendor["status"],
     canListAfterDark: Boolean(row.can_list_after_dark),
+    canListTable: Boolean(row.can_list_table),
     bankName: row.bank_name != null ? String(row.bank_name) : null,
     accountNumber: row.account_number != null ? String(row.account_number) : null,
     accountName: row.account_name != null ? String(row.account_name) : null,

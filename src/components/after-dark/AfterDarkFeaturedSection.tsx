@@ -21,14 +21,8 @@ export function AfterDarkFeaturedSection({
     const list = [...products];
     if (sort === "price-asc") return list.sort((a, b) => a.price - b.price);
     if (sort === "price-desc") return list.sort((a, b) => b.price - a.price);
-    return list.sort((a, b) => {
-      const aBest = a.tags.includes("bestseller") ? 1 : 0;
-      const bBest = b.tags.includes("bestseller") ? 1 : 0;
-      if (bBest !== aBest) return bBest - aBest;
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    });
+    // Featured = keep the randomised server order (already mixed per visit).
+    return list;
   }, [products, sort]);
 
   return (
@@ -63,7 +57,7 @@ export function AfterDarkFeaturedSection({
                 onChange={(e) => setSort(e.target.value as SortOption)}
                 className="h-10 rounded-lg border border-white/15 bg-[#141414] px-3 text-[13px] text-white/80 outline-none transition-colors focus:border-ad-amber"
               >
-                <option value="featured">Featured</option>
+                  <option value="featured">Discover (mixed)</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
               </select>

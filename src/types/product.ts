@@ -48,6 +48,7 @@ export type Product = {
 export type { ProductVariation, ProductVariationOption };
 
 export type ProductSort =
+  | "random"
   | "newest"
   | "price-asc"
   | "price-desc"

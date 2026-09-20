@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { CatalogPage } from "@/components/shop/CatalogPage";
 import { getOccasionConfig } from "@/lib/shop/collections";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<Record<string, string | undefined>>;

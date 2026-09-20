@@ -15,6 +15,10 @@ export const PRODUCT_TYPES = [
   "Bag",
   "Wallet",
   "Perfume",
+  "Cake",
+  "Chocolate",
+  "Hamper",
+  "Treat",
   "Other",
 ] as const;
 
@@ -25,6 +29,7 @@ export const MASTER_CATEGORIES = [
   "Watch",
   "Bag",
   "Beauty",
+  "Edible",
   "Other",
 ] as const;
 
@@ -79,6 +84,7 @@ export const TYPES_BY_MASTER: Record<string, readonly string[]> = {
   Watch: ["Watch", "Other"],
   Bag: ["Bag", "Wallet", "Other"],
   Beauty: ["Perfume", "Other"],
+  Edible: ["Cake", "Chocolate", "Hamper", "Treat", "Other"],
   Other: PRODUCT_TYPES,
 };
 
@@ -102,6 +108,31 @@ export const SPECS_BY_MASTER: Record<string, { key: string; options: string[] }[
       options: ["Leather", "Stainless Steel", "Gold Plated", "Titanium", "Rubber"],
     },
   ],
+  Edible: [
+    {
+      key: "Servings",
+      options: ["2–4", "6–8", "10–12", "15–20", "20+", "Share box"],
+    },
+    {
+      key: "Storage",
+      options: ["Fridge", "Ambient", "Frozen", "Cool dry place"],
+    },
+    {
+      key: "Lead time",
+      options: ["Same day", "1–2 days", "3–5 days", "1 week", "2+ weeks"],
+    },
+    {
+      key: "Allergens",
+      options: [
+        "Contains nuts",
+        "Contains dairy",
+        "Contains gluten",
+        "Contains eggs",
+        "Nut-free option",
+        "See description",
+      ],
+    },
+  ],
 };
 
 /** Search synonyms so "shoe" finds Footwear / Slide / Sneaker etc. */
@@ -118,6 +149,10 @@ export const SEARCH_SYNONYMS: Record<string, string[]> = {
   jewelry: ["jewellery", "necklace", "bracelet", "ring", "earring"],
   jewellery: ["jewelry", "necklace", "bracelet", "ring", "earring"],
   bag: ["handbag", "purse", "tote"],
+  cake: ["edible", "dessert", "bakery", "pastry"],
+  chocolate: ["edible", "cocoa", "sweet", "truffle"],
+  hamper: ["edible", "gift basket", "gourmet"],
+  edible: ["cake", "chocolate", "hamper", "treat", "food"],
 };
 
 export type CatalogAttributeInput = {

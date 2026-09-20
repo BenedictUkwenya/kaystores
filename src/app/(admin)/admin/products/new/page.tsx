@@ -45,6 +45,7 @@ export default async function AdminNewProductPage({ searchParams }: Props) {
         <VendorProductForm
           variant="admin"
           canListAfterDark
+          canListTable
           initialBrand="Kay Stores"
         />
       </DashboardLayout>
@@ -68,6 +69,7 @@ export default async function AdminNewProductPage({ searchParams }: Props) {
         variant="admin"
         vendorId={vendor.id}
         canListAfterDark={vendor.canListAfterDark}
+        canListTable={vendor.canListTable}
         initialBrand={vendor.businessName}
       />
     </DashboardLayout>

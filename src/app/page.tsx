@@ -11,6 +11,9 @@ import { getCuratedProducts } from "@/lib/products/queries";
 import { baseMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
 
+/** Fresh product mix on every visit — do not cache a fixed “new arrivals” list. */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   ...baseMetadata,
   title: siteConfig.title,

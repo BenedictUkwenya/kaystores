@@ -29,6 +29,7 @@ export const RECIPIENTS = [
 export const COLLECTIONS = [
   { slug: "luxury", label: "Luxury Collection", href: "/gifts/luxury-collection" },
   { slug: "corporate", label: "Corporate Gifting", href: "/gifts/corporate-gifting" },
+  { slug: "table", label: "Kay Table", href: "/table" },
 ] as const;
 
 /** Kay-controlled badges — vendors cannot set these */

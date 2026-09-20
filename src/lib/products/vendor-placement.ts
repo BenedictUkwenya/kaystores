@@ -53,8 +53,15 @@ export function prepareVendorProductInput(
   }
 
   const { tags: _tags, ...rest } = body;
+  const derivedTags: string[] = [];
+  if (placement.collections.includes("table") && body.productType) {
+    const typeTag = body.productType.trim().toLowerCase();
+    if (typeTag) derivedTags.push(typeTag);
+  }
+
   return {
     ...rest,
     ...placement,
+    tags: derivedTags.length ? derivedTags : undefined,
   };
 }

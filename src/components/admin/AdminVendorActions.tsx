@@ -11,6 +11,7 @@ export function AdminVendorActions({ vendor }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [trusted, setTrusted] = useState(vendor.canListAfterDark);
+  const [tableTrusted, setTableTrusted] = useState(vendor.canListTable);
 
   async function act(action: string, extra?: Record<string, unknown>) {
     setLoading(true);
@@ -44,10 +45,34 @@ export function AdminVendorActions({ vendor }: Props) {
             />
             Trusted (After Dark)
           </label>
-          <Button type="button" size="sm" disabled={loading} onClick={() => act("approve", { canListAfterDark: trusted })}>
+          <label className="flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              checked={tableTrusted}
+              onChange={(e) => setTableTrusted(e.target.checked)}
+            />
+            Kay Table
+          </label>
+          <Button
+            type="button"
+            size="sm"
+            disabled={loading}
+            onClick={() =>
+              act("approve", {
+                canListAfterDark: trusted,
+                canListTable: tableTrusted,
+              })
+            }
+          >
             Approve
           </Button>
-          <Button type="button" size="sm" variant="secondary" disabled={loading} onClick={() => act("reject")}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("reject")}
+          >
             Reject
           </Button>
         </>
@@ -59,11 +84,32 @@ export function AdminVendorActions({ vendor }: Props) {
             size="sm"
             variant="secondary"
             disabled={loading}
-            onClick={() => act("toggle_trusted", { canListAfterDark: !vendor.canListAfterDark })}
+            onClick={() =>
+              act("toggle_trusted", {
+                canListAfterDark: !vendor.canListAfterDark,
+              })
+            }
           >
             {vendor.canListAfterDark ? "Revoke After Dark" : "Grant After Dark"}
           </Button>
-          <Button type="button" size="sm" variant="secondary" disabled={loading} onClick={() => act("suspend")}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() =>
+              act("toggle_table", { canListTable: !vendor.canListTable })
+            }
+          >
+            {vendor.canListTable ? "Revoke Kay Table" : "Grant Kay Table"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => act("suspend")}
+          >
             Suspend
           </Button>
         </>

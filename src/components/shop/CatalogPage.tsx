@@ -16,11 +16,13 @@ function parseSort(value?: string): ProductSort {
   if (
     value === "price-asc" ||
     value === "price-desc" ||
-    value === "name-asc"
+    value === "name-asc" ||
+    value === "newest" ||
+    value === "random"
   ) {
     return value;
   }
-  return "newest";
+  return "random";
 }
 
 function buildFiltersFromParams(

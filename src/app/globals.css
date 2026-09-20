@@ -1060,6 +1060,15 @@ html[data-splash-boot="1"] body::before {
   color: #ffffff;
 }
 
+/* Kay Table — edible gifts experience tokens (scoped class also in table-experience.css) */
+.table-experience {
+  --table-bg: #f3ebe1;
+  --table-paper: #faf6f0;
+  --table-cocoa: #4a2f24;
+  --table-berry: #8b3a4a;
+  --table-leaf: #5a6b4a;
+}
+
 .after-dark-contact-form {
   --kay-fg: #ffffff;
   --kay-muted: #a3a3a3;

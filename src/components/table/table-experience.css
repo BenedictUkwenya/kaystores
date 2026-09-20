@@ -1,0 +1,106 @@
+/* Kay Table — warm kitchen / atelier experience */
+
+.table-experience {
+  --table-bg: #f3ebe1;
+  --table-paper: #faf6f0;
+  --table-cocoa: #4a2f24;
+  --table-cocoa-soft: #6b4536;
+  --table-berry: #8b3a4a;
+  --table-berry-soft: #a85a68;
+  --table-leaf: #5a6b4a;
+  --table-ink: #2c221c;
+  --table-muted: #6e5e54;
+  --table-line: rgba(74, 47, 36, 0.14);
+  --table-glow: rgba(139, 58, 74, 0.18);
+  background-color: var(--table-bg);
+  color: var(--table-ink);
+}
+
+.table-experience a {
+  color: inherit;
+}
+
+.table-paper-grain {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139, 58, 74, 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(90, 107, 74, 0.1), transparent 50%),
+    linear-gradient(165deg, #faf6f0 0%, #f3ebe1 45%, #ebe0d2 100%);
+}
+
+.table-animate-fade-up {
+  animation: table-fade-up 0.7s ease-out both;
+  animation-delay: var(--table-delay, 0ms);
+}
+
+.table-animate-fade-in {
+  animation: table-fade-in 0.9s ease-out both;
+  animation-delay: var(--table-delay, 0ms);
+}
+
+.table-animate-line {
+  animation: table-line 0.8s ease-out both;
+  animation-delay: var(--table-delay, 0ms);
+  transform-origin: left center;
+}
+
+@keyframes table-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes table-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes table-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.table-product-card .table-product-image-wrap {
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.table-product-card:hover .table-product-image-wrap {
+  box-shadow: 0 12px 32px rgba(74, 47, 36, 0.12);
+  transform: translateY(-2px);
+}
+
+.table-cta {
+  background: linear-gradient(105deg, #4a2f24 0%, #6b4536 50%, #4a2f24 100%);
+  color: #faf6f0;
+}
+
+.table-cta-secondary {
+  border: 1px solid var(--table-cocoa);
+  color: var(--table-cocoa);
+  background: transparent;
+}
+
+.table-cta:hover,
+.table-cta-secondary:hover {
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-animate-fade-up,
+  .table-animate-fade-in,
+  .table-animate-line {
+    animation: none;
+  }
+}

@@ -1,6 +1,8 @@
 import { CatalogPage } from "@/components/shop/CatalogPage";
 import { getSearchConfig } from "@/lib/shop/collections";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams: Promise<Record<string, string | undefined>>;
 };

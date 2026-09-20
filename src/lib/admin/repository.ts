@@ -92,6 +92,7 @@ export async function approveVendor(
   vendorId: string,
   adminUserId: string,
   canListAfterDark: boolean,
+  canListTable = false,
 ): Promise<void> {
   const db = admin();
   const { data: vendor, error: fetchErr } = await db
@@ -106,6 +107,7 @@ export async function approveVendor(
     .update({
       status: "approved",
       can_list_after_dark: canListAfterDark,
+      can_list_table: canListTable,
       approved_at: new Date().toISOString(),
       approved_by: adminUserId,
     })

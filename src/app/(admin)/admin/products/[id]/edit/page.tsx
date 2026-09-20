@@ -55,6 +55,9 @@ export default async function EditAdminProductPage({ params }: Props) {
         canListAfterDark={
           product.vendor_id ? Boolean(vendor?.canListAfterDark) : true
         }
+        canListTable={
+          product.vendor_id ? Boolean(vendor?.canListTable) : true
+        }
       />
     </DashboardLayout>
   );

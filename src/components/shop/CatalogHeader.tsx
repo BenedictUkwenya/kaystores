@@ -35,7 +35,7 @@ export function CatalogHeader({
         if (value && key !== "sort" && key !== "page") params.set(key, value);
       });
     }
-    if (nextSort !== "newest") params.set("sort", nextSort);
+    if (nextSort !== "random") params.set("sort", nextSort);
     const qs = params.toString();
     router.push(qs ? `${basePath}?${qs}` : basePath);
   }
@@ -84,6 +84,7 @@ export function CatalogHeader({
               onChange={(e) => handleSortChange(e.target.value)}
               className="h-9 appearance-none rounded-full border border-kay-border bg-kay-input-bg py-0 pl-3.5 pr-9 text-[12px] text-kay-fg outline-none transition-colors focus:border-kay-fg"
             >
+              <option value="random">Discover (mixed)</option>
               <option value="newest">Newest Arrivals</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
