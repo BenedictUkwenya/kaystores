@@ -51,7 +51,7 @@ export function AdminVendorActions({ vendor }: Props) {
               checked={tableTrusted}
               onChange={(e) => setTableTrusted(e.target.checked)}
             />
-            Kay Table
+            Kay Kitchen
           </label>
           <Button
             type="button"
@@ -101,7 +101,7 @@ export function AdminVendorActions({ vendor }: Props) {
               act("toggle_table", { canListTable: !vendor.canListTable })
             }
           >
-            {vendor.canListTable ? "Revoke Kay Table" : "Grant Kay Table"}
+            {vendor.canListTable ? "Revoke Kay Kitchen" : "Grant Kay Kitchen"}
           </Button>
           <Button
             type="button"

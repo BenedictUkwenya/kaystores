@@ -383,7 +383,7 @@ export const ADMIN_NAV: DashboardNavItem[] = [
   },
   {
     href: "/admin/table",
-    label: "Kay Table",
+    label: "Kay Kitchen",
     icon: "tag",
   },
   {
@@ -411,7 +411,7 @@ export const VENDOR_NAV: DashboardNavItem[] = [
   },
   {
     href: "/vendor/table",
-    label: "Kay Table",
+    label: "Kay Kitchen",
     icon: "tag",
   },
   { href: "/vendor/wallet", label: "Wallet", icon: "wallet" },

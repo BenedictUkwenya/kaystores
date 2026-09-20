@@ -7,7 +7,7 @@ export async function GET() {
     const { vendor } = await requireVendor();
     if (!vendor.canListTable) {
       return NextResponse.json(
-        { error: "Kay Table access required." },
+        { error: "Kay Kitchen access required." },
         { status: 403 },
       );
     }

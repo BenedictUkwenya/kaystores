@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       !vendor.canListTable
     ) {
       return Response.json(
-        { error: "Kay Table listings require admin approval." },
+        { error: "Kay Kitchen listings require admin approval." },
         { status: 403 },
       );
     }

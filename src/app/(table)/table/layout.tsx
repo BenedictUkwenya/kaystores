@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TableShell } from "@/components/table/TableShell";
 
 export const metadata: Metadata = {
-  title: "Kay Table — Edible gifts",
+  title: "Kay Kitchen — Edible gifts",
   description:
     "Cakes, chocolates, gourmet hampers, and custom celebration food from Kay Stores.",
 };

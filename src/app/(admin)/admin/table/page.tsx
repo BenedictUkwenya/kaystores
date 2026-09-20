@@ -43,7 +43,7 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
     <DashboardLayout
       role="admin"
       nav={ADMIN_NAV}
-      eyebrow="Kay Table"
+      eyebrow="Kay Kitchen"
       title="Custom requests"
       description="Review cake and edible briefs, assign bakers, quote, and reply in thread."
       badge="Admin"
@@ -82,7 +82,7 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
 
       {requests.length === 0 && (
         <p className="mt-8 text-[14px] text-kay-muted">
-          No Kay Table requests in this view yet.
+          No Kay Kitchen requests in this view yet.
         </p>
       )}
     </DashboardLayout>

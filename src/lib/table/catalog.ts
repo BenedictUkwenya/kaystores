@@ -3,10 +3,10 @@ import type { Product } from "@/types/product";
 export const TABLE_COLLECTION = "table" as const;
 
 export const TABLE_CATEGORIES = [
-  { slug: "cake", label: "Cakes", tag: "cake" },
-  { slug: "chocolate", label: "Chocolates", tag: "chocolate" },
-  { slug: "hamper", label: "Hampers", tag: "hamper" },
-  { slug: "treat", label: "Treats", tag: "treat" },
+  { slug: "cake", label: "Cakes", tag: "cake", blurb: "Celebration cakes" },
+  { slug: "chocolate", label: "Chocolates", tag: "chocolate", blurb: "Boxes & bars" },
+  { slug: "hamper", label: "Hampers", tag: "hamper", blurb: "Gourmet baskets" },
+  { slug: "treat", label: "Treats", tag: "treat", blurb: "Sweet extras" },
 ] as const;
 
 export type TableCategorySlug = (typeof TABLE_CATEGORIES)[number]["slug"];
@@ -38,15 +38,15 @@ export const TABLE_NAV = [
 ] as const;
 
 export const TABLE_COPY = {
-  brand: "Kay Table",
-  tagline: "Edible gifts, made to celebrate",
-  heroTitle: "Kay Table",
+  brand: "Kay Kitchen",
+  tagline: "Edible gifts for every celebration",
+  heroTitle: "Kay Kitchen",
   heroSubtitle:
-    "Cakes, chocolates, and gourmet hampers — ready to gift, or crafted to your brief.",
-  heroBrowse: "Browse the table",
+    "Cakes, chocolates, and gourmet hampers — ready to gift, or made to your brief.",
+  heroBrowse: "Browse",
   heroRequest: "Request a custom cake",
-  featuredTitle: "On the table",
-  categoriesTitle: "What are you craving?",
+  featuredTitle: "Selections",
+  categoriesTitle: "Shop by craving",
   requestTitle: "Tell us about your cake",
   requestSubtitle:
     "Share the occasion, flavours, and date — Kay matches you with a trusted baker.",

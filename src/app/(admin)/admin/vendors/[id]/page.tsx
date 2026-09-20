@@ -106,7 +106,7 @@ export default async function AdminVendorDetailPage({ params }: Props) {
             </div>
             <div>
               <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-kay-subtle">
-                Kay Table
+                Kay Kitchen
               </dt>
               <dd className="mt-1 text-kay-fg">
                 {vendor.canListTable ? "Allowed" : "Not allowed"}

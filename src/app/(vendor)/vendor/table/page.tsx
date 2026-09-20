@@ -20,12 +20,12 @@ export default async function VendorTablePage() {
       <DashboardLayout
         role="vendor"
         nav={VENDOR_NAV}
-        eyebrow="Kay Table"
+        eyebrow="Kay Kitchen"
         title="Edible gifts"
-        description="Kay Table access is granted by admin for bakers and edible makers."
+        description="Kay Kitchen access is granted by admin for bakers and edible makers."
       >
         <p className="rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-6 text-[14px] text-kay-muted">
-          You do not have Kay Table listing permission yet. Contact Kay admin to
+          You do not have Kay Kitchen listing permission yet. Contact Kay admin to
           request access.
         </p>
       </DashboardLayout>
@@ -53,7 +53,7 @@ export default async function VendorTablePage() {
     <DashboardLayout
       role="vendor"
       nav={VENDOR_NAV}
-      eyebrow="Kay Table"
+      eyebrow="Kay Kitchen"
       title="Your table"
       description="Manage edible listings and reply to custom cake requests assigned to you."
     >
@@ -84,7 +84,7 @@ export default async function VendorTablePage() {
         </ul>
         {tableProducts.length === 0 && (
           <p className="mt-3 text-[13px] text-kay-muted">
-            No Kay Table products yet. Add a product and select the Kay Table
+            No Kay Kitchen products yet. Add a product and select the Kay Kitchen
             collection.
           </p>
         )}

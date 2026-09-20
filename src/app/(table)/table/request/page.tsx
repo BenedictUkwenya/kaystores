@@ -2,7 +2,7 @@ import { getAuthContext } from "@/lib/auth/roles";
 import { TableRequestForm } from "@/components/table/TableRequestForm";
 
 export const metadata = {
-  title: "Request a custom cake — Kay Table",
+  title: "Request a custom cake — Kay Kitchen",
 };
 
 export default async function TableRequestPage() {

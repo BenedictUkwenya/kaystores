@@ -80,7 +80,7 @@ export async function GET(_request: Request, { params }: Ctx) {
     if (tableMissing(err)) {
       return NextResponse.json({
         messages: [],
-        warning: "Kay Table messaging is not enabled yet. Run migration 036.",
+        warning: "Kay Kitchen messaging is not enabled yet. Run migration 036.",
       });
     }
     const status = (err as { status?: number }).status;
@@ -119,7 +119,7 @@ export async function POST(request: Request, { params }: Ctx) {
   } catch (err) {
     if (tableMissing(err)) {
       return NextResponse.json(
-        { error: "Kay Table messaging is not enabled yet. Run migration 036." },
+        { error: "Kay Kitchen messaging is not enabled yet. Run migration 036." },
         { status: 503 },
       );
     }

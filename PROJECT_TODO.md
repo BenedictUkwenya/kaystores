@@ -86,7 +86,7 @@
 
 - [x] **Corporate Gifting**
 
-- [x] **Kay Table** (`/table` — edible gifts, custom cake requests, vendor/admin inbox)
+- [x] **Kay Kitchen** (`/table` — edible gifts, custom cake requests, vendor/admin inbox)
 
 - [x] Category: For Her
 

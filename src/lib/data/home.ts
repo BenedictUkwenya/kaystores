@@ -103,7 +103,7 @@ export const FOOTER_SHOP_LINKS: Record<string, string> = {
   "Best Sellers": "/gifts",
   "Luxury Collection": "/gifts/luxury-collection",
   "Corporate Gifts": "/gifts/corporate-gifting",
-  "Kay Table": "/table",
+  "Kay Kitchen": "/table",
   "Gift Cards": "/gifts",
 };
 

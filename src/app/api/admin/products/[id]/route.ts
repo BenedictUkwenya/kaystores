@@ -70,7 +70,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
       const vendor = await fetchVendorById(String(data.vendor_id));
       if (!vendor?.canListTable) {
         return Response.json(
-          { error: "Kay Table listings require admin approval." },
+          { error: "Kay Kitchen listings require admin approval." },
           { status: 403 },
         );
       }

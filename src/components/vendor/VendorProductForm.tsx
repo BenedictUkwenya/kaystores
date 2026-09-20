@@ -572,14 +572,14 @@ export function VendorProductForm({
 
       {canListTable ? (
         <p className="rounded-lg border border-[#6b3f2a]/25 bg-[#6b3f2a]/8 px-4 py-3 text-[12px] text-kay-fg">
-          Kay Table: tick the <strong>Kay Table</strong> collection above, set
+          Kay Kitchen: tick the <strong>Kay Kitchen</strong> collection above, set
           master category to <strong>Edible</strong>, and fill servings / storage
           / lead time / allergens. Tag products with cake, chocolate, hamper, or
           treat so they filter on /table.
         </p>
       ) : (
         <p className="text-[12px] text-kay-muted">
-          Kay Table (edible) listings require admin approval. Contact Kay to apply.
+          Kay Kitchen (edible) listings require admin approval. Contact Kay to apply.
         </p>
       )}
 

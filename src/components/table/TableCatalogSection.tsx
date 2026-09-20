@@ -30,18 +30,17 @@ export function TableCatalogSection({ products, activeTag }: Props) {
   return (
     <section
       id="selections"
-      className="relative scroll-mt-20 px-4 py-16 lg:px-10 lg:py-20"
+      className="relative scroll-mt-20 bg-[var(--table-paper)] px-4 py-16 lg:px-10 lg:py-20"
     >
       <div className="mx-auto max-w-[1280px]">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--table-berry)]">
-              Ready to gift
-            </p>
-            <h2 className="mt-2 font-serif text-[32px] text-[var(--table-cocoa)] sm:text-[40px]">
+            <h2 className="font-serif text-[30px] tracking-[-0.02em] text-[var(--table-ink)] sm:text-[36px]">
               {TABLE_COPY.featuredTitle}
             </h2>
-            <div className="table-animate-line mt-4 h-0.5 w-full max-w-xs bg-[var(--table-cocoa)]/40" />
+            <p className="mt-2 text-[14px] text-[var(--table-muted)]">
+              Ready-to-gift edible pieces from trusted makers.
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <label className="sr-only" htmlFor="table-sort">
@@ -51,9 +50,9 @@ export function TableCatalogSection({ products, activeTag }: Props) {
               id="table-sort"
               value={sort}
               onChange={(e) => setSort(e.target.value as SortOption)}
-              className="h-10 rounded-lg border border-[var(--table-line)] bg-[var(--table-paper)] px-3 text-[13px] text-[var(--table-ink)] outline-none focus:border-[var(--table-cocoa)]"
+              className="h-10 rounded-full border border-[var(--table-line)] bg-transparent px-4 text-[13px] text-[var(--table-ink)] outline-none focus:border-[var(--table-ink)]"
             >
-              <option value="featured">Discover (mixed)</option>
+              <option value="featured">Discover</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
             </select>
@@ -65,8 +64,8 @@ export function TableCatalogSection({ products, activeTag }: Props) {
             href="/table"
             className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
               !activeTag
-                ? "bg-[var(--table-cocoa)] text-[var(--table-paper)]"
-                : "border border-[var(--table-line)] text-[var(--table-muted)] hover:border-[var(--table-cocoa)]"
+                ? "bg-[var(--table-ink)] text-[var(--table-paper)]"
+                : "text-[var(--table-muted)] hover:text-[var(--table-ink)]"
             }`}
           >
             All
@@ -77,8 +76,8 @@ export function TableCatalogSection({ products, activeTag }: Props) {
               href={`/table?tag=${cat.tag}`}
               className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
                 activeTag === cat.tag
-                  ? "bg-[var(--table-cocoa)] text-[var(--table-paper)]"
-                  : "border border-[var(--table-line)] text-[var(--table-muted)] hover:border-[var(--table-cocoa)]"
+                  ? "bg-[var(--table-ink)] text-[var(--table-paper)]"
+                  : "text-[var(--table-muted)] hover:text-[var(--table-ink)]"
               }`}
             >
               {cat.label}
@@ -93,13 +92,14 @@ export function TableCatalogSection({ products, activeTag }: Props) {
         </div>
 
         {sorted.length === 0 && (
-          <div className="mt-12 text-center">
-            <p className="text-[14px] text-[var(--table-muted)]">
-              The table is being set. Request a custom cake while we add more.
+          <div className="mt-16 max-w-md">
+            <p className="text-[15px] leading-relaxed text-[var(--table-muted)]">
+              We&apos;re stocking the kitchen. In the meantime, request a custom
+              cake and we&apos;ll match you with a baker.
             </p>
             <Link
               href={TABLE_ROUTES.request}
-              className="table-cta mt-6 inline-flex h-11 items-center justify-center rounded-lg px-8 text-[13px] font-semibold"
+              className="table-cta mt-6 inline-flex h-11 items-center justify-center rounded-full px-7 text-[13px] font-semibold"
             >
               {TABLE_COPY.heroRequest}
             </Link>

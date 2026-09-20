@@ -19,7 +19,7 @@ export function TableProductCard({ product, index = 0 }: Props) {
 
   return (
     <article className="table-product-card group flex flex-col">
-      <div className="table-product-image-wrap relative overflow-hidden rounded-2xl border border-[var(--table-line)] bg-[var(--table-paper)]">
+      <div className="table-product-image-wrap relative overflow-hidden rounded-xl border border-[var(--table-line)] bg-[var(--table-bg)]">
         <Link href={`/products/${product.slug}`} className="block overflow-hidden">
           <Image
             src={imgSrc}
@@ -32,16 +32,16 @@ export function TableProductCard({ product, index = 0 }: Props) {
         </Link>
         <ProductCardActions product={product} />
       </div>
-      <div className="mt-4" style={{ transitionDelay: `${index * 40}ms` }}>
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--table-berry)]">
+      <div className="mt-3.5" style={{ transitionDelay: `${index * 40}ms` }}>
+        <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--table-subtle)]">
           {product.brand}
         </p>
         <Link href={`/products/${product.slug}`}>
-          <h3 className="mt-1 text-[14px] font-medium leading-snug text-[var(--table-ink)] transition-colors group-hover:text-[var(--table-cocoa)]">
+          <h3 className="mt-1 text-[14px] font-medium leading-snug text-[var(--table-ink)] transition-opacity group-hover:opacity-70">
             {product.name}
           </h3>
         </Link>
-        <p className="mt-1.5 text-[15px] font-semibold tabular-nums text-[var(--table-cocoa)]">
+        <p className="mt-1.5 text-[15px] font-semibold tabular-nums text-[var(--table-ink)]">
           {formatNaira(product.price)}
         </p>
       </div>

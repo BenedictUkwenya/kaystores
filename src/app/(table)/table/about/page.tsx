@@ -1,24 +1,24 @@
 import Link from "next/link";
-import { TABLE_ROUTES } from "@/lib/table/catalog";
+import { TABLE_COPY, TABLE_ROUTES } from "@/lib/table/catalog";
 
 export const metadata = {
-  title: "About — Kay Table",
+  title: "About — Kay Kitchen",
 };
 
 export default function TableAboutPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 lg:px-10 lg:py-20">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--table-berry)]">
-        About Kay Table
+      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--table-accent)]">
+        About {TABLE_COPY.brand}
       </p>
-      <h1 className="mt-3 font-serif text-[28px] text-[var(--table-cocoa)] sm:text-[36px]">
+      <h1 className="mt-3 font-serif text-[28px] tracking-[-0.02em] text-[var(--table-ink)] sm:text-[36px]">
         Celebration food, curated with care
       </h1>
       <div className="mt-8 space-y-5 text-[15px] leading-relaxed text-[var(--table-muted)]">
         <p>
-          Kay Table is our edible world — cakes, chocolates, gourmet hampers, and
-          treats chosen for gifting and gatherings. Separate from luxury goods and
-          After Dark, with its own bakers and brief.
+          Kay Kitchen is our edible world — cakes, chocolates, gourmet hampers,
+          and treats chosen for gifting and gatherings. Separate from luxury goods
+          and After Dark, with its own bakers and brief.
         </p>
         <p>
           Browse ready-to-buy selections, or request a custom cake. We review every
@@ -32,9 +32,9 @@ export default function TableAboutPage() {
       </div>
       <Link
         href={TABLE_ROUTES.shop}
-        className="table-cta mt-10 inline-flex h-11 items-center justify-center rounded-lg px-8 text-[13px] font-semibold"
+        className="table-cta mt-10 inline-flex h-11 items-center justify-center rounded-full px-8 text-[13px] font-semibold"
       >
-        Browse the table
+        Browse
       </Link>
     </div>
   );

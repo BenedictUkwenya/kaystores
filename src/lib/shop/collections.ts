@@ -198,6 +198,7 @@ export const NAV_DROPDOWN_LINKS = {
 } as const;
 
 export const NAV_STATIC_LINKS = {
+  "Kay Kitchen": "/table",
   "Luxury Collection": COLLECTIONS[0].href,
   "Corporate Gifting": COLLECTIONS[1].href,
 } as const;

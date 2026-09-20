@@ -28,18 +28,18 @@ export default async function TableRequestStatusPage({ params }: PageProps) {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 lg:px-10 lg:py-14">
       <nav className="flex flex-wrap items-center gap-1.5 text-[12px] text-[var(--table-muted)]">
-        <Link href={TABLE_ROUTES.home} className="hover:text-[var(--table-cocoa)]">
-          Kay Table
+        <Link href={TABLE_ROUTES.home} className="hover:text-[var(--table-ink)]">
+          Kay Kitchen
         </Link>
         <span>/</span>
         <span className="text-[var(--table-ink)]">Request</span>
       </nav>
 
       <div className="mt-6 text-center">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--table-berry)]">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--table-accent)]">
           Custom request
         </p>
-        <h1 className="mt-2 font-serif text-[30px] text-[var(--table-cocoa)] sm:text-[36px]">
+        <h1 className="mt-2 font-serif text-[30px] text-[var(--table-ink)] sm:text-[36px]">
           {request.occasion || request.category}
         </h1>
         <p className="mt-3 text-[14px] text-[var(--table-muted)]">
@@ -112,7 +112,7 @@ export default async function TableRequestStatusPage({ params }: PageProps) {
             <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">
               Quote
             </dt>
-            <dd className="mt-1 font-medium text-[var(--table-cocoa)]">
+            <dd className="mt-1 font-medium text-[var(--table-ink)]">
               {formatNaira(request.quoteAmount)}
               {request.quoteNote ? ` — ${request.quoteNote}` : ""}
             </dd>

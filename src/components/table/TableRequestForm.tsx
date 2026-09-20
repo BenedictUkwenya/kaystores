@@ -96,10 +96,10 @@ export function TableRequestForm({ defaultContact }: Props) {
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-xl space-y-6">
       <div className="text-center">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--table-berry)]">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--table-accent)]">
           Custom request
         </p>
-        <h1 className="mt-2 font-serif text-[32px] text-[var(--table-cocoa)] sm:text-[40px]">
+        <h1 className="mt-2 font-serif text-[32px] text-[var(--table-ink)] sm:text-[40px]">
           {TABLE_COPY.requestTitle}
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-[var(--table-muted)]">
@@ -116,7 +116,7 @@ export function TableRequestForm({ defaultContact }: Props) {
           onChange={(e) =>
             patch("category", e.target.value as TableRequestCategory)
           }
-          className="h-11 w-full rounded-lg border border-[var(--table-line)] bg-[var(--table-paper)] px-3.5 text-[13px] outline-none focus:border-[var(--table-cocoa)]"
+          className="h-11 w-full rounded-lg border border-[var(--table-line)] bg-[var(--table-paper)] px-3.5 text-[13px] outline-none focus:border-[var(--table-ink)]"
         >
           {CATEGORIES.map((c) => (
             <option key={c.value} value={c.value}>
@@ -180,7 +180,7 @@ export function TableRequestForm({ defaultContact }: Props) {
       />
 
       <div className="border-t border-[var(--table-line)] pt-6">
-        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--table-cocoa)]">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--table-ink)]">
           Contact
         </p>
         <div className="space-y-4">
@@ -210,7 +210,7 @@ export function TableRequestForm({ defaultContact }: Props) {
       <button
         type="submit"
         disabled={submitting}
-        className="table-cta inline-flex h-12 w-full items-center justify-center rounded-lg text-[14px] font-semibold disabled:opacity-60"
+        className="table-cta inline-flex h-12 w-full items-center justify-center rounded-full text-[14px] font-semibold disabled:opacity-60"
       >
         {submitting ? "Sending…" : "Submit request"}
       </button>

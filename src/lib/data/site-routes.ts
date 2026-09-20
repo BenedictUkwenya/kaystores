@@ -25,7 +25,7 @@ export const FOOTER_HELP_LINKS: Record<string, string> = {
 
 export const FOOTER_ABOUT_LINKS: Record<string, string> = {
   "Our Story": SITE_ROUTES.about,
-  "Kay Table": SITE_ROUTES.table,
+  "Kay Kitchen": SITE_ROUTES.table,
   "Private collection (18+)": SITE_ROUTES.afterDark,
   Careers: SITE_ROUTES.careers,
   Press: SITE_ROUTES.press,
