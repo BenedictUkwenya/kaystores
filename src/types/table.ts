@@ -13,6 +13,8 @@ export type TableRequestCategory =
   | "treat"
   | "other";
 
+export type TableFulfillmentMethod = "delivery" | "pickup";
+
 export type TableSenderRole = "customer" | "vendor" | "admin";
 
 export type TableRequest = {
@@ -29,6 +31,10 @@ export type TableRequest = {
   styleNotes?: string | null;
   neededBy?: string | null;
   city?: string | null;
+  state?: string | null;
+  fulfillmentMethod: TableFulfillmentMethod;
+  pickupHubId?: string | null;
+  pickupHubName?: string | null;
   budget?: number | null;
   category: TableRequestCategory;
   assignedVendorId?: string | null;
@@ -59,6 +65,10 @@ export type CreateTableRequestInput = {
   styleNotes?: string;
   neededBy?: string;
   city?: string;
+  state?: string;
+  fulfillmentMethod?: TableFulfillmentMethod;
+  pickupHubId?: string;
+  pickupHubName?: string;
   budget?: number;
   category?: TableRequestCategory;
   userId?: string | null;

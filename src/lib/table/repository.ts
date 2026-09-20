@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   CreateTableRequestInput,
+  TableFulfillmentMethod,
   TableRequest,
   TableRequestMessage,
   TableRequestStatus,
@@ -23,6 +24,7 @@ function mapRequest(
   row: Record<string, unknown>,
   vendorName?: string | null,
 ): TableRequest {
+  const method = row.fulfillment_method;
   return {
     id: String(row.id),
     reference: String(row.reference),
@@ -37,6 +39,13 @@ function mapRequest(
     styleNotes: row.style_notes != null ? String(row.style_notes) : null,
     neededBy: row.needed_by != null ? String(row.needed_by) : null,
     city: row.city != null ? String(row.city) : null,
+    state: row.state != null ? String(row.state) : null,
+    fulfillmentMethod:
+      method === "pickup" ? "pickup" : ("delivery" as TableFulfillmentMethod),
+    pickupHubId:
+      row.pickup_hub_id != null ? String(row.pickup_hub_id) : null,
+    pickupHubName:
+      row.pickup_hub_name != null ? String(row.pickup_hub_name) : null,
     budget: row.budget != null ? Number(row.budget) : null,
     category: (row.category as TableRequest["category"]) ?? "cake",
     assignedVendorId:
@@ -64,6 +73,9 @@ function mapMessage(row: Record<string, unknown>): TableRequestMessage {
 export async function createTableRequest(
   input: CreateTableRequestInput,
 ): Promise<TableRequest> {
+  const method: TableFulfillmentMethod =
+    input.fulfillmentMethod === "pickup" ? "pickup" : "delivery";
+
   const { data, error } = await db()
     .from("table_requests")
     .insert({
@@ -78,7 +90,17 @@ export async function createTableRequest(
       flavour_notes: input.flavourNotes?.trim() || null,
       style_notes: input.styleNotes?.trim() || null,
       needed_by: input.neededBy || null,
-      city: input.city?.trim() || null,
+      fulfillment_method: method,
+      city: method === "delivery" ? input.city?.trim() || null : null,
+      state: method === "delivery" ? input.state?.trim() || null : null,
+      pickup_hub_id:
+        method === "pickup" &&
+        input.pickupHubId &&
+        /^[0-9a-f-]{36}$/i.test(input.pickupHubId)
+          ? input.pickupHubId
+          : null,
+      pickup_hub_name:
+        method === "pickup" ? input.pickupHubName?.trim() || null : null,
       budget:
         input.budget != null && Number.isFinite(input.budget)
           ? Math.max(0, Math.floor(input.budget))

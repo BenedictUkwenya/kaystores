@@ -73,14 +73,20 @@ export default async function TableRequestStatusPage({ params }: PageProps) {
             <dd className="mt-1 text-[var(--table-ink)]">{request.neededBy}</dd>
           </div>
         )}
-        {request.city && (
-          <div>
-            <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">
-              City
-            </dt>
-            <dd className="mt-1 text-[var(--table-ink)]">{request.city}</dd>
-          </div>
-        )}
+        <div>
+          <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">
+            Fulfilment
+          </dt>
+          <dd className="mt-1 text-[var(--table-ink)]">
+            {request.fulfillmentMethod === "pickup"
+              ? `Pickup${request.pickupHubName ? ` — ${request.pickupHubName}` : " at Kay hub"}`
+              : `Kay delivery${
+                  request.city
+                    ? ` — ${request.city}${request.state ? `, ${request.state}` : ""}`
+                    : ""
+                }`}
+          </dd>
+        </div>
         {request.budget != null && (
           <div>
             <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">

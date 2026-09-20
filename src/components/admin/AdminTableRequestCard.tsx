@@ -82,7 +82,14 @@ export function AdminTableRequestCard({
           <p className="mt-1 text-[12px] text-kay-subtle">
             {request.contactEmail}
             {request.contactPhone ? ` · ${request.contactPhone}` : ""}
-            {request.city ? ` · ${request.city}` : ""}
+            {" · "}
+            {request.fulfillmentMethod === "pickup"
+              ? `Pickup${request.pickupHubName ? ` @ ${request.pickupHubName}` : ""}`
+              : `Kay delivery${
+                  request.city
+                    ? ` · ${request.city}${request.state ? `, ${request.state}` : ""}`
+                    : ""
+                }`}
           </p>
         </div>
         <Button
