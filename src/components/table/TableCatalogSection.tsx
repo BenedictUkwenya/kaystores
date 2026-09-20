@@ -64,7 +64,7 @@ export function TableCatalogSection({ products, activeTag }: Props) {
             href="/table"
             className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
               !activeTag
-                ? "bg-[var(--table-ink)] text-[var(--table-paper)]"
+                ? "bg-[var(--table-ink)] text-[#fffcf8]"
                 : "text-[var(--table-muted)] hover:text-[var(--table-ink)]"
             }`}
           >
@@ -76,7 +76,7 @@ export function TableCatalogSection({ products, activeTag }: Props) {
               href={`/table?tag=${cat.tag}`}
               className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors ${
                 activeTag === cat.tag
-                  ? "bg-[var(--table-ink)] text-[var(--table-paper)]"
+                  ? "bg-[var(--table-ink)] text-[#fffcf8]"
                   : "text-[var(--table-muted)] hover:text-[var(--table-ink)]"
               }`}
             >

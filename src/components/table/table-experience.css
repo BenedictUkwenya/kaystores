@@ -13,10 +13,6 @@
   color: var(--table-ink);
 }
 
-.table-experience a {
-  color: inherit;
-}
-
 .table-paper-grain {
   background:
     radial-gradient(ellipse 70% 55% at 85% 30%, rgba(184, 154, 106, 0.12), transparent 60%),
@@ -32,12 +28,6 @@
 .table-animate-fade-in {
   animation: table-fade-in 0.8s ease-out both;
   animation-delay: var(--table-delay, 0ms);
-}
-
-.table-animate-line {
-  animation: table-line 0.75s ease-out both;
-  animation-delay: var(--table-delay, 0ms);
-  transform-origin: left center;
 }
 
 @keyframes table-fade-up {
@@ -60,15 +50,6 @@
   }
 }
 
-@keyframes table-line {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
 .table-product-card .table-product-image-wrap {
   transition: box-shadow 0.35s ease, transform 0.35s ease;
 }
@@ -78,39 +59,55 @@
   transform: translateY(-2px);
 }
 
+/* Primary / secondary CTAs — specificity beats generic `a` color */
+.table-experience a.table-cta,
+.table-experience button.table-cta,
 .table-cta {
-  background: #111111;
-  color: #fffcf8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--table-ink);
+  color: #fffcf8 !important;
+  border: 1px solid var(--table-ink);
+  text-decoration: none;
 }
 
+.table-experience a.table-cta:hover,
+.table-experience button.table-cta:hover,
 .table-cta:hover {
-  background: #2a2a2a;
+  background: #2c2c2c;
+  border-color: #2c2c2c;
+  color: #fffcf8 !important;
 }
 
+.table-experience a.table-cta-secondary,
+.table-experience button.table-cta-secondary,
 .table-cta-secondary {
-  border: 1px solid rgba(17, 17, 17, 0.22);
-  color: var(--table-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
+  color: var(--table-ink) !important;
+  border: 1px solid rgba(17, 17, 17, 0.28);
+  text-decoration: none;
 }
 
+.table-experience a.table-cta-secondary:hover,
+.table-experience button.table-cta-secondary:hover,
 .table-cta-secondary:hover {
   border-color: var(--table-ink);
+  background: rgba(17, 17, 17, 0.03);
+  color: var(--table-ink) !important;
 }
 
 .table-cta,
 .table-cta-secondary {
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.table-cta:hover,
-.table-cta-secondary:hover {
-  transform: translateY(-1px);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .table-animate-fade-up,
-  .table-animate-fade-in,
-  .table-animate-line {
+  .table-animate-fade-in {
     animation: none;
   }
 }

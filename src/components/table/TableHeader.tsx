@@ -8,6 +8,7 @@ import { useCart } from "@/providers/CartProvider";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { IconBag, IconSearch, IconX } from "@/components/ui/Icons";
 
 export function TableHeader() {
@@ -30,18 +31,26 @@ export function TableHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--table-line)] bg-[color-mix(in_srgb,var(--table-paper)_92%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between gap-2 px-4 sm:px-6 lg:px-10">
-        <div className="flex min-w-0 items-baseline">
-          <Logo
-            href={TABLE_ROUTES.home}
-            size="md"
-            label={`${TABLE_COPY.brand} — Home`}
-          />
-          <span
-            className="ml-2.5 hidden border-l border-[var(--table-line)] pl-2.5 font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--table-muted)] sm:inline"
-            aria-hidden
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-baseline">
+            <Logo
+              href={TABLE_ROUTES.home}
+              size="md"
+              label={`${TABLE_COPY.brand} — Home`}
+            />
+            <span
+              className="ml-2.5 hidden border-l border-[var(--table-line)] pl-2.5 font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--table-muted)] sm:inline"
+              aria-hidden
+            >
+              Kitchen
+            </span>
+          </div>
+          <Link
+            href="/"
+            className="hidden text-[12px] text-[var(--table-muted)] transition-colors hover:text-[var(--table-ink)] md:inline"
           >
-            Kitchen
-          </span>
+            ← Kay Stores
+          </Link>
         </div>
 
         <nav
@@ -59,7 +68,7 @@ export function TableHeader() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <div className="relative flex items-center">
             {searchOpen ? (
               <form
@@ -106,6 +115,7 @@ export function TableHeader() {
               </button>
             )}
           </div>
+          <ThemeToggle className="hidden sm:flex" />
           <HeaderPortalLink className="hidden sm:flex" />
           <HeaderAccountLink />
           <button
@@ -138,6 +148,16 @@ export function TableHeader() {
 
       {menuOpen && (
         <nav className="max-h-[70vh] overflow-y-auto border-t border-[var(--table-line)] bg-[var(--table-paper)] px-4 py-4 sm:px-6 lg:hidden">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--table-line)] pb-4">
+            <Link
+              href="/"
+              onClick={() => setMenuOpen(false)}
+              className="text-[14px] font-medium text-[var(--table-ink)]"
+            >
+              ← Kay Stores
+            </Link>
+            <ThemeToggle />
+          </div>
           <ul className="space-y-3">
             {TABLE_NAV.map((item) => (
               <li key={item.label}>
@@ -152,15 +172,6 @@ export function TableHeader() {
             ))}
             <li className="border-t border-[var(--table-line)] pt-3">
               <HeaderPortalLink className="flex flex-wrap gap-2" />
-            </li>
-            <li>
-              <Link
-                href="/"
-                onClick={() => setMenuOpen(false)}
-                className="block py-1 text-[14px] text-[var(--table-muted)]"
-              >
-                Return to Kay Stores
-              </Link>
             </li>
           </ul>
         </nav>
