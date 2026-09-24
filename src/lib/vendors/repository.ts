@@ -547,6 +547,10 @@ function mapVendorOrderItem(
   row: Record<string, unknown>,
   order?: Record<string, unknown>,
 ): VendorOrderItem {
+  const hubAddress =
+    row.selected_hub_address && typeof row.selected_hub_address === "object"
+      ? (row.selected_hub_address as AddressDetails)
+      : null;
   return {
     id: String(row.id),
     orderId: String(row.order_id),
@@ -560,6 +564,23 @@ function mapVendorOrderItem(
     vendorEarnings: Number(row.vendor_earnings),
     fulfillmentStatus: row.fulfillment_status as VendorOrderItem["fulfillmentStatus"],
     hubNotes: row.hub_notes != null ? String(row.hub_notes) : null,
+    selectedHubId:
+      row.selected_hub_id != null ? String(row.selected_hub_id) : null,
+    selectedHubName:
+      row.selected_hub_name != null ? String(row.selected_hub_name) : null,
+    selectedHubPhone:
+      row.selected_hub_phone != null ? String(row.selected_hub_phone) : null,
+    selectedHubAddress: hubAddress,
+    hubSelectedAt:
+      row.hub_selected_at != null ? String(row.hub_selected_at) : null,
+    vendorDispatchedAt:
+      row.vendor_dispatched_at != null
+        ? String(row.vendor_dispatched_at)
+        : null,
+    hubReminderSentAt:
+      row.hub_reminder_sent_at != null
+        ? String(row.hub_reminder_sent_at)
+        : null,
     createdAt: String(row.created_at),
     orderNumber: order ? String(order.order_number) : undefined,
     paymentStatus: order
@@ -588,14 +609,58 @@ export async function fetchVendorOrderItems(
 export async function updateVendorFulfillment(
   itemId: string,
   vendorId: string,
-  update: { fulfillmentStatus?: string; hubNotes?: string },
+  update: {
+    fulfillmentStatus?: string;
+    hubNotes?: string;
+    selectedHubId?: string;
+  },
 ): Promise<void> {
   const supabase = await createClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("vendor_order_items")
+    .select("*")
+    .eq("id", itemId)
+    .eq("vendor_id", vendorId)
+    .maybeSingle();
+  if (fetchError) throw new Error(fetchError.message);
+  if (!existing) throw new Error("Order item not found.");
+
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
-  if (update.fulfillmentStatus) payload.fulfillment_status = update.fulfillmentStatus;
+
   if (update.hubNotes !== undefined) payload.hub_notes = update.hubNotes;
+
+  if (update.selectedHubId) {
+    const { getShippingHubById } = await import("@/lib/shipping/hubs");
+    const hub = await getShippingHubById(update.selectedHubId);
+    if (!hub || !hub.isActive) {
+      throw new Error("That hub is not available. Pick another option.");
+    }
+    payload.selected_hub_id = hub.id;
+    payload.selected_hub_name = hub.name;
+    payload.selected_hub_phone = hub.contactPhone;
+    payload.selected_hub_address = hub.address;
+    payload.hub_selected_at = new Date().toISOString();
+  }
+
+  if (update.fulfillmentStatus) {
+    if (update.fulfillmentStatus === "at_hub") {
+      const hubId =
+        (payload.selected_hub_id as string | undefined) ??
+        (existing.selected_hub_id as string | null);
+      if (!hubId) {
+        throw new Error(
+          "Choose which hub you are sending to before marking dispatched.",
+        );
+      }
+      payload.fulfillment_status = "at_hub";
+      payload.vendor_dispatched_at = new Date().toISOString();
+    } else {
+      payload.fulfillment_status = update.fulfillmentStatus;
+    }
+  }
 
   const { error } = await supabase
     .from("vendor_order_items")

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireVendor } from "@/lib/auth/roles";
 import { fetchVendorOrderItems } from "@/lib/vendors/repository";
+import { nearestHubsForVendor } from "@/lib/shipping/hubs";
 import {
   DashboardLayout,
   VENDOR_NAV,
@@ -40,7 +41,10 @@ function StepRail({ status }: { status: string }) {
 
 export default async function VendorOrdersPage() {
   const { vendor } = await requireVendor();
-  const items = await fetchVendorOrderItems(vendor.id);
+  const [items, hubOptions] = await Promise.all([
+    fetchVendorOrderItems(vendor.id),
+    nearestHubsForVendor(vendor.pickupAddress?.state, 2),
+  ]);
   const open = items.filter(
     (i) => !["completed", "cancelled"].includes(i.fulfillmentStatus),
   ).length;
@@ -51,7 +55,7 @@ export default async function VendorOrdersPage() {
       nav={VENDOR_NAV}
       eyebrow="Fulfilment"
       title="Orders"
-      description={`${items.length} assigned · ${open} open. Deliver to the Kay hub within 12 hours of payment.`}
+      description={`${items.length} assigned · ${open} open. Pick a nearby hub, attach the phone number, send within 12 hours, then mark dispatched.`}
       actions={
         <Link
           href="/vendor/wallet"
@@ -66,17 +70,17 @@ export default async function VendorOrdersPage() {
           {
             icon: <IconOrders className="h-4 w-4" />,
             title: "Paid",
-            text: "Wait for payment confirmation before shipping to hub.",
+            text: "Wait for payment confirmation before shipping to a hub.",
           },
           {
             icon: <IconTruck className="h-4 w-4" />,
-            title: "To hub",
-            text: "Mark awaiting hub delivery when the parcel leaves.",
+            title: "Pick hub & send",
+            text: "Choose one of two nearby hubs, attach the phone number, then send.",
           },
           {
             icon: <IconPackage className="h-4 w-4" />,
-            title: "QC & earn",
-            text: "Earnings release after Kay QC passes.",
+            title: "Mark dispatched",
+            text: "Tick dispatched after sending. Earnings release after Kay QC.",
           },
         ].map((card) => (
           <div
@@ -135,11 +139,21 @@ export default async function VendorOrdersPage() {
                         label={`Payment ${item.paymentStatus}`}
                       />
                     )}
+                    {item.hubReminderSentAt &&
+                      item.fulfillmentStatus === "awaiting_hub_delivery" && (
+                        <StatusBadge
+                          status="pending"
+                          label="12h reminder sent"
+                        />
+                      )}
                   </div>
                   <StepRail status={item.fulfillmentStatus} />
                 </div>
-                <div className="w-full lg:max-w-xs">
-                  <VendorFulfillmentActions item={item} />
+                <div className="w-full lg:max-w-sm">
+                  <VendorFulfillmentActions
+                    item={item}
+                    hubOptions={hubOptions}
+                  />
                 </div>
               </div>
             </li>

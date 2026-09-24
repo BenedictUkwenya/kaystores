@@ -102,6 +102,7 @@ type Payload =
         | "vendor_withdrawal_update"
         | "vendor_concierge_assigned"
         | "vendor_new_order"
+        | "vendor_hub_dispatch_reminder"
         | "concierge_offer_won"
         | "concierge_offer_lost";
       appUrl: string;
@@ -116,6 +117,7 @@ type Payload =
       rejectionReason?: string;
       withdrawalAmount?: number;
       withdrawalStatus?: string;
+      hubOptions?: { name: string; phone: string; address: string }[];
       request?: {
         referenceNumber: string;
         productName: string;
@@ -625,11 +627,22 @@ function buildMessage(
       };
     }
     case "vendor_new_order": {
-      const { vendor, appUrl, orderNumber, lineSummary } = payload;
+      const { vendor, appUrl, orderNumber, lineSummary, hubOptions } = payload;
+      const hubBlock =
+        hubOptions && hubOptions.length
+          ? `<p style="color:#5c5c5c;line-height:1.6;margin-top:16px"><strong>Send to a nearby hub</strong> — pick one, attach the phone number on the parcel, then mark dispatched in your portal:</p>
+        <ul style="color:#5c5c5c;line-height:1.7;padding-left:18px">${hubOptions
+          .map(
+            (h) =>
+              `<li><strong>${h.name}</strong><br/>${h.address}<br/>Attach phone: <strong>${h.phone}</strong></li>`,
+          )
+          .join("")}</ul>`
+          : `<p style="color:#5c5c5c;line-height:1.6;margin-top:16px">Open your vendor portal to choose a hub and get the phone number to attach.</p>`;
       const html = layout(
         "New paid order",
         `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, payment is confirmed for order <strong>${orderNumber}</strong>.</p>
         <p style="color:#5c5c5c;line-height:1.6">${lineSummary || "Your catalogue items are included in this order."}</p>
+        ${hubBlock}
         <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/orders">Open vendor orders</a></p>`,
       );
       return {
@@ -639,6 +652,35 @@ function buildMessage(
         text: stripHtml(html),
         replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "vendor_new_order" }],
+      };
+    }
+    case "vendor_hub_dispatch_reminder": {
+      const { vendor, appUrl, orderNumber, productName, hubOptions } = payload;
+      const hubBlock =
+        hubOptions && hubOptions.length
+          ? `<ul style="color:#5c5c5c;line-height:1.7;padding-left:18px">${hubOptions
+              .map(
+                (h) =>
+                  `<li><strong>${h.name}</strong> — attach <strong>${h.phone}</strong><br/>${h.address}</li>`,
+              )
+              .join("")}</ul>`
+          : "";
+      const html = layout(
+        "Reminder — send to hub",
+        `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, order <strong>${orderNumber}</strong>${
+          productName ? ` (${productName})` : ""
+        } is still waiting for hub dispatch (12+ hours since payment).</p>
+        <p style="color:#5c5c5c;line-height:1.6">Please choose a hub, attach the phone number on the parcel, send it, then mark <strong>dispatched</strong> in your portal.</p>
+        ${hubBlock}
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/orders">Open vendor orders</a></p>`,
+      );
+      return {
+        to: [vendor.contactEmail],
+        subject: `Reminder — dispatch order ${orderNumber}`,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: "vendor_hub_dispatch_reminder" }],
       };
     }
     case "concierge_recommendation_ready": {

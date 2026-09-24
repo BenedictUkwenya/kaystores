@@ -103,6 +103,7 @@ Do **not** rely on client `signUp` / `resetPasswordForEmail` for mail — those 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + server reads with RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only: invoke Edge Functions (not Resend) |
 | `NEXT_PUBLIC_APP_URL` | Live site URL for invite/email links (not localhost in production) |
+| `CRON_SECRET` | Bearer token for `/api/cron/vendor-hub-reminders` (also set on Vercel for Cron) |
 
 Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fallback for the auth-hook invite template.
 
@@ -118,7 +119,8 @@ Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fa
 | Concierge submitted | Submitter confirmation + team alert (+ link to admin concierge) |
 | Concierge offers ready / client revision | Team admin alert |
 | Concierge dispatched to vendors | Each assigned vendor |
-| Shop order paid | Buyer + team + each vendor on the order |
+| Shop order paid | Buyer + team + each vendor (hub options + attach phone in email) |
+| Vendor not dispatched after 12h | Vendor reminder (`vendor_hub_dispatch_reminder` via hourly cron) |
 | Contact form | Team alert |
 
 Orders persist to `public.orders` when Supabase is configured; in-memory fallback remains for local dev without DB.

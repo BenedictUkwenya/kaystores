@@ -165,6 +165,60 @@ export async function resolveShippingHub(
   );
 }
 
+function hubProximityScore(
+  hub: ShippingHub,
+  vendorState: string | null,
+): number {
+  if (!vendorState) {
+    // No vendor address yet — prefer default, then sort order.
+    return (hub.isDefault ? 0 : 100) + hub.sortOrder;
+  }
+  const target = normalizeStateName(vendorState);
+  const hubState = normalizeStateName(hub.address.state || "");
+  if (hubState && hubState === target) return 0;
+  if (
+    hub.serviceStates.some((s) => serviceStateKeys(s).includes(target))
+  ) {
+    return 10;
+  }
+  if (hub.isDefault) return 50;
+  if (hub.serviceStates.length === 0) return 60;
+  return 100 + hub.sortOrder;
+}
+
+/**
+ * Nearest hubs for a vendor to send stock to (manual pick).
+ * Uses vendor pickup state when set; otherwise default + next by sort.
+ * Returns up to `limit` (default 2) options.
+ */
+export async function nearestHubsForVendor(
+  vendorPickupState?: string | null,
+  limit = 2,
+): Promise<ShippingHub[]> {
+  const hubs = await listShippingHubs({ activeOnly: true });
+  if (!hubs.length) {
+    const envHub = envFallbackHub();
+    return envHub ? [envHub] : [];
+  }
+
+  const state = vendorPickupState?.trim() || null;
+  return [...hubs]
+    .sort((a, b) => {
+      const scoreDiff =
+        hubProximityScore(a, state) - hubProximityScore(b, state);
+      if (scoreDiff !== 0) return scoreDiff;
+      return a.sortOrder - b.sortOrder;
+    })
+    .slice(0, Math.max(1, limit));
+}
+
+export async function getShippingHubById(
+  id: string,
+): Promise<ShippingHub | null> {
+  const hubs = await listShippingHubs({ activeOnly: false });
+  return hubs.find((h) => h.id === id) ?? null;
+}
+
 function validateHubInput(input: ShippingHubInput) {
   if (!input.name.trim()) throw new Error("Hub name is required.");
   if (!input.address?.line1?.trim() || !input.address.city?.trim() || !input.address.state?.trim()) {

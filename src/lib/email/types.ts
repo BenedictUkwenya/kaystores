@@ -86,6 +86,12 @@ export type ContactEmailPayload = {
   };
 };
 
+export type VendorEmailHubOption = {
+  name: string;
+  phone: string;
+  address: string;
+};
+
 export type VendorEmailPayload = {
   type:
     | "vendor_application_received"
@@ -95,7 +101,8 @@ export type VendorEmailPayload = {
     | "vendor_product_rejected"
     | "vendor_withdrawal_update"
     | "vendor_concierge_assigned"
-    | "vendor_new_order";
+    | "vendor_new_order"
+    | "vendor_hub_dispatch_reminder";
   appUrl: string;
   vendor: {
     contactName: string;
@@ -108,6 +115,8 @@ export type VendorEmailPayload = {
   rejectionReason?: string;
   withdrawalAmount?: number;
   withdrawalStatus?: string;
+  /** Nearby hubs to send to + phone to attach on the parcel. */
+  hubOptions?: VendorEmailHubOption[];
   request?: {
     referenceNumber: string;
     productName: string;

@@ -11,6 +11,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
     await updateVendorFulfillment(id, vendor.id, {
       fulfillmentStatus: body.fulfillmentStatus,
       hubNotes: body.hubNotes,
+      selectedHubId: body.selectedHubId,
     });
     return Response.json({ ok: true });
   } catch (err) {

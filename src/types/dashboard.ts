@@ -90,7 +90,7 @@ export type Vendor = {
   inviteToken: string | null;
   approvedAt: string | null;
   createdAt: string;
-  /** Stored for a future direct-vendor shipping rollout; hub ships today. */
+  /** Used to rank nearest hubs for vendor→hub dispatch. */
   pickupAddress?: AddressDetails | null;
   returnAddress?: AddressDetails | null;
 };
@@ -108,6 +108,16 @@ export type VendorOrderItem = {
   vendorEarnings: number;
   fulfillmentStatus: FulfillmentStatus;
   hubNotes: string | null;
+  /** Hub the vendor chose to send this parcel to. */
+  selectedHubId: string | null;
+  selectedHubName: string | null;
+  /** Phone number to attach on the parcel so Kay is notified on arrival. */
+  selectedHubPhone: string | null;
+  selectedHubAddress: AddressDetails | null;
+  hubSelectedAt: string | null;
+  /** When the vendor marked the parcel as sent / dispatched to hub. */
+  vendorDispatchedAt: string | null;
+  hubReminderSentAt: string | null;
   createdAt: string;
   orderNumber?: string;
   paymentStatus?: PaymentStatus;

@@ -74,7 +74,8 @@ Auth OTP uses the **`send-auth-email`** hook. Configure the same verified domain
 | Admin quotes / assigns baker | **Client** (quote) + **assigned vendor** |
 | Offers ready / client revision | **Every admin** (+ team inbox) |
 | Admin dispatches to vendors | **Each assigned vendor** |
-| Client pays shop order | Buyer + team + **each vendor** on the order |
+| Client pays shop order | Buyer + team + **each vendor** on the order (includes nearby hub options + attach-phone) |
+| Vendor still awaiting hub dispatch after 12h | Vendor reminder email (`vendor_hub_dispatch_reminder`) |
 | Concierge recommendation | Client |
 
 If team or vendor mail never arrives, check Supabase **Edge Functions → Logs** for `send-email` errors and confirm `RESEND_API_KEY` + `KAY_TEAM_EMAIL` secrets are set.

@@ -4,6 +4,7 @@ import { requireVendor } from "@/lib/auth/roles";
 import { fetchOrderById } from "@/lib/orders/repository";
 import { vendorHasOrder } from "@/lib/orders/support";
 import { fetchVendorOrderItems } from "@/lib/vendors/repository";
+import { nearestHubsForVendor } from "@/lib/shipping/hubs";
 import {
   DashboardLayout,
   VENDOR_NAV,
@@ -20,9 +21,10 @@ export default async function VendorOrderDetailPage({ params }: Props) {
   const { id } = await params;
   if (!(await vendorHasOrder(vendor.id, id))) notFound();
 
-  const [order, items] = await Promise.all([
+  const [order, items, hubOptions] = await Promise.all([
     fetchOrderById(id),
     fetchVendorOrderItems(vendor.id),
+    nearestHubsForVendor(vendor.pickupAddress?.state, 2),
   ]);
   if (!order) notFound();
   const mine = items.filter((item) => item.orderId === id);
@@ -33,7 +35,7 @@ export default async function VendorOrderDetailPage({ params }: Props) {
       nav={VENDOR_NAV}
       eyebrow="Fulfilment"
       title={order.orderNumber}
-      description="Deliver this item to the Kay hub. Use support if you need Kay to confirm a product detail."
+      description="Pick a nearby Kay hub, attach the phone number on the parcel, send it, then mark dispatched. Kay handles last-mile to the customer."
     >
       <div className="mb-4">
         <Link
@@ -51,7 +53,10 @@ export default async function VendorOrderDetailPage({ params }: Props) {
           </p>
           <ul className="space-y-4">
             {mine.map((item) => (
-              <li key={item.id} className="border-b border-kay-border-light pb-4 last:border-0 last:pb-0">
+              <li
+                key={item.id}
+                className="border-b border-kay-border-light pb-4 last:border-0 last:pb-0"
+              >
                 <p className="font-medium text-kay-fg">{item.productName}</p>
                 <p className="mt-1 text-[12px] text-kay-muted">
                   Qty {item.quantity} · {formatNaira(item.lineTotal)}
@@ -60,14 +65,17 @@ export default async function VendorOrderDetailPage({ params }: Props) {
                   <StatusBadge status={item.fulfillmentStatus} />
                 </div>
                 <div className="mt-3">
-                  <VendorFulfillmentActions item={item} />
+                  <VendorFulfillmentActions
+                    item={item}
+                    hubOptions={hubOptions}
+                  />
                 </div>
               </li>
             ))}
           </ul>
           <p className="rounded-lg bg-kay-surface px-3 py-2 text-[12px] text-kay-muted">
-            Send goods to the Kay hub after payment — not directly to the
-            customer. Kay handles last-mile from the hub.
+            Send goods to the hub you chose — not directly to the customer. Kay
+            handles last-mile from the hub.
           </p>
         </div>
         <OrderSupportChat orderId={id} viewerRole="vendor" />

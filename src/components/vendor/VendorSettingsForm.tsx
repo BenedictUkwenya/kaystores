@@ -108,7 +108,7 @@ export function VendorSettingsForm({ vendor }: Props) {
           Pickup & return address
         </p>
         <p className="mb-4 text-[12px] text-kay-muted">
-          Stored for future direct-vendor shipping. Today Kay still dispatches from the hub after QC.
+          Stored so we can suggest the nearest hubs for you to send parcels to. Kay still runs last-mile after hub QC.
         </p>
         <div className="space-y-4">
           <Input

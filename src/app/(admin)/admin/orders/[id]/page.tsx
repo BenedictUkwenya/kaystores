@@ -154,7 +154,24 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                   key={vi.id}
                   className="flex flex-col gap-2 text-[13px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
                 >
-                  <span className="min-w-0">{vi.product_name}</span>
+                  <div className="min-w-0">
+                    <span className="block">{vi.product_name}</span>
+                    {vi.selected_hub_name && (
+                      <span className="mt-0.5 block text-[11px] text-kay-muted">
+                        Hub: {String(vi.selected_hub_name)}
+                        {vi.selected_hub_phone
+                          ? ` · ${String(vi.selected_hub_phone)}`
+                          : ""}
+                        {vi.vendor_dispatched_at ? " · vendor dispatched" : ""}
+                      </span>
+                    )}
+                    {vi.hub_reminder_sent_at &&
+                      vi.fulfillment_status === "awaiting_hub_delivery" && (
+                        <span className="mt-0.5 block text-[11px] text-amber-700">
+                          12h reminder sent — still awaiting dispatch
+                        </span>
+                      )}
+                  </div>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <StatusBadge status={vi.fulfillment_status} />
                     {vi.fulfillment_status === "at_hub" && (

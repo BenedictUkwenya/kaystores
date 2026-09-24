@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-20
+**Last updated:** 2026-09-24
 
 ---
 
@@ -280,6 +280,8 @@
 
 - [ ] **Terminal Africa multi-hub shipping** — Admin Shipping (Terminal + manual Kay delivery toggles), hubs, state routing, seed hubs implemented; run migrations `030`–`033`, keep `TERMINAL_AFRICA_SECRET_KEY` on Vercel when using Terminal, then mark complete
 
+- [x] **Vendor hub dispatch** — vendors pick ~2 nearest hubs, attach hub phone on parcel, mark dispatched; order email includes hub options; 12h reminder cron (`038`, `/api/cron/vendor-hub-reminders`, redeploy `send-email` edge function)
+
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete
@@ -314,11 +316,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 10   | 11    |
+| Backend           | 11   | 12    |
 
 
 
-**Overall:** 75 / 80 checklist items complete
+**Overall:** 76 / 81 checklist items complete
 
 
 
