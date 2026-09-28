@@ -1,3 +1,7 @@
+import type { ChatChannel } from "@/types/order-support";
+
+export type { ChatChannel };
+
 export type TableRequestStatus =
   | "submitted"
   | "reviewing"
@@ -52,6 +56,7 @@ export type TableRequestMessage = {
   senderRole: TableSenderRole;
   senderName: string;
   body: string;
+  channel: ChatChannel;
   createdAt: string;
 };
 

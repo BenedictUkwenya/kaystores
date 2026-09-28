@@ -14,6 +14,12 @@ import { ManualPaymentConfirm } from "@/components/checkout/ManualPaymentConfirm
 import { AddressLocationPicker } from "@/components/checkout/AddressLocationPicker";
 import { redirectToPaystackCheckout } from "@/components/payments/PaystackPayButton";
 import {
+  SPLIT_MIN_PEOPLE,
+  SPLIT_WINDOW_HOURS,
+  maxSplitPeople,
+  splitAmounts,
+} from "@/lib/payments/split-math";
+import {
   IconArrowRight,
   IconGift,
   IconPackage,
@@ -72,6 +78,8 @@ export function CheckoutForm({
   const [terminalEnabled, setTerminalEnabled] = useState(true);
   const [manualEnabled, setManualEnabled] = useState(true);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
+  const [splitOn, setSplitOn] = useState(false);
+  const [splitCount, setSplitCount] = useState(SPLIT_MIN_PEOPLE);
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{
     id: string;
@@ -107,6 +115,14 @@ export function CheckoutForm({
     () => calculateOrderPricing(items, selectedShipping?.amount),
     [items, selectedShipping?.amount],
   );
+
+  const splitMax = maxSplitPeople(pricing.grandTotal);
+  const splitAvailable = paystackEnabled && splitMax >= SPLIT_MIN_PEOPLE;
+  const splitActive = splitAvailable && splitOn;
+  const splitPeople = Math.min(Math.max(splitCount, SPLIT_MIN_PEOPLE), Math.max(splitMax, SPLIT_MIN_PEOPLE));
+  const splitPreview = splitActive
+    ? splitAmounts(pricing.grandTotal, splitPeople)
+    : [];
 
   useCheckoutPrefill({ setFirstName, setLastName, setBuyer });
 
@@ -252,6 +268,7 @@ export function CheckoutForm({
           buyer: { fullName, email: buyer.email, phone: buyer.phone },
           buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
           paymentConfirmed: paystackEnabled ? false : true,
+          split: splitActive ? { count: splitPeople } : undefined,
           anonymousPackaging,
           gift:
             deliveryType === "gift"
@@ -285,6 +302,10 @@ export function CheckoutForm({
           (addReveal || revealVideo || revealPhoto || giftNote.trim())
         ) {
           void uploadRevealForOrder(order.id, buyer.email.trim().toLowerCase());
+        }
+        if (splitActive) {
+          router.replace(`/order/${order.id}/split`);
+          return;
         }
         await redirectToPaystackCheckout({
           kind: "order",
@@ -935,6 +956,74 @@ export function CheckoutForm({
                     when you&apos;re done.
                   </p>
                 )}
+                {splitAvailable && (
+                  <div className="mt-4 border-t border-kay-border-light pt-4">
+                    <Toggle
+                      bare
+                      id="split-cost"
+                      label="Split the cost with friends"
+                      description={`We'll create a payment link for each person. Everyone has ${SPLIT_WINDOW_HOURS} hours to pay — the gift ships once all shares are in.`}
+                      checked={splitOn}
+                      onChange={setSplitOn}
+                    />
+                    {splitActive && (
+                      <div className="mt-4 rounded-lg bg-kay-bg/60 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-[13px] text-kay-fg">
+                            People (including you)
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              aria-label="Fewer people"
+                              disabled={splitPeople <= SPLIT_MIN_PEOPLE}
+                              onClick={() => setSplitCount(splitPeople - 1)}
+                              className="flex h-9 w-9 items-center justify-center rounded-full border border-kay-border text-[18px] text-kay-fg transition hover:border-kay-fg disabled:opacity-40"
+                            >
+                              −
+                            </button>
+                            <span className="w-6 text-center text-[18px] font-semibold tabular-nums text-kay-fg">
+                              {splitPeople}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label="More people"
+                              disabled={splitPeople >= splitMax}
+                              onClick={() => setSplitCount(splitPeople + 1)}
+                              className="flex h-9 w-9 items-center justify-center rounded-full border border-kay-border text-[18px] text-kay-fg transition hover:border-kay-fg disabled:opacity-40"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-[13px] text-kay-muted">
+                          {splitPreview.every((a) => a === splitPreview[0]) ? (
+                            <>
+                              Each person pays{" "}
+                              <span className="font-semibold text-kay-fg">
+                                {formatNaira(splitPreview[0])}
+                              </span>
+                              .
+                            </>
+                          ) : (
+                            <>
+                              {splitPeople - 1} people pay{" "}
+                              <span className="font-semibold text-kay-fg">
+                                {formatNaira(splitPreview[0])}
+                              </span>
+                              , one pays{" "}
+                              <span className="font-semibold text-kay-fg">
+                                {formatNaira(splitPreview[splitPreview.length - 1])}
+                              </span>
+                              .
+                            </>
+                          )}{" "}
+                          Your items are held while everyone pays.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <ManualPaymentConfirm
@@ -962,11 +1051,15 @@ export function CheckoutForm({
               className="flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-kay-gold text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(184,154,106,0.4)] transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {submitting
-                ? paystackEnabled
-                  ? "Opening checkout…"
-                  : "Placing order…"
+                ? splitActive
+                  ? "Creating share links…"
+                  : paystackEnabled
+                    ? "Opening checkout…"
+                    : "Placing order…"
                 : pricing.canCheckout
-                  ? isPrivateCheckout
+                  ? splitActive
+                    ? `Split between ${splitPeople} people`
+                    : isPrivateCheckout
                     ? paystackEnabled
                       ? "Pay privately with Paystack"
                       : "Place private order"

@@ -32,6 +32,8 @@ export type OrderRow = {
   payment_status?: string | null;
   payment_reference?: string | null;
   paid_at?: string | null;
+  payment_mode?: string | null;
+  split_expires_at?: string | null;
   created_at: string;
 };
 
@@ -89,6 +91,8 @@ export function mapOrderRow(row: OrderRow): Order {
     paymentStatus: (row.payment_status ?? "unpaid") as Order["paymentStatus"],
     paymentReference: row.payment_reference ?? undefined,
     paidAt: row.paid_at ?? undefined,
+    paymentMode: row.payment_mode === "split" ? "split" : "single",
+    splitExpiresAt: row.split_expires_at ?? null,
     createdAt: row.created_at,
   };
 }

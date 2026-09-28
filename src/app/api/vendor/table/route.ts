@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, requireVendor } from "@/lib/auth/roles";
-import { listTableRequests } from "@/lib/table/repository";
+import { listTableRequests, toVendorSafeRequest } from "@/lib/table/repository";
 
 export async function GET() {
   try {
@@ -15,7 +15,7 @@ export async function GET() {
       vendorId: vendor.id,
       limit: 50,
     });
-    return NextResponse.json({ requests });
+    return NextResponse.json({ requests: requests.map(toVendorSafeRequest) });
   } catch (err) {
     return apiErrorResponse(err);
   }

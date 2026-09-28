@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
+  ChatChannel,
   CreateTableRequestInput,
   TableFulfillmentMethod,
   TableRequest,
@@ -66,7 +67,19 @@ function mapMessage(row: Record<string, unknown>): TableRequestMessage {
     senderRole: row.sender_role as TableSenderRole,
     senderName: String(row.sender_name ?? "Kay"),
     body: String(row.body ?? ""),
+    channel: row.channel === "vendor" ? "vendor" : "customer",
     createdAt: String(row.created_at),
+  };
+}
+
+/** Vendors never get customer contact details — Kay relays everything. */
+export function toVendorSafeRequest(request: TableRequest): TableRequest {
+  return {
+    ...request,
+    userId: null,
+    contactName: request.contactName.trim().split(/\s+/)[0] || "Client",
+    contactEmail: "",
+    contactPhone: null,
   };
 }
 
@@ -202,11 +215,13 @@ export async function updateTableRequest(
 
 export async function listTableRequestMessages(
   requestId: string,
+  channel: ChatChannel,
 ): Promise<TableRequestMessage[]> {
   const { data, error } = await db()
     .from("table_request_messages")
     .select("*")
     .eq("request_id", requestId)
+    .eq("channel", channel)
     .order("created_at", { ascending: true })
     .limit(200);
 
@@ -220,6 +235,7 @@ export async function insertTableRequestMessage(input: {
   senderRole: TableSenderRole;
   senderName: string;
   body: string;
+  channel: ChatChannel;
 }): Promise<TableRequestMessage> {
   const { data, error } = await db()
     .from("table_request_messages")
@@ -229,6 +245,7 @@ export async function insertTableRequestMessage(input: {
       sender_role: input.senderRole,
       sender_name: input.senderName,
       body: input.body,
+      channel: input.channel,
     })
     .select("*")
     .single();

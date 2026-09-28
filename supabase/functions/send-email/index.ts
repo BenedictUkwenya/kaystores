@@ -230,7 +230,35 @@ type Payload =
         quoteAmount?: number;
         quoteNote?: string;
       };
+    }
+  | {
+      type:
+        | "chat_message"
+        | "table_status_update"
+        | "vendor_dispatch_overdue"
+        | "split_payment_update";
+      appUrl: string;
+      /** Direct recipients. */
+      to?: string[];
+      /** Also send to every admin + KAY_TEAM_EMAIL. */
+      toTeam?: boolean;
+      adminEmails?: string[];
+      subject: string;
+      title: string;
+      paragraphs: string[];
+      /** Quoted user-written text (escaped before rendering). */
+      quote?: string;
+      ctaUrl?: string;
+      ctaLabel?: string;
     };
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function defaultReplyTo(): string | undefined {
   return Deno.env.get("KAY_REPLY_TO_EMAIL") ?? Deno.env.get("KAY_TEAM_EMAIL") ?? undefined;
@@ -965,6 +993,44 @@ function buildMessage(
         text: stripHtml(html),
         replyTo: defaultReplyTo(),
         tags: [{ name: "category", value: "gift_reveal_opened" }],
+      };
+    }
+    case "chat_message":
+    case "table_status_update":
+    case "vendor_dispatch_overdue":
+    case "split_payment_update": {
+      const recipients = new Set<string>();
+      for (const raw of payload.to ?? []) {
+        const email = raw.trim().toLowerCase();
+        if (email) recipients.add(email);
+      }
+      if (payload.toTeam) {
+        for (const email of teamRecipients(payload.adminEmails) ?? []) {
+          recipients.add(email);
+        }
+      }
+      if (!recipients.size) return null;
+      const paragraphs = payload.paragraphs
+        .map(
+          (p) =>
+            `<p style="color:#5c5c5c;line-height:1.6">${escapeHtml(p)}</p>`,
+        )
+        .join("");
+      const quote = payload.quote
+        ? `<blockquote style="margin:16px 0;padding:12px 16px;border-left:3px solid #b89a6a;background:#f9f7f2;color:#333;white-space:pre-wrap;line-height:1.6">${escapeHtml(payload.quote.slice(0, 600))}</blockquote>`
+        : "";
+      const cta =
+        payload.ctaUrl && payload.ctaLabel
+          ? ctaButton(payload.ctaUrl, escapeHtml(payload.ctaLabel))
+          : "";
+      const html = layout(escapeHtml(payload.title), `${paragraphs}${quote}${cta}`);
+      return {
+        to: [...recipients],
+        subject: payload.subject,
+        html,
+        text: stripHtml(html),
+        replyTo: defaultReplyTo(),
+        tags: [{ name: "category", value: payload.type }],
       };
     }
     default:

@@ -56,7 +56,8 @@ export type OrderStatus =
   | "pending_handover"
   | "processing"
   | "shipped"
-  | "delivered";
+  | "delivered"
+  | "cancelled";
 
 export type PaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
 
@@ -88,6 +89,8 @@ export type Order = {
   paymentStatus?: PaymentStatus;
   paymentReference?: string | null;
   paidAt?: string | null;
+  paymentMode?: "single" | "split";
+  splitExpiresAt?: string | null;
   createdAt: string;
   /** Present when a Kay Reveal exists for this gift order (emails / UI). */
   revealToken?: string;
@@ -112,6 +115,8 @@ export type CreateOrderPayload = {
   paymentConfirmed?: boolean;
   /** Server-issued Terminal rate selection, required for hub delivery. */
   shippingQuoteToken?: string;
+  /** Split the total into share links, one per person. */
+  split?: { count: number };
 };
 
 export const GIFT_NOTE_MAX_LENGTH = 200;

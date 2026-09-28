@@ -191,6 +191,27 @@ export type SupportMessageEmailPayload = {
   threadId: string;
 };
 
+export type NoticeEmailType =
+  | "chat_message"
+  | "table_status_update"
+  | "vendor_dispatch_overdue"
+  | "split_payment_update";
+
+/** Generic branded notice — recipients, copy, optional quoted text and CTA. */
+export type NoticeEmailPayload = {
+  type: NoticeEmailType;
+  appUrl: string;
+  to?: string[];
+  toTeam?: boolean;
+  adminEmails?: string[];
+  subject: string;
+  title: string;
+  paragraphs: string[];
+  quote?: string;
+  ctaUrl?: string;
+  ctaLabel?: string;
+};
+
 export type KayEmailPayload =
   | OrderEmailPayload
   | ConciergeEmailPayload
@@ -201,4 +222,5 @@ export type KayEmailPayload =
   | RoleEmailPayload
   | AuthOtpEmailPayload
   | SupportMessageEmailPayload
-  | GiftRevealOpenedEmailPayload;
+  | GiftRevealOpenedEmailPayload
+  | NoticeEmailPayload;

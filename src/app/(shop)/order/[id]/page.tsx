@@ -116,8 +116,33 @@ export default async function OrderConfirmationPage({
         <OrderSupportChat orderId={order.id} viewerRole="customer" />
       </div>
 
-      {reference && !paid && <PaymentReturnVerifier reference={reference} />}
-      <OrderPaymentSection order={order} paystackEnabled={paystackEnabled} />
+      {order.paymentMode === "split" ? (
+        !paid && (
+          <div className="mt-6 rounded-xl border border-kay-gold/40 bg-kay-gold-light/25 p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-kay-gold">
+              {order.status === "cancelled" ? "Split expired" : "Split payment in progress"}
+            </p>
+            <p className="mt-2 text-[14px] text-kay-fg">
+              {order.status === "cancelled"
+                ? "Not everyone paid in time, so this order was cancelled."
+                : "This order is being paid in shares. Track who has paid and resend links."}
+            </p>
+            <Link
+              href={`/order/${order.id}/split`}
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-kay-fg px-5 text-[13px] font-medium text-kay-accent-fg transition-opacity hover:opacity-90"
+            >
+              View share links
+            </Link>
+          </div>
+        )
+      ) : (
+        <>
+          {reference && !paid && <PaymentReturnVerifier reference={reference} />}
+          {order.status !== "cancelled" && (
+            <OrderPaymentSection order={order} paystackEnabled={paystackEnabled} />
+          )}
+        </>
+      )}
 
       <div className="mt-6 space-y-6 rounded-lg border border-kay-border-light bg-kay-surface-elevated/60 p-5 sm:p-6">
         <div>

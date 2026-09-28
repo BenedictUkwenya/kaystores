@@ -1,5 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { OrderSupportMessage, OrderSupportRole } from "@/types/order-support";
+import type {
+  ChatChannel,
+  OrderSupportMessage,
+  OrderSupportRole,
+} from "@/types/order-support";
 
 function db() {
   const client = createAdminClient();
@@ -15,17 +19,20 @@ function mapMessage(row: Record<string, unknown>): OrderSupportMessage {
     senderRole: row.sender_role as OrderSupportRole,
     senderName: String(row.sender_name ?? "Kay"),
     body: String(row.body ?? ""),
+    channel: row.channel === "vendor" ? "vendor" : "customer",
     createdAt: String(row.created_at),
   };
 }
 
 export async function listOrderSupportMessages(
   orderId: string,
+  channel: ChatChannel,
 ): Promise<OrderSupportMessage[]> {
   const { data, error } = await db()
     .from("order_support_messages")
     .select("*")
     .eq("order_id", orderId)
+    .eq("channel", channel)
     .order("created_at", { ascending: true })
     .limit(200);
 
@@ -39,6 +46,7 @@ export async function insertOrderSupportMessage(input: {
   senderRole: OrderSupportRole;
   senderName: string;
   body: string;
+  channel: ChatChannel;
 }): Promise<OrderSupportMessage> {
   const { data, error } = await db()
     .from("order_support_messages")
@@ -48,6 +56,7 @@ export async function insertOrderSupportMessage(input: {
       sender_role: input.senderRole,
       sender_name: input.senderName,
       body: input.body,
+      channel: input.channel,
     })
     .select("*")
     .single();
@@ -72,4 +81,29 @@ export async function vendorHasOrder(
 
   if (error) throw new Error(error.message);
   return Boolean(data);
+}
+
+/** Vendor emails for everyone with items on this order. */
+export async function listOrderVendorContacts(
+  orderId: string,
+): Promise<{ email: string; name: string }[]> {
+  const { data, error } = await db()
+    .from("vendor_order_items")
+    .select("vendor_id, vendors(contact_email, contact_name, business_name)")
+    .eq("order_id", orderId);
+  if (error) throw new Error(error.message);
+  const seen = new Map<string, { email: string; name: string }>();
+  for (const row of data ?? []) {
+    const v = row.vendors as
+      | { contact_email?: string; contact_name?: string; business_name?: string }
+      | { contact_email?: string; contact_name?: string; business_name?: string }[]
+      | null;
+    const vendor = Array.isArray(v) ? v[0] : v;
+    if (!vendor?.contact_email) continue;
+    seen.set(String(row.vendor_id), {
+      email: vendor.contact_email,
+      name: vendor.contact_name || vendor.business_name || "there",
+    });
+  }
+  return [...seen.values()];
 }

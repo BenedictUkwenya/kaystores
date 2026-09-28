@@ -1,16 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { apiErrorResponse, getAuthContext } from "@/lib/auth/roles";
 import {
   getTableRequestById,
   insertTableRequestMessage,
   listTableRequestMessages,
 } from "@/lib/table/repository";
-import type { TableSenderRole } from "@/types/table";
+import { notifyKitchenChatMessage } from "@/lib/email/chat";
+import { parseChatChannel, type ChatChannel } from "@/types/order-support";
+import type { TableRequest, TableSenderRole } from "@/types/table";
 
 type Access = {
   role: TableSenderRole;
   name: string;
   userId: string | null;
+  request: TableRequest;
 };
 
 async function resolveAccess(requestId: string): Promise<Access> {
@@ -28,6 +31,7 @@ async function resolveAccess(requestId: string): Promise<Access> {
       role: "admin",
       name: ctx.profile.fullName?.trim() || "Kay admin",
       userId: ctx.userId,
+      request,
     };
   }
 
@@ -40,6 +44,7 @@ async function resolveAccess(requestId: string): Promise<Access> {
       role: "vendor",
       name: ctx.vendor.businessName || ctx.profile.fullName || "Baker",
       userId: ctx.userId,
+      request,
     };
   }
 
@@ -48,6 +53,7 @@ async function resolveAccess(requestId: string): Promise<Access> {
       role: "customer",
       name: ctx.profile.fullName?.trim() || request.contactName || "Customer",
       userId: ctx.userId,
+      request,
     };
   }
 
@@ -56,7 +62,15 @@ async function resolveAccess(requestId: string): Promise<Access> {
     role: "customer",
     name: request.contactName?.trim() || "Customer",
     userId: ctx?.userId ?? null,
+    request,
   };
+}
+
+/** Customers only see the customer<->admin line; vendors only vendor<->admin. */
+function channelFor(role: TableSenderRole, requested: unknown): ChatChannel {
+  if (role === "vendor") return "vendor";
+  if (role === "customer") return "customer";
+  return parseChatChannel(requested) ?? "customer";
 }
 
 function tableMissing(err: unknown) {
@@ -70,12 +84,16 @@ function tableMissing(err: unknown) {
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Ctx) {
+export async function GET(request: Request, { params }: Ctx) {
   try {
     const { id } = await params;
-    await resolveAccess(id);
-    const messages = await listTableRequestMessages(id);
-    return NextResponse.json({ messages });
+    const access = await resolveAccess(id);
+    const channel = channelFor(
+      access.role,
+      new URL(request.url).searchParams.get("channel"),
+    );
+    const messages = await listTableRequestMessages(id, channel);
+    return NextResponse.json({ messages, channel });
   } catch (err) {
     if (tableMissing(err)) {
       return NextResponse.json({
@@ -95,7 +113,7 @@ export async function POST(request: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     const access = await resolveAccess(id);
-    const body = (await request.json()) as { body?: string };
+    const body = (await request.json()) as { body?: string; channel?: string };
     const text = typeof body.body === "string" ? body.body.trim() : "";
     if (!text) {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
@@ -107,13 +125,36 @@ export async function POST(request: Request, { params }: Ctx) {
       );
     }
 
+    const channel = channelFor(access.role, body.channel);
+    if (channel === "vendor" && !access.request.assignedVendorId) {
+      return NextResponse.json(
+        { error: "Assign a baker before messaging them." },
+        { status: 400 },
+      );
+    }
+
     const message = await insertTableRequestMessage({
       requestId: id,
       senderId: access.userId,
       senderRole: access.role,
       senderName: access.name,
       body: text,
+      channel,
     });
+
+    after(() =>
+      notifyKitchenChatMessage({
+        requestId: id,
+        reference: access.request.reference,
+        channel,
+        senderRole: access.role,
+        senderName: access.name,
+        body: text,
+        customerEmail: access.request.contactEmail,
+        customerName: access.request.contactName,
+        assignedVendorId: access.request.assignedVendorId ?? null,
+      }).catch((err) => console.error("[kitchen chat notify]", err)),
+    );
 
     return NextResponse.json({ message });
   } catch (err) {

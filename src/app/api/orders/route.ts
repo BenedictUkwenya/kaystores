@@ -16,6 +16,7 @@ import {
   getSelectedQuoteAmount,
 } from "@/lib/shipping/terminal";
 import { isPaystackConfigured } from "@/lib/payments/config";
+import { createPaymentShares, validateSplitCount } from "@/lib/payments/shares";
 import type { CreateOrderPayload } from "@/types/order";
 
 export async function POST(request: Request) {
@@ -107,6 +108,20 @@ export async function POST(request: Request) {
       body.paymentConfirmed = false;
     }
 
+    const splitCount = body.split?.count;
+    if (splitCount !== undefined) {
+      if (!paystackOnline) {
+        return NextResponse.json(
+          { error: "Split payments need online checkout." },
+          { status: 400 },
+        );
+      }
+      const splitError = validateSplitCount(body.pricing.grandTotal, splitCount);
+      if (splitError) {
+        return NextResponse.json({ error: splitError }, { status: 400 });
+      }
+    }
+
     body.buyer = {
       ...body.buyer,
       email: body.buyer.email.trim().toLowerCase(),
@@ -144,6 +159,11 @@ export async function POST(request: Request) {
       await createVendorOrderItemsFromOrder(order.id, itemsWithVendor, vendorMap, {
         paymentPaid: order.paymentStatus === "paid",
       });
+
+      if (splitCount !== undefined) {
+        await createPaymentShares(order.id, order.pricing.grandTotal, splitCount);
+        return NextResponse.json({ ...order, paymentMode: "split" });
+      }
 
       // Emails / vendor notify only after payment (Paystack webhook or manual confirm).
       if (order.paymentStatus === "paid") {

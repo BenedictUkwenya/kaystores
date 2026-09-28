@@ -1,6 +1,10 @@
+import { splitMultiSpec } from "@/lib/products/catalog-attributes";
+
 type ProductSpecsProps = {
   specs: Record<string, string>;
 };
+
+const PILL_KEYS = new Set(["Allergens"]);
 
 export function ProductSpecs({ specs }: ProductSpecsProps) {
   const entries = Object.entries(specs);
@@ -20,7 +24,22 @@ export function ProductSpecs({ specs }: ProductSpecsProps) {
             }`}
           >
             <dt className="font-medium text-kay-fg">{key}</dt>
-            <dd className="text-kay-muted">{value}</dd>
+            <dd className="text-kay-muted">
+              {PILL_KEYS.has(key) ? (
+                <span className="flex flex-wrap gap-1.5">
+                  {splitMultiSpec(value).map((part) => (
+                    <span
+                      key={part}
+                      className="rounded-full border border-kay-gold/40 bg-kay-gold-light/40 px-2.5 py-0.5 text-[12px] text-kay-fg"
+                    >
+                      {part}
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                value
+              )}
+            </dd>
           </div>
         ))}
       </dl>

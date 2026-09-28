@@ -6,6 +6,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   processing: "Processing",
   shipped: "Shipped",
   delivered: "Delivered",
+  cancelled: "Cancelled",
 };
 
 const TRACKING_STEPS: { key: OrderStatus; label: string }[] = [
@@ -16,6 +17,7 @@ const TRACKING_STEPS: { key: OrderStatus; label: string }[] = [
 ];
 
 function statusRank(status: OrderStatus): number {
+  if (status === "cancelled") return 0;
   if (status === "pending_handover") return 0;
   if (status === "confirmed") return 1;
   if (status === "processing") return 2;

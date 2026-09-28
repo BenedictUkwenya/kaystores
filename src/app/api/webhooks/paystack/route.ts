@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await confirmPaymentFromTxRef(tx.txRef, tx.reference);
+    await confirmPaymentFromTxRef(tx.txRef, tx.reference, tx.amountNaira);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[webhooks/paystack]", err);

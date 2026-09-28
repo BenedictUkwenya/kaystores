@@ -7,6 +7,7 @@ import { ShopBySection } from "@/components/home/ShopBySection";
 import { CuratedSection } from "@/components/home/CuratedSection";
 import { PressSection } from "@/components/home/PressSection";
 import { ValuePropsBar } from "@/components/home/ValuePropsBar";
+import { LaunchCountdownHero } from "@/components/launch/LaunchCountdownHero";
 import { getCuratedProducts } from "@/lib/products/queries";
 import { baseMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
@@ -39,6 +40,7 @@ export default async function Home() {
       <Header />
       <main className="flex-1">
         <HeroSection />
+        <LaunchCountdownHero />
         <AIConciergeSection />
         <ShopBySection />
         <CuratedSection products={curatedProducts} />

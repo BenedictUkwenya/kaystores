@@ -7,6 +7,7 @@ import { BrandUIProvider, useBrandUI } from "@/providers/BrandUIProvider";
 import { KaySplashScreen } from "@/components/brand/KaySplashScreen";
 import { KayLoadingOverlay } from "@/components/brand/KayLoader";
 import { CartShell } from "@/components/cart/CartShell";
+import { LaunchCountdown } from "@/components/launch/LaunchCountdown";
 
 function BrandUIChrome({ children }: { children: React.ReactNode }) {
   const { isBusy } = useBrandUI();
@@ -14,6 +15,7 @@ function BrandUIChrome({ children }: { children: React.ReactNode }) {
     <>
       <KaySplashScreen />
       <KayLoadingOverlay show={isBusy} />
+      <LaunchCountdown />
       {children}
     </>
   );

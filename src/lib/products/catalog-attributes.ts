@@ -88,8 +88,26 @@ export const TYPES_BY_MASTER: Record<string, readonly string[]> = {
   Other: PRODUCT_TYPES,
 };
 
+export type SpecField = {
+  key: string;
+  options: string[];
+  /** Allow several options; stored comma-joined in specs[key]. */
+  multi?: boolean;
+  /** Picking this option clears the others (multi fields only). */
+  exclusiveOption?: string;
+};
+
+export const MULTI_SPEC_SEPARATOR = ", ";
+
+export function splitMultiSpec(value?: string | null): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 /** Spec keys that appear for certain master categories. */
-export const SPECS_BY_MASTER: Record<string, { key: string; options: string[] }[]> = {
+export const SPECS_BY_MASTER: Record<string, SpecField[]> = {
   Phone: [
     {
       key: "Storage",
@@ -123,6 +141,8 @@ export const SPECS_BY_MASTER: Record<string, { key: string; options: string[] }[
     },
     {
       key: "Allergens",
+      multi: true,
+      exclusiveOption: "See description",
       options: [
         "Contains nuts",
         "Contains dairy",
@@ -194,7 +214,7 @@ export function buildSearchKeywords(input: CatalogAttributeInput): string[] {
   for (const size of input.sizeOptions ?? []) add(size);
   for (const [key, value] of Object.entries(input.specs ?? {})) {
     add(key);
-    add(value);
+    for (const part of splitMultiSpec(value)) add(part);
   }
 
   // Expand known synonyms for master category / type so general queries work.

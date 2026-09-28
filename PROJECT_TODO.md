@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-24
+**Last updated:** 2026-09-28
 
 ---
 
@@ -64,6 +64,8 @@
 
 - [ ] Responsive breakpoints verified site-wide
 
+- [x] **Oct 11 launch countdown** — slim bar on every page, floating pill, full-screen flip-clock modal with “Remind me”, home hero section
+
 
 
 ---
@@ -106,6 +108,8 @@
 
 - [x] **Search results page**
 
+- [x] **Multi-select allergens** — vendors tick every allergen that applies (chips); PDP shows them as pills
+
 
 
 ---
@@ -142,6 +146,8 @@
 - [x] Order confirmation / thank-you page
 
 - [x] **MOV + pricing** — Gifting ₦20k / After Dark ₦20k MOV; delivery from live quote + tax; curation fee retired (list price is product price)
+
+- [x] **Split the cost** — checkout toggle (2–10 people), share links with copy/WhatsApp, public `/split/[token]` Paystack page, order confirms when all shares paid, 72h expiry cron cancels + restores stock + flags refunds
 
 
 
@@ -282,6 +288,14 @@
 
 - [x] **Vendor hub dispatch** — vendors pick ~2 nearest hubs, attach hub phone on parcel, mark dispatched; order email includes hub options; 12h reminder cron (`038`, `/api/cron/vendor-hub-reminders`, redeploy `send-email` edge function)
 
+- [x] **Kay relays all chat (two channels)** — customer and vendor never talk directly; admin sees Customer / Vendor tabs with “Relay to…”; vendors no longer see customer contact details
+
+- [x] **Chat email alerts + unread badges** — throttled emails (10 min) for Kitchen + order chats; admin/vendor sidebar badges when a reply is needed
+
+- [x] **Kay Kitchen status auto-save + customer email** — status saves instantly from the dropdown and emails the customer
+
+- [x] **Vendor dispatch follow-ups** — 12h vendor reminder + admin alert, 24h second reminder + admin alert, overdue badge on admin Orders
+
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete
@@ -304,11 +318,11 @@
 
 | Foundation        | 7    | 7     |
 
-| Design system     | 6    | 7     |
+| Design system     | 7    | 8     |
 
-| Shop pages        | 16   | 16    |
+| Shop pages        | 17   | 17    |
 
-| Cart & checkout   | 12   | 12    |
+| Cart & checkout   | 13   | 13    |
 
 | AI engine         | 4    | 6     |
 
@@ -316,11 +330,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 11   | 12    |
+| Backend           | 15   | 16    |
 
 
 
-**Overall:** 76 / 81 checklist items complete
+**Overall:** 83 / 88 checklist items complete
 
 
 

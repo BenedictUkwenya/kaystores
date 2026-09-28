@@ -8,6 +8,7 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
     processing: "bg-kay-beta-bg text-kay-beta border-kay-gold/20",
     shipped: "bg-sky-50 text-sky-800 border-sky-200/60",
     delivered: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
+    cancelled: "bg-red-50 text-red-700 border-red-200/60",
   };
 
   return (

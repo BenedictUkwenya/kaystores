@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireVendor } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
-import { listTableRequests } from "@/lib/table/repository";
+import { listTableRequests, toVendorSafeRequest } from "@/lib/table/repository";
 import { mapProductRow } from "@/types/product";
 import {
   DashboardLayout,
@@ -44,10 +44,12 @@ export default async function VendorTablePage() {
     .map(mapProductRow)
     .filter(isTableCatalogProduct);
 
-  const requests = await listTableRequests({
-    vendorId: vendor.id,
-    limit: 50,
-  });
+  const requests = (
+    await listTableRequests({
+      vendorId: vendor.id,
+      limit: 50,
+    })
+  ).map(toVendorSafeRequest);
 
   return (
     <DashboardLayout

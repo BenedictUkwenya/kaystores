@@ -1,17 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { apiErrorResponse, getAuthContext } from "@/lib/auth/roles";
 import { getOrder } from "@/lib/orders/store";
 import {
   insertOrderSupportMessage,
   listOrderSupportMessages,
+  listOrderVendorContacts,
   vendorHasOrder,
 } from "@/lib/orders/support";
-import type { OrderSupportRole } from "@/types/order-support";
+import { notifyOrderChatMessage } from "@/lib/email/chat";
+import {
+  parseChatChannel,
+  type ChatChannel,
+  type OrderSupportRole,
+} from "@/types/order-support";
+import type { Order } from "@/types/order";
 
 type Access = {
   role: OrderSupportRole;
   name: string;
   userId: string | null;
+  order: Order;
 };
 
 async function resolveAccess(orderId: string): Promise<Access> {
@@ -29,6 +37,7 @@ async function resolveAccess(orderId: string): Promise<Access> {
       role: "admin",
       name: ctx.profile.fullName?.trim() || "Kay admin",
       userId: ctx.userId,
+      order,
     };
   }
 
@@ -37,6 +46,7 @@ async function resolveAccess(orderId: string): Promise<Access> {
       role: "vendor",
       name: ctx.vendor.businessName || ctx.profile.fullName || "Vendor",
       userId: ctx.userId,
+      order,
     };
   }
 
@@ -45,6 +55,7 @@ async function resolveAccess(orderId: string): Promise<Access> {
       role: "customer",
       name: ctx.profile.fullName?.trim() || order.buyer.fullName || "Customer",
       userId: ctx.userId,
+      order,
     };
   }
 
@@ -53,7 +64,15 @@ async function resolveAccess(orderId: string): Promise<Access> {
     role: "customer",
     name: order.buyer.fullName?.trim() || "Customer",
     userId: ctx?.userId ?? null,
+    order,
   };
+}
+
+/** Customers only see the customer<->admin line; vendors only vendor<->admin. */
+function channelFor(role: OrderSupportRole, requested: unknown): ChatChannel {
+  if (role === "vendor") return "vendor";
+  if (role === "customer") return "customer";
+  return parseChatChannel(requested) ?? "customer";
 }
 
 function tableMissing(err: unknown) {
@@ -62,14 +81,18 @@ function tableMissing(err: unknown) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    await resolveAccess(id);
-    const messages = await listOrderSupportMessages(id);
-    return NextResponse.json({ messages });
+    const access = await resolveAccess(id);
+    const channel = channelFor(
+      access.role,
+      new URL(request.url).searchParams.get("channel"),
+    );
+    const messages = await listOrderSupportMessages(id, channel);
+    return NextResponse.json({ messages, channel });
   } catch (err) {
     if (tableMissing(err)) {
       return NextResponse.json({
@@ -92,7 +115,7 @@ export async function POST(
   try {
     const { id } = await params;
     const access = await resolveAccess(id);
-    const body = (await request.json()) as { body?: string };
+    const body = (await request.json()) as { body?: string; channel?: string };
     const text = typeof body.body === "string" ? body.body.trim() : "";
     if (!text) {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
@@ -104,13 +127,38 @@ export async function POST(
       );
     }
 
+    const channel = channelFor(access.role, body.channel);
     const message = await insertOrderSupportMessage({
       orderId: id,
       senderId: access.userId,
       senderRole: access.role,
       senderName: access.name,
       body: text,
+      channel,
     });
+
+    after(async () => {
+      try {
+        const vendors =
+          access.role === "admin" && channel === "vendor"
+            ? await listOrderVendorContacts(id)
+            : [];
+        await notifyOrderChatMessage({
+          orderId: id,
+          orderNumber: access.order.orderNumber,
+          channel,
+          senderRole: access.role,
+          senderName: access.name,
+          body: text,
+          customerEmail: access.order.buyer.email,
+          customerName: access.order.buyer.fullName,
+          vendors,
+        });
+      } catch (err) {
+        console.error("[order chat notify]", err);
+      }
+    });
+
     return NextResponse.json({ message });
   } catch (err) {
     if (tableMissing(err)) {

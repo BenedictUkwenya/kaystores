@@ -36,19 +36,49 @@ export function AdminTableRequestCard({
   const [quoteNote, setQuoteNote] = useState(request.quoteNote ?? "");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [chatOpen, setChatOpen] = useState(false);
+
+  async function changeStatus(next: TableRequestStatus) {
+    const previous = status;
+    setStatus(next);
+    setStatusSaving(true);
+    setError("");
+    setToast("");
+    try {
+      const res = await fetch("/api/admin/table", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: request.id, status: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not update status.");
+      setToast(
+        next === "submitted"
+          ? `Status set to ${TABLE_STATUS_LABELS[next]}.`
+          : `Status set to ${TABLE_STATUS_LABELS[next]} — customer emailed.`,
+      );
+      router.refresh();
+    } catch (err) {
+      setStatus(previous);
+      setError(err instanceof Error ? err.message : "Could not update status.");
+    } finally {
+      setStatusSaving(false);
+    }
+  }
 
   async function save() {
     setLoading(true);
     setError("");
+    setToast("");
     try {
       const res = await fetch("/api/admin/table", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: request.id,
-          status,
           assignedVendorId: vendorId || null,
           quoteAmount: quoteAmount
             ? parseIntegerInput(quoteAmount)
@@ -60,6 +90,7 @@ export function AdminTableRequestCard({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not update.");
       setNote("");
+      setToast("Saved.");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update.");
@@ -114,12 +145,13 @@ export function AdminTableRequestCard({
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-kay-subtle">
-            Status
+            Status {statusSaving ? "· saving…" : "· saves instantly"}
           </label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as TableRequestStatus)}
-            className="h-10 w-full rounded-lg border border-kay-border bg-kay-input-bg px-3 text-[13px]"
+            disabled={statusSaving}
+            onChange={(e) => void changeStatus(e.target.value as TableRequestStatus)}
+            className="h-10 w-full rounded-lg border border-kay-border bg-kay-input-bg px-3 text-[13px] disabled:opacity-60"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -159,7 +191,7 @@ export function AdminTableRequestCard({
 
       <div className="mt-3">
         <Input
-          label="Message to thread (optional)"
+          label="Message to customer (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="We'll confirm flavours by Friday…"
@@ -167,16 +199,25 @@ export function AdminTableRequestCard({
       </div>
 
       {error && <p className="mt-2 text-[13px] text-red-600">{error}</p>}
+      {toast && (
+        <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+          {toast}
+        </p>
+      )}
 
       <div className="mt-4">
         <Button type="button" size="sm" disabled={loading} onClick={save}>
-          {loading ? "Saving…" : "Save"}
+          {loading ? "Saving…" : "Save baker & quote"}
         </Button>
       </div>
 
       {chatOpen && (
         <div className="mt-5">
-          <TableRequestChat requestId={request.id} viewerRole="admin" />
+          <TableRequestChat
+            requestId={request.id}
+            viewerRole="admin"
+            hasAssignedVendor={Boolean(request.assignedVendorId)}
+          />
         </div>
       )}
     </li>

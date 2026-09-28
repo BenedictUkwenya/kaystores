@@ -14,6 +14,12 @@ import {
   loadOrderForPayment,
   setPaymentPending,
 } from "@/lib/payments/confirm";
+import {
+  getShareByToken,
+  getShareOrderSummary,
+  isSplitExpired,
+  markSharePending,
+} from "@/lib/payments/shares";
 
 export async function POST(request: Request) {
   try {
@@ -28,6 +34,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+
+    if (body.kind === "share") {
+      return initializeSharePayment(body);
+    }
+
     const kind = body.kind === "concierge" ? "concierge" : "order";
     const id = String(body.id ?? "");
     const emailOverride = body.email ? String(body.email) : undefined;
@@ -46,6 +57,17 @@ export async function POST(request: Request) {
 
       if (order.paymentStatus === "paid") {
         return NextResponse.json({ error: "Order is already paid." }, { status: 400 });
+      }
+
+      if (order.paymentMode === "split") {
+        return NextResponse.json(
+          { error: "This order is being split — pay using your share link." },
+          { status: 400 },
+        );
+      }
+
+      if (order.status === "cancelled") {
+        return NextResponse.json({ error: "This order was cancelled." }, { status: 400 });
       }
 
       if (order.grandTotal < 1) {
@@ -109,6 +131,62 @@ export async function POST(request: Request) {
   }
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function initializeSharePayment(body: {
+  token?: unknown;
+  name?: unknown;
+  email?: unknown;
+}) {
+  const token = String(body.token ?? "");
+  const name = String(body.name ?? "").trim().slice(0, 80);
+  const email = String(body.email ?? "").trim().toLowerCase();
+
+  if (!name) {
+    return NextResponse.json({ error: "Enter your name." }, { status: 400 });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
+  }
+
+  const share = await getShareByToken(token);
+  if (!share) {
+    return NextResponse.json({ error: "Share link not found." }, { status: 404 });
+  }
+  if (share.status === "paid") {
+    return NextResponse.json({ error: "This share is already paid." }, { status: 400 });
+  }
+  if (share.status !== "unpaid" && share.status !== "pending") {
+    return NextResponse.json({ error: "This share is no longer open." }, { status: 400 });
+  }
+
+  const summary = await getShareOrderSummary(share.orderId);
+  if (!summary || summary.status === "cancelled") {
+    return NextResponse.json({ error: "This order was cancelled." }, { status: 400 });
+  }
+  if (summary.paymentStatus === "paid") {
+    return NextResponse.json({ error: "This order is already fully paid." }, { status: 400 });
+  }
+  if (isSplitExpired(summary)) {
+    return NextResponse.json({ error: "This split link has expired." }, { status: 400 });
+  }
+
+  await markSharePending(share.id, { name, email });
+
+  const payment = await initializePaystackPayment({
+    kind: "share",
+    id: share.id,
+    amount: share.amount,
+    email,
+    name,
+    title: "Kay Stores",
+    description: `Share ${share.shareIndex} of order ${summary.orderNumber}`,
+    redirectPath: `/split/${share.token}?payment=return`,
+  });
+
+  return NextResponse.json(payment);
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -130,20 +208,20 @@ export async function GET(request: Request) {
       });
     }
 
-    const order = verified.metadata?.kind === "order" && verified.metadata.id
-      ? await loadOrderForPayment(verified.metadata.id)
-      : null;
-    if (order && Math.abs(koboToNaira(verified.amount) - order.grandTotal) > 0.5) {
+    const kind = verified.metadata?.kind;
+    const confirmed = await confirmPaymentFromTxRef(
+      reference,
+      String(verified.id ?? reference),
+      kind === "order" || kind === "share"
+        ? koboToNaira(verified.amount)
+        : undefined,
+    );
+    if (!confirmed && (kind === "order" || kind === "share")) {
       return NextResponse.json(
         { paid: false, error: "Amount mismatch." },
         { status: 400 },
       );
     }
-
-    const confirmed = await confirmPaymentFromTxRef(
-      reference,
-      String(verified.id ?? reference),
-    );
 
     return NextResponse.json({
       paid: Boolean(confirmed),

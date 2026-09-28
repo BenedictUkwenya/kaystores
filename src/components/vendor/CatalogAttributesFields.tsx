@@ -2,6 +2,8 @@
 
 import {
   MASTER_CATEGORIES,
+  MULTI_SPEC_SEPARATOR,
+  splitMultiSpec,
   PRODUCT_AUDIENCES,
   PRODUCT_COLORS,
   PRODUCT_CONDITIONS,
@@ -162,7 +164,57 @@ export function CatalogAttributesFields({ value, onChange }: Props) {
 
       {specFields.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {specFields.map((field) => (
+          {specFields.map((field) =>
+            field.multi ? (
+              <div key={field.key} className="sm:col-span-2">
+                <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle">
+                  {field.key}{" "}
+                  <span className="normal-case tracking-normal text-kay-muted">
+                    (pick all that apply)
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {field.options.map((opt) => {
+                    const selected = splitMultiSpec(value.specs[field.key]);
+                    const on = selected.includes(opt);
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          let next: string[];
+                          if (on) next = selected.filter((s) => s !== opt);
+                          else if (opt === field.exclusiveOption) next = [opt];
+                          else
+                            next = [
+                              ...selected.filter((s) => s !== field.exclusiveOption),
+                              opt,
+                            ];
+                          const specs = { ...value.specs };
+                          if (next.length) {
+                            specs[field.key] = field.options
+                              .filter((o) => next.includes(o))
+                              .join(MULTI_SPEC_SEPARATOR);
+                          } else {
+                            delete specs[field.key];
+                          }
+                          patch({ specs });
+                        }}
+                        className={`rounded-full border px-3.5 py-1.5 text-[12px] transition ${
+                          on
+                            ? "border-kay-fg bg-kay-accent text-kay-accent-fg"
+                            : "border-kay-border bg-kay-input-bg text-kay-fg hover:border-kay-fg"
+                        }`}
+                      >
+                        {on ? "✓ " : ""}
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
             <div key={field.key}>
               <label className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle">
                 {field.key}
@@ -184,7 +236,8 @@ export function CatalogAttributesFields({ value, onChange }: Props) {
                 ))}
               </select>
             </div>
-          ))}
+            ),
+          )}
         </div>
       )}
     </div>

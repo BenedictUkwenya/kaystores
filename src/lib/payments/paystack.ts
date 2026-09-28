@@ -175,6 +175,7 @@ export function extractPaystackWebhookTx(payload: PaystackWebhookPayload): {
   txRef: string;
   reference: string;
   successful: boolean;
+  amountNaira?: number;
 } | null {
   const data = payload.data;
   if (!data?.reference) return null;
@@ -186,5 +187,7 @@ export function extractPaystackWebhookTx(payload: PaystackWebhookPayload): {
     txRef: data.reference,
     reference: String(data.id ?? data.reference),
     successful,
+    amountNaira:
+      typeof data.amount === "number" ? koboToNaira(data.amount) : undefined,
   };
 }
