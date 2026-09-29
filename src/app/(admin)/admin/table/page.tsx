@@ -6,6 +6,7 @@ import {
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
 import { AdminTableRequestCard } from "@/components/admin/AdminTableRequestCard";
+import { applyClientMarkup, getMarkupTiers } from "@/lib/pricing/markup";
 import type { TableRequestStatus } from "@/types/table";
 import Link from "next/link";
 
@@ -27,12 +28,13 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const status = params.status as TableRequestStatus | undefined;
 
-  const [requests, vendors] = await Promise.all([
+  const [requests, vendors, tiers] = await Promise.all([
     listTableRequests({
       status: status || undefined,
       limit: 100,
     }),
     fetchAllVendors("approved"),
+    getMarkupTiers(),
   ]);
 
   const tableVendors = vendors
@@ -76,6 +78,11 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
             key={request.id}
             request={request}
             vendors={tableVendors}
+            suggestedClientPrice={
+              request.vendorQuoteAmount != null
+                ? applyClientMarkup(request.vendorQuoteAmount, tiers)
+                : null
+            }
           />
         ))}
       </ul>

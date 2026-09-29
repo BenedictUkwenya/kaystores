@@ -42,9 +42,11 @@ function vendorSafeSummary(request: TableRequest) {
     deliveryAddress: _a,
     recipientName: _rn,
     recipientPhone: _rp,
+    quoteAmount: _qa,
+    quoteNote: _qn,
     ...rest
   } = tableSummary(request);
-  void [_e, _p, _s, _a, _rn, _rp];
+  void [_e, _p, _s, _a, _rn, _rp, _qa, _qn];
   return {
     ...rest,
     contactName: request.contactName.trim().split(/\s+/)[0] || "Kay client",
@@ -83,7 +85,7 @@ const STATUS_COPY: Partial<
   quoted: {
     subject: "has a quote",
     title: "Your quote is ready",
-    body: "We've prepared a quote for your request. Open your request page to accept and pay, or message us if you'd like changes.",
+    body: "We've prepared a quote for your request. Accept & pay or decline on your request page — or message us there if you'd like changes.",
   },
   accepted: {
     subject: "has been accepted",
@@ -119,6 +121,70 @@ export async function notifyTableStatusUpdate(request: TableRequest) {
     ctaUrl: `${getEmailSiteUrl()}${tableAccessPath(request.id)}`,
     ctaLabel: "View your request",
   });
+}
+
+function naira(amount: number) {
+  return `₦${Math.round(amount).toLocaleString("en-NG")}`;
+}
+
+/** Every admin: assigned vendor sent their price — add margin and quote the client. */
+export async function notifyAdminsVendorQuoted(request: TableRequest) {
+  if (request.vendorQuoteAmount == null) return;
+  await sendNotice({
+    type: "admin_alert",
+    toTeam: true,
+    subject: `Vendor price in — ${request.reference} · ${naira(request.vendorQuoteAmount)}`,
+    title: "Vendor sent a price",
+    paragraphs: [
+      `${request.assignedVendorName ?? "The assigned vendor"} quoted ${naira(request.vendorQuoteAmount)} for ${request.reference} (${request.category}).`,
+      ...(request.budget != null ? [`Client budget: ${naira(request.budget)}`] : []),
+      "Add Kay's margin, then send the quote to the client from the Kay Kitchen admin page.",
+    ],
+    quote: request.vendorQuoteNote ?? undefined,
+    ctaUrl: `${getEmailSiteUrl()}/admin/table`,
+    ctaLabel: "Review & send quote",
+  });
+}
+
+/** Client declined the quote — confirm to them and alert every admin. */
+export async function notifyTableQuoteDeclined(
+  request: TableRequest,
+  reason?: string,
+) {
+  const tasks: Promise<unknown>[] = [
+    sendNotice({
+      type: "admin_alert",
+      toTeam: true,
+      subject: `Quote declined — ${request.reference}`,
+      title: "Client declined the Kay Kitchen quote",
+      paragraphs: [
+        `${request.contactName} declined the quote${request.quoteAmount != null ? ` of ${naira(request.quoteAmount)}` : ""} for ${request.reference}.`,
+        ...(request.assignedVendorName
+          ? [`Let ${request.assignedVendorName} know the brief is off.`]
+          : []),
+      ],
+      quote: reason,
+      ctaUrl: `${getEmailSiteUrl()}/admin/table`,
+      ctaLabel: "Open Kay Kitchen",
+    }),
+  ];
+  if (request.contactEmail) {
+    tasks.push(
+      sendNotice({
+        type: "table_status_update",
+        to: [request.contactEmail],
+        subject: `You declined the quote for ${request.reference}`,
+        title: "Quote declined",
+        paragraphs: [
+          `Hi ${request.contactName},`,
+          "You've declined our quote, so nothing will be charged. If you'd like a different option or price, message us on your request page and we'll help.",
+        ],
+        ctaUrl: `${getEmailSiteUrl()}${tableAccessPath(request.id)}`,
+        ctaLabel: "View your request",
+      }),
+    );
+  }
+  await Promise.all(tasks);
 }
 
 /** Assigned baker: new Kay Kitchen brief. */

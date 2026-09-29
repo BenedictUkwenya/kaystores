@@ -68,15 +68,20 @@ Signup / password reset use **8-digit codes** on `/verify` (OTP length must matc
 
 1. `POST /api/auth/signup` → Admin `generateLink` (Supabase does **not** send mail) → Resend (`auth_otp`), **direct from Vercel when `RESEND_API_KEY` is set**, else via `send-email` Edge Function
 
-**Vercel (required for reliable signup / vendor invites):** copy the same values from Edge secrets into Production env:
+**Vercel (required for all transactional email):** copy the same values from Edge secrets into Production env. When `RESEND_API_KEY` is set on Vercel, **every** email type (orders, admin alerts, Kay Kitchen, support, auth) is rendered in `src/lib/email/render.ts` and sent straight to Resend — the `send-email` Edge Function is only a fallback.
 
 ```bash
 RESEND_API_KEY=re_xxxxxxxx
 RESEND_FROM_EMAIL="Kay Stores <hello@shoponkay.com>"
 KAY_REPLY_TO_EMAIL=hello@shoponkay.com
+KAY_TEAM_EMAIL=hello@shoponkay.com
 ```
 
-Without `RESEND_API_KEY` on Vercel, signup depends on the Edge Function accepting your `SUPABASE_SERVICE_ROLE_KEY` — if you see **Unauthorized**, add Resend on Vercel or redeploy `send-email` after fixing the service role key.
+Admin alerts go to every `profiles.role = 'admin'` email **plus** `KAY_TEAM_EMAIL`.
+
+Without `RESEND_API_KEY` on Vercel, email depends on the Edge Function accepting your `SUPABASE_SERVICE_ROLE_KEY` — if you see **Unauthorized**, add Resend on Vercel or redeploy `send-email` after fixing the service role key.
+
+`src/lib/email/render.ts` is a Node port of `supabase/functions/send-email/index.ts` — when changing a template, update both.
 2. `POST /api/auth/send-otp` → same for recovery / resend code
 3. Browser verifies with `verifyOtp`
 
@@ -118,7 +123,7 @@ Do **not** rely on client `signUp` / `resetPasswordForEmail` for mail — those 
 
 Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fallback for the auth-hook invite template.
 
-**Not in `.env`:** `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `KAY_TEAM_EMAIL`, `SEND_EMAIL_HOOK_SECRET`
+**Also on Vercel (not committed):** `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `KAY_TEAM_EMAIL`, `KAY_REPLY_TO_EMAIL`. `SEND_EMAIL_HOOK_SECRET` is Supabase-only.
 
 ## 6. Email triggers
 

@@ -2,17 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { KayEmailPayload } from "@/lib/email/types";
 import type { Order } from "@/types/order";
 import { FunctionsHttpError } from "@supabase/supabase-js";
-import {
-  canSendAuthEmailDirect,
-  sendAuthOtpDirect,
-  sendRoleEmailDirect,
-} from "@/lib/email/auth-direct";
-
-const DIRECT_AUTH_TYPES = new Set([
-  "auth_otp",
-  "role_invite",
-  "role_upgraded",
-]);
+import { deliverKayEmail } from "@/lib/email/render";
 
 export type SendEmailResult =
   | { ok: true; id?: string }
@@ -43,20 +33,27 @@ async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
   return "Email send failed.";
 }
 
-/** Invokes the Supabase Edge Function — Resend API key lives in Supabase secrets only. */
+/**
+ * Sends via Resend straight from the server when RESEND_API_KEY is set;
+ * otherwise falls back to the Supabase send-email Edge Function.
+ */
 export async function sendKayEmail(
   payload: KayEmailPayload,
 ): Promise<SendEmailResult> {
-  if (DIRECT_AUTH_TYPES.has(payload.type) && canSendAuthEmailDirect()) {
-    if (payload.type === "auth_otp") {
-      return sendAuthOtpDirect({
-        to: payload.to,
-        token: payload.token,
-        action: payload.action,
-      });
-    }
-    if (payload.type === "role_invite" || payload.type === "role_upgraded") {
-      return sendRoleEmailDirect(payload);
+  if (process.env.RESEND_API_KEY?.trim()) {
+    try {
+      const result = await deliverKayEmail(
+        payload as unknown as Parameters<typeof deliverKayEmail>[0],
+      );
+      if (!result.ok) {
+        console.error(`[email:${payload.type}]`, result.error);
+        return { ok: false, error: result.error ?? "Email send failed." };
+      }
+      return { ok: true, id: result.id };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Email send failed.";
+      console.error(`[email:${payload.type}]`, message);
+      return { ok: false, error: message };
     }
   }
 
@@ -92,22 +89,6 @@ export async function sendKayEmail(
   if (error) {
     const message = await edgeFunctionErrorMessage(error);
     console.error("[email] edge function error:", message);
-    if (
-      DIRECT_AUTH_TYPES.has(payload.type) &&
-      canSendAuthEmailDirect() &&
-      (message.includes("Unauthorized") || message.includes("unauthorized"))
-    ) {
-      if (payload.type === "auth_otp") {
-        return sendAuthOtpDirect({
-          to: payload.to,
-          token: payload.token,
-          action: payload.action,
-        });
-      }
-      if (payload.type === "role_invite" || payload.type === "role_upgraded") {
-        return sendRoleEmailDirect(payload);
-      }
-    }
     return { ok: false, error: message };
   }
 

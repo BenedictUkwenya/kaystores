@@ -7,6 +7,7 @@ import {
 import { TABLE_ROUTES } from "@/lib/table/catalog";
 import { resolveTableViewer } from "@/lib/orders/access";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
+import { TableQuoteDeclineButton } from "@/components/table/TableQuoteDeclineButton";
 import {
   PaymentReturnVerifier,
   PaystackPayButton,
@@ -112,18 +113,21 @@ export default async function TableRequestStatusPage({ params, searchParams }: P
             <p className="mt-1 text-[13px] text-[var(--table-muted)]">{request.quoteNote}</p>
           )}
           <div className="mt-4 flex flex-col items-center">
-            {paystackOn ? (
-              <PaystackPayButton
-                kind="table"
-                id={request.id}
-                label="Accept & pay"
-                className="w-full sm:w-auto"
-              />
-            ) : (
-              <p className="text-[13px] text-[var(--table-muted)]">
-                Happy with the quote? Reply below and we&apos;ll send payment details.
-              </p>
-            )}
+            <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
+              {paystackOn ? (
+                <PaystackPayButton
+                  kind="table"
+                  id={request.id}
+                  label="Accept & pay"
+                  className="w-full sm:w-auto"
+                />
+              ) : (
+                <p className="text-[13px] text-[var(--table-muted)]">
+                  Happy with the quote? Reply below and we&apos;ll send payment details.
+                </p>
+              )}
+              <TableQuoteDeclineButton requestId={request.id} />
+            </div>
             <p className="mt-3 text-[12px] text-[var(--table-muted)]">
               Want changes first? Message us below before paying.
             </p>
@@ -215,7 +219,10 @@ export default async function TableRequestStatusPage({ params, searchParams }: P
             <dd className="mt-1 text-[var(--table-ink)]">{request.allergies}</dd>
           </div>
         )}
-        {request.quoteAmount != null && !canPay && (
+        {request.quoteAmount != null &&
+          !canPay &&
+          request.status !== "submitted" &&
+          request.status !== "reviewing" && (
           <div className="sm:col-span-2">
             <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">
               Quote

@@ -8,6 +8,7 @@ import {
   VENDOR_NAV,
 } from "@/components/dashboard/DashboardLayout";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
+import { VendorTableQuoteForm } from "@/components/table/VendorTableQuoteForm";
 import { TABLE_STATUS_LABELS } from "@/components/table/TableRequestStatusTimeline";
 import { formatNaira } from "@/lib/data/home";
 import { isTableCatalogProduct } from "@/lib/table/catalog";
@@ -143,7 +144,7 @@ export default async function VendorTablePage() {
                   ["Style", request.styleNotes],
                   ["Message on item", request.messageOnItem],
                   ["Allergies / dietary", request.allergies],
-                  ["Kay quote", request.quoteAmount ? formatNaira(request.quoteAmount) : null],
+                  ["Client budget", request.budget ? formatNaira(request.budget) : null],
                 ]
                   .filter(([, v]) => v)
                   .map(([label, value]) => (
@@ -161,6 +162,17 @@ export default async function VendorTablePage() {
                     </div>
                   ))}
               </dl>
+
+              <VendorTableQuoteForm
+                requestId={request.id}
+                currentAmount={request.vendorQuoteAmount}
+                currentNote={request.vendorQuoteNote}
+                quotedAt={request.vendorQuotedAt}
+                editable={
+                  request.paymentStatus === "unpaid" &&
+                  (request.status === "submitted" || request.status === "reviewing")
+                }
+              />
 
               {dropHub && (
                 <div className="mt-4 rounded-xl border border-kay-gold/25 bg-kay-gold-light/30 p-3 text-[12px] text-kay-fg">

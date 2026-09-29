@@ -54,6 +54,12 @@ function mapRequest(
     assignedVendorName: vendorName ?? null,
     quoteAmount: row.quote_amount != null ? Number(row.quote_amount) : null,
     quoteNote: row.quote_note != null ? String(row.quote_note) : null,
+    vendorQuoteAmount:
+      row.vendor_quote_amount != null ? Number(row.vendor_quote_amount) : null,
+    vendorQuoteNote:
+      row.vendor_quote_note != null ? String(row.vendor_quote_note) : null,
+    vendorQuotedAt:
+      row.vendor_quoted_at != null ? String(row.vendor_quoted_at) : null,
     paymentStatus: (["pending", "paid", "refunded"].includes(String(row.payment_status))
       ? row.payment_status
       : "unpaid") as TableRequest["paymentStatus"],
@@ -95,6 +101,9 @@ export function toVendorSafeRequest(request: TableRequest): TableRequest {
     recipientName: null,
     recipientPhone: null,
     paymentReference: null,
+    // The client price includes Kay's margin.
+    quoteAmount: null,
+    quoteNote: null,
   };
 }
 
@@ -201,11 +210,21 @@ export async function updateTableRequest(
     assignedVendorId?: string | null;
     quoteAmount?: number | null;
     quoteNote?: string | null;
+    vendorQuoteAmount?: number | null;
+    vendorQuoteNote?: string | null;
   },
 ): Promise<TableRequest> {
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
+  if (update.vendorQuoteAmount !== undefined) {
+    payload.vendor_quote_amount = update.vendorQuoteAmount;
+    payload.vendor_quoted_at =
+      update.vendorQuoteAmount != null ? new Date().toISOString() : null;
+  }
+  if (update.vendorQuoteNote !== undefined) {
+    payload.vendor_quote_note = update.vendorQuoteNote;
+  }
   if (update.status != null) payload.status = update.status;
   if (update.assignedVendorId !== undefined) {
     payload.assigned_vendor_id = update.assignedVendorId;

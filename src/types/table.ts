@@ -45,6 +45,10 @@ export type TableRequest = {
   assignedVendorName?: string | null;
   quoteAmount?: number | null;
   quoteNote?: string | null;
+  /** Vendor's price to Kay — never shown to the client. */
+  vendorQuoteAmount?: number | null;
+  vendorQuoteNote?: string | null;
+  vendorQuotedAt?: string | null;
   paymentStatus: TablePaymentStatus;
   paymentReference?: string | null;
   paidAt?: string | null;

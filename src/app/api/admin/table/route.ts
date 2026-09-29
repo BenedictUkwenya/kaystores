@@ -175,9 +175,11 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // Moving to "quoted" already sends the status email with the quote.
+    // Moving to "quoted" already sends the status email with the quote; draft
+    // quotes (before the request is "quoted") stay private to Kay.
     const quoteChanged =
       !(statusChanged && status === "quoted") &&
+      updated.status === "quoted" &&
       updated.quoteAmount != null &&
       updated.quoteAmount > 0 &&
       (before.quoteAmount !== updated.quoteAmount ||

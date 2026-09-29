@@ -17,27 +17,33 @@ function hasPrivateItems(order: Order): boolean {
   return order.items.some((item) => item.segment === "after_dark");
 }
 
-/** Rich "new paid order" alert for every admin + team inbox. */
-export async function notifyAdminsNewOrder(order: Order): Promise<void> {
+function orderDetailLines(order: Order): string[] {
   const address = formatAddressLines(getDeliveryAddress(order)).join(", ");
   const recipient =
     order.deliveryType === "gift" && order.gift
       ? `Gift for ${order.gift.recipientName}${order.gift.recipientPhone ? ` · ${order.gift.recipientPhone}` : ""}`
       : "Delivering to the buyer";
+  return [
+    `Buyer: ${order.buyer.fullName} · ${order.buyer.phone} · ${order.buyer.email}`,
+    recipient,
+    address ? `Deliver to: ${address}` : "Delivery address: not provided",
+    ...(order.anonymousPackaging || hasPrivateItems(order)
+      ? ["Packaging: plain, unmarked (anonymous / private items)."]
+      : []),
+    "Items:",
+    ...itemLines(order),
+  ];
+}
+
+/** Rich "new paid order" alert for every admin + team inbox. */
+export async function notifyAdminsNewOrder(order: Order): Promise<void> {
   await sendNotice({
     type: "admin_alert",
     toTeam: true,
     subject: `New paid order #${order.orderNumber} — ${formatNaira(order.pricing.grandTotal)}`,
     title: "New paid order",
     paragraphs: [
-      `Buyer: ${order.buyer.fullName} · ${order.buyer.phone} · ${order.buyer.email}`,
-      recipient,
-      address ? `Deliver to: ${address}` : "Delivery address: not provided",
-      ...(order.anonymousPackaging || hasPrivateItems(order)
-        ? ["Packaging: plain, unmarked (anonymous / private items)."]
-        : []),
-      "Items:",
-      ...itemLines(order),
+      ...orderDetailLines(order),
       `Total paid: ${formatNaira(order.pricing.grandTotal)}${order.paymentReference ? ` · ref ${order.paymentReference}` : ""}`,
     ],
     ctaUrl: `${getEmailSiteUrl()}/admin/orders/${order.id}`,
@@ -45,15 +51,17 @@ export async function notifyAdminsNewOrder(order: Order): Promise<void> {
   });
 }
 
+/** Bank-transfer order placed (or transfer claimed) — awaiting admin verification. */
 export async function notifyManualPaymentClaim(order: Order): Promise<void> {
   await sendNotice({
     type: "admin_alert",
     toTeam: true,
-    subject: `Verify payment — order #${order.orderNumber}`,
-    title: "Customer says they've paid",
+    subject: `New order awaiting transfer — #${order.orderNumber} · ${formatNaira(order.pricing.grandTotal)}`,
+    title: "Order placed — verify bank transfer",
     paragraphs: [
-      `${order.buyer.fullName} (${order.buyer.phone}) marked order #${order.orderNumber} as paid by transfer: ${formatNaira(order.pricing.grandTotal)}.`,
+      `${order.buyer.fullName} placed order #${order.orderNumber} and says they paid ${formatNaira(order.pricing.grandTotal)} by bank transfer.`,
       "Check the bank account, then use “Mark payment paid” on the order. Vendors are only notified after you confirm.",
+      ...orderDetailLines(order),
     ],
     ctaUrl: `${getEmailSiteUrl()}/admin/orders/${order.id}`,
     ctaLabel: "Verify payment",

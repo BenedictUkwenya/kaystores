@@ -302,6 +302,10 @@
 
 - [x] **Concierge pay + delivery** — delivery address at payment, price lock after offer is shown, hub instructions for vendors, admin alert when item reaches hub
 
+- [x] **All email sent from Vercel + admin order alerts** — every email type renders in `src/lib/email/render.ts` and goes straight to Resend (edge `send-email` is fallback only); every admin + `KAY_TEAM_EMAIL` gets paid-order and bank-transfer-order alerts (set `KAY_TEAM_EMAIL` on Vercel)
+
+- [ ] **Kay Kitchen vendor quotes** — assigned baker sends a price, admins emailed, admin card shows vendor price + suggested client price (markup tiers) and “Send quote to client”, client accept & pay or decline (admins + client emailed); run migration `044_kitchen_vendor_quotes.sql`, test the flow live, then mark complete
+
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { formatIntegerInput, parseIntegerInput } from "@/lib/data/home";
+import { formatIntegerInput, formatNaira, parseIntegerInput } from "@/lib/data/home";
 import type { TableRequest, TableRequestStatus } from "@/types/table";
 import { TABLE_STATUS_LABELS } from "@/components/table/TableRequestStatusTimeline";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
@@ -23,15 +23,22 @@ const STATUS_OPTIONS: TableRequestStatus[] = [
 export function AdminTableRequestCard({
   request,
   vendors,
+  suggestedClientPrice,
 }: {
   request: TableRequest;
   vendors: VendorOption[];
+  /** Vendor price + Kay markup tiers, when the vendor has quoted. */
+  suggestedClientPrice?: number | null;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(request.status);
   const [vendorId, setVendorId] = useState(request.assignedVendorId ?? "");
   const [quoteAmount, setQuoteAmount] = useState(
-    request.quoteAmount != null ? String(request.quoteAmount) : "",
+    request.quoteAmount != null
+      ? formatIntegerInput(String(request.quoteAmount))
+      : suggestedClientPrice
+        ? formatIntegerInput(String(suggestedClientPrice))
+        : "",
   );
   const [quoteNote, setQuoteNote] = useState(request.quoteNote ?? "");
   const [note, setNote] = useState("");
@@ -93,7 +100,7 @@ export function AdminTableRequestCard({
     }
   }
 
-  async function save() {
+  async function save(sendQuote = false) {
     setLoading(true);
     setError("");
     setToast("");
@@ -109,12 +116,14 @@ export function AdminTableRequestCard({
             : { quoteAmount: quoteAmount ? parseIntegerInput(quoteAmount) : null }),
           quoteNote: quoteNote.trim() || null,
           note: note.trim() || undefined,
+          ...(sendQuote ? { status: "quoted" } : {}),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not update.");
       setNote("");
-      setToast("Saved.");
+      if (sendQuote) setStatus("quoted");
+      setToast(sendQuote ? "Quote sent — client emailed to accept & pay or decline." : "Saved.");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update.");
@@ -193,6 +202,51 @@ export function AdminTableRequestCard({
         )}
       </div>
 
+      {request.assignedVendorId && (
+        <div
+          className={`mt-4 rounded-xl border p-3 text-[13px] ${
+            request.vendorQuoteAmount != null
+              ? "border-kay-gold/40 bg-kay-gold-light/25"
+              : "border-kay-border-light bg-kay-surface"
+          }`}
+        >
+          {request.vendorQuoteAmount != null ? (
+            <>
+              <p className="text-kay-fg">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-kay-subtle">
+                  Vendor price{" "}
+                </span>
+                <span className="font-semibold">{formatNaira(request.vendorQuoteAmount)}</span>
+                {request.assignedVendorName ? ` · ${request.assignedVendorName}` : ""}
+                {request.vendorQuotedAt
+                  ? ` · ${new Date(request.vendorQuotedAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}`
+                  : ""}
+              </p>
+              {request.vendorQuoteNote && (
+                <p className="mt-1 whitespace-pre-wrap text-kay-muted">“{request.vendorQuoteNote}”</p>
+              )}
+              {suggestedClientPrice != null && (
+                <p className="mt-1 text-kay-muted">
+                  Suggested client price (with Kay margin):{" "}
+                  <span className="font-medium text-kay-fg">{formatNaira(suggestedClientPrice)}</span>
+                  {!paid && (
+                    <button
+                      type="button"
+                      className="ml-2 text-[12px] font-medium text-kay-gold hover:underline"
+                      onClick={() => setQuoteAmount(formatIntegerInput(String(suggestedClientPrice)))}
+                    >
+                      Use this
+                    </button>
+                  )}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-kay-muted">Waiting for the baker to send their price.</p>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-kay-subtle">
@@ -229,7 +283,7 @@ export function AdminTableRequestCard({
           </select>
         </div>
         <Input
-          label={paid ? "Quote (₦) · locked, paid" : "Quote (₦)"}
+          label={paid ? "Client quote (₦) · locked, paid" : "Client quote (₦)"}
           value={quoteAmount}
           disabled={paid}
           onChange={(e) => setQuoteAmount(formatIntegerInput(e.target.value))}
@@ -258,9 +312,19 @@ export function AdminTableRequestCard({
       )}
 
       <div className="mt-4 flex flex-wrap items-end gap-3">
-        <Button type="button" size="sm" disabled={loading} onClick={save}>
+        <Button type="button" size="sm" variant="secondary" disabled={loading} onClick={() => save()}>
           {loading ? "Saving…" : "Save baker & quote"}
         </Button>
+        {!paid && (request.status === "submitted" || request.status === "reviewing") && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={loading || !quoteAmount}
+            onClick={() => save(true)}
+          >
+            Send quote to client
+          </Button>
+        )}
         {!paid && request.quoteAmount != null && request.quoteAmount > 0 && (
           <div className="flex flex-wrap items-end gap-2">
             <Input

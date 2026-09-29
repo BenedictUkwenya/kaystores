@@ -1,10 +1,10 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+/* Generated from supabase/functions/send-email/index.ts — keep templates in sync. */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+function envGet(key: string): string | undefined {
+  const v = process.env[key];
+  return v && v.trim() ? v.trim() : undefined;
+}
 
 type Order = {
   orderNumber: string;
@@ -84,6 +84,26 @@ function formatOrderItemsText(order: Order, discreet: boolean): string {
 }
 
 type Payload =
+  | {
+      type: "support_message";
+      appUrl: string;
+      audience: "team" | "user";
+      to?: string;
+      preview: string;
+      senderName?: string;
+      deepLink: string;
+      threadId: string;
+    }
+  | {
+      type: "gift_reveal_opened";
+      appUrl: string;
+      to: string;
+      buyerName: string;
+      recipientName: string;
+      orderNumber: string;
+      orderId: string;
+      orderUrl?: string;
+    }
   | { type: "order_confirmation"; appUrl: string; order: Order }
   | { type: "order_internal"; appUrl: string; order: Order }
   | { type: "handover_link"; appUrl: string; order: Order }
@@ -297,7 +317,7 @@ function escapeHtml(value: string): string {
 }
 
 function defaultReplyTo(): string | undefined {
-  return Deno.env.get("KAY_REPLY_TO_EMAIL") ?? Deno.env.get("KAY_TEAM_EMAIL") ?? undefined;
+  return envGet("KAY_REPLY_TO_EMAIL") ?? envGet("KAY_TEAM_EMAIL") ?? undefined;
 }
 
 /** Merge listed admin inboxes with KAY_TEAM_EMAIL (unique, lowercased). */
@@ -307,7 +327,7 @@ function teamRecipients(adminEmails?: string[]): string[] | null {
     const email = raw.trim().toLowerCase();
     if (email) set.add(email);
   }
-  const teamEmail = Deno.env.get("KAY_TEAM_EMAIL")?.trim().toLowerCase();
+  const teamEmail = envGet("KAY_TEAM_EMAIL")?.trim().toLowerCase();
   if (teamEmail) set.add(teamEmail);
   return set.size ? [...set] : null;
 }
@@ -317,7 +337,7 @@ function naira(amount: number) {
 }
 
 function siteUrl(): string {
-  const fromEnv = Deno.env.get("PUBLIC_SITE_URL")?.replace(/\/$/, "");
+  const fromEnv = envGet("PUBLIC_SITE_URL")?.replace(/\/$/, "");
   if (fromEnv && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(fromEnv)) {
     return fromEnv;
   }
@@ -357,8 +377,8 @@ function buildMessage(
   bcc?: string[];
   tags?: { name: string; value: string }[];
 } | null {
-  const teamEmail = Deno.env.get("KAY_TEAM_EMAIL");
-  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+  const teamEmail = envGet("KAY_TEAM_EMAIL");
+  const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
 
   switch (payload.type) {
     case "order_confirmation": {
@@ -1031,6 +1051,7 @@ function buildMessage(
         <p style="color:#5c5c5c;white-space:pre-wrap;line-height:1.6">${preview || "[Image attached]"}</p>
         ${ctaButton(deepLink, "Open conversation")}`,
       );
+      if (!to) return null;
       return {
         to: [to],
         subject: "New reply from Kay Support",
@@ -1163,51 +1184,6 @@ function escapeDeep<T>(value: T, key = ""): T {
   return value;
 }
 
-function jwtRole(token: string): string | null {
-  try {
-    const part = token.split(".")[1];
-    if (!part) return null;
-    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
-    const payload = JSON.parse(json) as { role?: string };
-    return payload.role ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function keyHasServiceAccess(key: string): Promise<boolean> {
-  if (!key) return false;
-  if (jwtRole(key) === "service_role") return true;
-  const base = Deno.env.get("SUPABASE_URL")?.replace(/\/$/, "");
-  if (!base) return false;
-  const res = await fetch(`${base}/auth/v1/admin/users?page=1&per_page=1`, {
-    headers: { Authorization: `Bearer ${key}`, apikey: key },
-  });
-  return res.ok;
-}
-
-async function isAuthorized(req: Request): Promise<boolean> {
-  const invokeSecret = Deno.env.get("EMAIL_INVOKE_SECRET")?.trim();
-  const headerSecret = req.headers.get("x-kay-email-secret")?.trim() ?? "";
-  if (invokeSecret && headerSecret && invokeSecret === headerSecret) {
-    return true;
-  }
-
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-  const bearer =
-    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
-  const apikey = req.headers.get("apikey")?.trim() ?? "";
-  const candidates = [...new Set([bearer, apikey].filter(Boolean))];
-
-  for (const key of candidates) {
-    if (serviceKey && key === serviceKey) return true;
-  }
-  for (const key of candidates) {
-    if (await keyHasServiceAccess(key)) return true;
-  }
-  return false;
-}
-
 async function sendResend(options: {
   from: string;
   to: string[];
@@ -1218,7 +1194,7 @@ async function sendResend(options: {
   bcc?: string[];
   tags?: { name: string; value: string }[];
 }): Promise<{ id?: string; error?: string }> {
-  const apiKey = Deno.env.get("RESEND_API_KEY");
+  const apiKey = envGet("RESEND_API_KEY");
   if (!apiKey) {
     return { error: "RESEND_API_KEY not configured in Supabase secrets" };
   }
@@ -1250,22 +1226,13 @@ async function sendResend(options: {
   return { id: data.id };
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+export type DeliverResult = { ok: boolean; id?: string; error?: string };
 
-  if (!(await isAuthorized(req))) {
-    return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
+/** Render + send any Kay email payload via Resend (Node / Vercel). */
+export async function deliverKayEmail(raw: Payload): Promise<DeliverResult> {
   try {
-    const raw = (await req.json()) as Payload;
     const payload = SELF_ESCAPING.has(raw.type) ? raw : escapeDeep(raw);
-    const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+    const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
 
     if (payload.type === "concierge") {
       const { request } = payload;
@@ -1284,10 +1251,7 @@ Deno.serve(async (req) => {
         text: stripHtml(buyerHtml),
       });
       if (buyer.error) {
-        return new Response(JSON.stringify({ ok: false, error: buyer.error }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return { ok: false, error: buyer.error };
       }
       if (buyer.id) results.push(buyer.id);
 
@@ -1313,9 +1277,7 @@ Deno.serve(async (req) => {
         if (team.id) results.push(team.id);
       }
 
-      return new Response(JSON.stringify({ ok: true, id: results[0] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { ok: true, id: results[0] };
     }
 
     if (payload.type === "table_request") {
@@ -1341,10 +1303,7 @@ Deno.serve(async (req) => {
         tags: [{ name: "category", value: "table_request_client" }],
       });
       if (buyer.error) {
-        return new Response(JSON.stringify({ ok: false, error: buyer.error }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return { ok: false, error: buyer.error };
       }
       if (buyer.id) results.push(buyer.id);
 
@@ -1379,17 +1338,12 @@ Deno.serve(async (req) => {
         if (team.id) results.push(team.id);
       }
 
-      return new Response(JSON.stringify({ ok: true, id: results[0] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { ok: true, id: results[0] };
     }
 
     const message = buildMessage(payload);
     if (!message || Array.isArray(message)) {
-      return new Response(JSON.stringify({ ok: false, error: "Invalid payload" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { ok: false, error: "Invalid payload" };
     }
 
     const result = await sendResend({
@@ -1403,20 +1357,13 @@ Deno.serve(async (req) => {
       tags: message.tags,
     });
     if (result.error) {
-      return new Response(JSON.stringify({ ok: false, error: result.error }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { ok: false, error: result.error };
     }
 
-    return new Response(JSON.stringify({ ok: true, id: result.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return { ok: true, id: result.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ ok: false, error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return { ok: false, error: message };
   }
-});
+}
+
