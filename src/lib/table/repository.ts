@@ -205,6 +205,32 @@ export async function listTableRequests(opts?: {
   });
 }
 
+/** A signed-in client's requests — by account or by the email they used as a guest. */
+export async function listTableRequestsForAccount(opts: {
+  userId: string;
+  email?: string | null;
+}): Promise<TableRequest[]> {
+  const email = opts.email?.trim().toLowerCase();
+  const filter = email
+    ? `user_id.eq.${opts.userId},contact_email.eq.${email}`
+    : `user_id.eq.${opts.userId}`;
+  const { data, error } = await db()
+    .from("table_requests")
+    .select("*, vendors(business_name)")
+    .or(filter)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const vendors = row.vendors as { business_name?: string } | null;
+    return mapRequest(
+      row as Record<string, unknown>,
+      vendors?.business_name ?? null,
+    );
+  });
+}
+
 export async function updateTableRequest(
   id: string,
   update: {

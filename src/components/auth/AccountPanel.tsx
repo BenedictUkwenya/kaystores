@@ -9,6 +9,7 @@ import { AccountGuestView } from "@/components/account/AccountGuestView";
 import type { OrderSummary } from "@/types/order";
 import type { ClientConciergeStatus } from "@/types/concierge";
 import type { Vendor } from "@/types/dashboard";
+import type { AccountKitchenRequest } from "@/components/account/AccountKitchenRequests";
 import { readVendorApplyDraft } from "@/lib/vendor/apply-draft";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
   initialOrders: OrderSummary[];
   initialConciergeRequests: ClientConciergeStatus[];
   initialVendorApplication: Vendor | null;
+  kitchenRequests?: AccountKitchenRequest[];
 };
 
 function AccountSkeleton() {
@@ -37,6 +39,7 @@ export function AccountPanel({
   initialOrders,
   initialConciergeRequests,
   initialVendorApplication,
+  kitchenRequests = [],
 }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser);
@@ -126,6 +129,7 @@ export function AccountPanel({
       user={user}
       orders={orders}
       conciergeRequests={conciergeRequests}
+      kitchenRequests={kitchenRequests}
       vendorApplication={vendorApplication}
       onSignOut={handleSignOut}
     />

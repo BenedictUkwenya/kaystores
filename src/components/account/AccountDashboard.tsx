@@ -8,6 +8,10 @@ import { AccountLayout } from "@/components/account/AccountLayout";
 import { AccountOrders } from "@/components/account/AccountOrders";
 import { AccountConciergeRequests } from "@/components/account/AccountConciergeRequests";
 import {
+  AccountKitchenRequests,
+  type AccountKitchenRequest,
+} from "@/components/account/AccountKitchenRequests";
+import {
   formatMemberSince,
   getInitials,
 } from "@/components/account/account-utils";
@@ -23,6 +27,7 @@ type Props = {
   user: User;
   orders: OrderSummary[];
   conciergeRequests: ClientConciergeStatus[];
+  kitchenRequests?: AccountKitchenRequest[];
   vendorApplication: Vendor | null;
   onSignOut: () => void;
 };
@@ -33,6 +38,12 @@ const SERVICES = [
     label: "Message Kay",
     description: "Chat with our support team",
     icon: IconInfo,
+  },
+  {
+    href: "/table/request",
+    label: "Custom cake",
+    description: "Send a photo, get a price",
+    icon: IconBag,
   },
   {
     href: "/concierge",
@@ -64,6 +75,7 @@ export function AccountDashboard({
   user,
   orders,
   conciergeRequests,
+  kitchenRequests = [],
   vendorApplication,
   onSignOut,
 }: Props) {
@@ -117,7 +129,7 @@ export function AccountDashboard({
   return (
     <AccountLayout
       title={`Welcome back, ${firstName}`}
-      description="Your orders, gifting activity, and concierge requests — managed with the same care we put into every delivery."
+      description="Your orders, custom cakes, and concierge requests — managed with the same care we put into every delivery."
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
         <div className="space-y-8">
@@ -201,6 +213,8 @@ export function AccountDashboard({
               <StatCell label="Status" value="Active" accent />
             </div>
           </section>
+
+          <AccountKitchenRequests requests={kitchenRequests} />
 
           <AccountConciergeRequests requests={conciergeRequests} />
 
