@@ -66,7 +66,17 @@ Signup / password reset use **8-digit codes** on `/verify` (OTP length must matc
 
 **App path (preferred — avoids Supabase Auth email rate limits):**
 
-1. `POST /api/auth/signup` → Admin `generateLink` (Supabase does **not** send mail) → Resend via `send-email` (`auth_otp`)
+1. `POST /api/auth/signup` → Admin `generateLink` (Supabase does **not** send mail) → Resend (`auth_otp`), **direct from Vercel when `RESEND_API_KEY` is set**, else via `send-email` Edge Function
+
+**Vercel (required for reliable signup / vendor invites):** copy the same values from Edge secrets into Production env:
+
+```bash
+RESEND_API_KEY=re_xxxxxxxx
+RESEND_FROM_EMAIL="Kay Stores <hello@shoponkay.com>"
+KAY_REPLY_TO_EMAIL=hello@shoponkay.com
+```
+
+Without `RESEND_API_KEY` on Vercel, signup depends on the Edge Function accepting your `SUPABASE_SERVICE_ROLE_KEY` — if you see **Unauthorized**, add Resend on Vercel or redeploy `send-email` after fixing the service role key.
 2. `POST /api/auth/send-otp` → same for recovery / resend code
 3. Browser verifies with `verifyOtp`
 

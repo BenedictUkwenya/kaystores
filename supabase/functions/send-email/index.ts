@@ -1162,7 +1162,30 @@ function escapeDeep<T>(value: T, key = ""): T {
   return value;
 }
 
-function isAuthorized(req: Request): boolean {
+function jwtRole(token: string): string | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { role?: string };
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function keyHasServiceAccess(key: string): Promise<boolean> {
+  if (!key) return false;
+  if (jwtRole(key) === "service_role") return true;
+  const base = Deno.env.get("SUPABASE_URL")?.replace(/\/$/, "");
+  if (!base) return false;
+  const res = await fetch(`${base}/auth/v1/admin/users?page=1&per_page=1`, {
+    headers: { Authorization: `Bearer ${key}`, apikey: key },
+  });
+  return res.ok;
+}
+
+async function isAuthorized(req: Request): Promise<boolean> {
   const invokeSecret = Deno.env.get("EMAIL_INVOKE_SECRET")?.trim();
   const headerSecret = req.headers.get("x-kay-email-secret")?.trim() ?? "";
   if (invokeSecret && headerSecret && invokeSecret === headerSecret) {
@@ -1170,12 +1193,18 @@ function isAuthorized(req: Request): boolean {
   }
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-  if (!serviceKey) return false;
-
   const bearer =
     req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
   const apikey = req.headers.get("apikey")?.trim() ?? "";
-  return bearer === serviceKey || apikey === serviceKey;
+  const candidates = [...new Set([bearer, apikey].filter(Boolean))];
+
+  for (const key of candidates) {
+    if (serviceKey && key === serviceKey) return true;
+  }
+  for (const key of candidates) {
+    if (await keyHasServiceAccess(key)) return true;
+  }
+  return false;
 }
 
 async function sendResend(options: {
@@ -1225,7 +1254,7 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -2,6 +2,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { KayEmailPayload } from "@/lib/email/types";
 import type { Order } from "@/types/order";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import {
+  canSendAuthEmailDirect,
+  sendAuthOtpDirect,
+  sendRoleEmailDirect,
+} from "@/lib/email/auth-direct";
+
+const DIRECT_AUTH_TYPES = new Set([
+  "auth_otp",
+  "role_invite",
+  "role_upgraded",
+]);
 
 export type SendEmailResult =
   | { ok: true; id?: string }
@@ -36,6 +47,17 @@ async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
 export async function sendKayEmail(
   payload: KayEmailPayload,
 ): Promise<SendEmailResult> {
+  if (DIRECT_AUTH_TYPES.has(payload.type) && canSendAuthEmailDirect()) {
+    if (payload.type === "auth_otp") {
+      return sendAuthOtpDirect({
+        to: payload.to,
+        token: payload.token,
+        action: payload.action,
+      });
+    }
+    return sendRoleEmailDirect(payload);
+  }
+
   const admin = createAdminClient();
   if (!admin) {
     console.warn("[email] skipped — SUPABASE_SERVICE_ROLE_KEY not set");
@@ -68,6 +90,20 @@ export async function sendKayEmail(
   if (error) {
     const message = await edgeFunctionErrorMessage(error);
     console.error("[email] edge function error:", message);
+    if (
+      DIRECT_AUTH_TYPES.has(payload.type) &&
+      canSendAuthEmailDirect() &&
+      (message.includes("Unauthorized") || message.includes("unauthorized"))
+    ) {
+      if (payload.type === "auth_otp") {
+        return sendAuthOtpDirect({
+          to: payload.to,
+          token: payload.token,
+          action: payload.action,
+        });
+      }
+      return sendRoleEmailDirect(payload);
+    }
     return { ok: false, error: message };
   }
 
