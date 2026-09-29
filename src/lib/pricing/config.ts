@@ -13,16 +13,20 @@ export function isTestCheckoutMode(): boolean {
 
 const testMode = isTestCheckoutMode();
 
+/** Temporary QA — restore 20_000 before public launch. */
+const MOV_GIFTING = 0;
+const MOV_AFTER_DARK = 0;
+
 export const PRICING_CONFIG = {
   gifting: {
     label: "Luxury gifting",
-    mov: testMode ? 200 : 20_000,
+    mov: MOV_GIFTING,
     /** Curation fee retired — product price is the listed price. */
     curationFeeRate: 0,
   },
   after_dark: {
     label: "Kay After Dark",
-    mov: testMode ? 200 : 20_000,
+    mov: MOV_AFTER_DARK,
     curationFeeRate: 0,
   },
   delivery: {
