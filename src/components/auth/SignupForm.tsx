@@ -9,13 +9,14 @@ import {
   saveVendorApplyDraft,
 } from "@/lib/vendor/apply-draft";
 import { isValidNin } from "@/lib/vendor/nin";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 type SignupIntent = "customer" | "vendor";
 
 export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/account";
+  const next = safeNextPath(searchParams.get("next"));
   const inviteToken = searchParams.get("invite") ?? "";
   const inviteRole = searchParams.get("role");
   const inviteMode =

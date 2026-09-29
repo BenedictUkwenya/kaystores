@@ -11,12 +11,14 @@ import {
 } from "@/components/cart/AddToCartButton";
 import { CompareButton } from "@/components/compare/CompareButton";
 import { findVariationOption } from "@/lib/products/variations";
+import { isAfterDarkProduct } from "@/lib/pricing/segment";
 
 type ProductInfoProps = {
   product: Product;
 };
 
 export function ProductInfo({ product }: ProductInfoProps) {
+  const afterDark = isAfterDarkProduct(product);
   const variation = product.variation ?? null;
   const [selectedOptionId, setSelectedOptionId] = useState(
     variation?.options.length === 1 ? variation.options[0].id : "",
@@ -158,14 +160,17 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </p>
       )}
       <div className="mt-8 rounded-lg border border-kay-border-light bg-kay-surface px-4 py-3 text-[12px] text-kay-muted">
-        Kay luxury gift packaging included
+        {afterDark
+          ? "Plain outer packaging · no visible Kay branding"
+          : "Kay luxury gift packaging included"}
       </div>
 
       <div className="mt-6 flex items-start gap-2 rounded-lg bg-kay-surface px-4 py-3">
         <IconSparkle className="mt-0.5 shrink-0 text-kay-gold" />
         <p className="text-[12px] leading-relaxed text-kay-muted">
-          Sending as a gift? Add at checkout — recipient note, anonymous packaging,
-          and Kay Reveal available.
+          {afterDark
+            ? "Discretion first — plain wrap by default, and line items stay discreet on shared receipts."
+            : "Sending as a gift? Add at checkout — recipient note, anonymous packaging, and Kay Reveal available."}
         </p>
       </div>
     </div>

@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { Product } from "@/types/product";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { ClearFiltersLink } from "@/components/shop/ClearFiltersLink";
 
 type ProductGridProps = {
   products: Product[];
@@ -13,6 +15,15 @@ export function ProductGrid({ products }: ProductGridProps) {
         <p className="mt-2 max-w-sm text-[14px] text-kay-muted">
           Try adjusting your filters or browse our full collection.
         </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <ClearFiltersLink className="inline-flex h-10 items-center justify-center rounded-full bg-kay-fg px-6 text-[13px] font-medium text-kay-accent-fg transition-opacity hover:opacity-90" />
+          <Link
+            href="/gifts"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-kay-fg px-6 text-[13px] font-medium text-kay-fg transition-colors hover:bg-kay-surface"
+          >
+            Browse all gifts
+          </Link>
+        </div>
       </div>
     );
   }

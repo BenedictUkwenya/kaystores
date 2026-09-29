@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-09-28
+**Last updated:** 2026-09-29
 
 ---
 
@@ -296,6 +296,12 @@
 
 - [x] **Vendor dispatch follow-ups** — 12h vendor reminder + admin alert, 24h second reminder + admin alert, overdue badge on admin Orders
 
+- [x] **System review — order privacy & fulfilment** — guest order/kitchen access keys, checkout validation, admin paid→hub QC→ship/deliver/cancel, abandoned unpaid cleanup, per-vendor order chat, withdrawal guard (migration `041`)
+
+- [x] **Kay Kitchen quote payment** — client accept & pay (Paystack `table`), richer request brief, baker hub instructions, admin mark paid (migration `043`)
+
+- [x] **Concierge pay + delivery** — delivery address at payment, price lock after offer is shown, hub instructions for vendors, admin alert when item reaches hub
+
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete
@@ -330,11 +336,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 15   | 16    |
+| Backend           | 18   | 19    |
 
 
 
-**Overall:** 83 / 88 checklist items complete
+**Overall:** 86 / 91 checklist items complete
 
 
 
@@ -356,7 +362,7 @@
 
 | Special requests (Concierge) | Done | Full flow: dispatch → vendor offers with photos → client picks → fulfilment |
 
-| Privacy / John Doe (After Dark) | Partial | 18+ gate, `/after-dark`; encrypted aliases TBD |
+| Privacy / John Doe (After Dark) | Done | Server age cookie, catalogue wall-off, dedicated AD PDP/search, checkout 18+ gate; encrypted aliases TBD |
 
 | MOV + pricing | Done | MOV enforced; curation fee off; delivery quote + tax |
 

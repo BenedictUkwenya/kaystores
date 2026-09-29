@@ -1,9 +1,17 @@
 import { apiErrorResponse, requireAdmin } from "@/lib/auth/roles";
-import { updateOrderAdmin } from "@/lib/admin/repository";
 import { fetchOrderById } from "@/lib/orders/repository";
-import { mapOrderRow } from "@/lib/orders/map";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { markVendorItemQcPassed } from "@/lib/vendors/repository";
+import {
+  OrderActionError,
+  adminCancel,
+  adminDeliver,
+  adminHubReceived,
+  adminMarkPaid,
+  adminMarkRefunded,
+  adminQcFail,
+  adminQcPass,
+  adminShip,
+} from "@/lib/orders/admin-actions";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -28,27 +36,65 @@ export async function GET(_req: Request, { params }: Ctx) {
   }
 }
 
+type Body = {
+  action?: string;
+  itemId?: string;
+  reference?: string;
+  reason?: string;
+  note?: string;
+  trackingCarrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  /** Legacy QC button. */
+  qcPassItemId?: string;
+};
+
 export async function PATCH(request: Request, { params }: Ctx) {
   try {
     await requireAdmin();
     const { id } = await params;
-    const body = await request.json();
+    const body = (await request.json()) as Body;
+    const action = body.action ?? (body.qcPassItemId ? "qc_pass" : "");
+    const itemId = String(body.itemId ?? body.qcPassItemId ?? "");
 
-    await updateOrderAdmin(id, {
-      status: body.status,
-      paymentStatus: body.paymentStatus,
-      paymentReference: body.paymentReference,
-      trackingCarrier: body.trackingCarrier,
-      trackingNumber: body.trackingNumber,
-      trackingUrl: body.trackingUrl,
-    });
-
-    if (body.qcPassItemId) {
-      await markVendorItemQcPassed(String(body.qcPassItemId));
+    switch (action) {
+      case "mark_paid":
+        await adminMarkPaid(id, body.reference ?? "");
+        break;
+      case "hub_received":
+        await adminHubReceived(id, itemId);
+        break;
+      case "qc_pass":
+        await adminQcPass(id, itemId);
+        break;
+      case "qc_fail":
+        await adminQcFail(id, itemId, body.note ?? "");
+        break;
+      case "ship":
+        await adminShip(id, {
+          carrier: body.trackingCarrier,
+          number: body.trackingNumber,
+          url: body.trackingUrl,
+        });
+        break;
+      case "deliver":
+        await adminDeliver(id);
+        break;
+      case "cancel":
+        await adminCancel(id, body.reason ?? "");
+        break;
+      case "mark_refunded":
+        await adminMarkRefunded(id, body.reference ?? "");
+        break;
+      default:
+        return Response.json({ error: "Unknown action." }, { status: 400 });
     }
 
     return Response.json({ ok: true });
   } catch (err) {
+    if (err instanceof OrderActionError) {
+      return Response.json({ error: err.message }, { status: err.status });
+    }
     return apiErrorResponse(err);
   }
 }

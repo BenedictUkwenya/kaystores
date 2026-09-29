@@ -234,13 +234,16 @@ export async function reviewProduct(
   if (error) throw new Error(error.message);
 }
 
-export async function fetchPendingWithdrawals(): Promise<WithdrawalRequest[]> {
+export async function fetchPendingWithdrawals(
+  statuses: string[] = ["pending", "approved", "processing"],
+): Promise<WithdrawalRequest[]> {
   const db = admin();
   const { data, error } = await db
     .from("withdrawal_requests")
     .select("*, vendors(business_name, contact_email)")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true });
+    .in("status", statuses)
+    .order("created_at", { ascending: statuses.includes("pending") })
+    .limit(200);
   if (error) throw new Error(error.message);
 
   return (data ?? []).map((row) => ({
@@ -271,6 +274,15 @@ export async function updateWithdrawal(
   },
 ): Promise<void> {
   const db = admin();
+  const allowedFrom: Record<string, string[]> = {
+    approved: ["pending"],
+    processing: ["pending", "approved"],
+    paid: ["pending", "approved", "processing"],
+    rejected: ["pending", "approved", "processing"],
+  };
+  const from = allowedFrom[update.status];
+  if (!from) throw new Error("Invalid withdrawal status.");
+
   const payload: Record<string, unknown> = {
     status: update.status,
     admin_note: update.adminNote ?? null,
@@ -279,36 +291,17 @@ export async function updateWithdrawal(
   if (update.status === "paid") {
     payload.paid_at = new Date().toISOString();
   }
-  const { error } = await db.from("withdrawal_requests").update(payload).eq("id", id);
+  // Wallet balance is derived from withdrawal statuses (see summarizeWallet),
+  // so a guarded status change is the whole ledger entry.
+  const { data, error } = await db
+    .from("withdrawal_requests")
+    .update(payload)
+    .eq("id", id)
+    .in("status", from)
+    .select("id");
   if (error) throw new Error(error.message);
-
-  if (update.status === "paid") {
-    const { data: withdrawal } = await db
-      .from("withdrawal_requests")
-      .select("vendor_id, amount")
-      .eq("id", id)
-      .single();
-    if (withdrawal) {
-      const { data: earnings } = await db
-        .from("vendor_earnings")
-        .select("id, net_amount")
-        .eq("vendor_id", withdrawal.vendor_id)
-        .eq("status", "available")
-        .order("created_at", { ascending: true });
-
-      let remaining = Number(withdrawal.amount);
-      for (const e of earnings ?? []) {
-        if (remaining <= 0) break;
-        const net = Number(e.net_amount);
-        if (net <= remaining) {
-          await db
-            .from("vendor_earnings")
-            .update({ status: "paid_out" })
-            .eq("id", e.id);
-          remaining -= net;
-        }
-      }
-    }
+  if (!data?.length) {
+    throw new Error("This withdrawal was already processed.");
   }
 }
 
@@ -321,45 +314,6 @@ export async function fetchAllOrdersAdmin(limit = 50) {
     .limit(limit);
   if (error) throw new Error(error.message);
   return data ?? [];
-}
-
-export async function updateOrderAdmin(
-  orderId: string,
-  update: {
-    status?: string;
-    paymentStatus?: string;
-    paymentReference?: string;
-    trackingCarrier?: string;
-    trackingNumber?: string;
-    trackingUrl?: string;
-  },
-): Promise<void> {
-  const db = admin();
-  const payload: Record<string, unknown> = {};
-  if (update.status) payload.status = update.status;
-  if (update.paymentStatus) {
-    payload.payment_status = update.paymentStatus;
-    if (update.paymentStatus === "paid") {
-      payload.paid_at = new Date().toISOString();
-    }
-  }
-  if (update.paymentReference) payload.payment_reference = update.paymentReference;
-  if (update.trackingCarrier !== undefined)
-    payload.tracking_carrier = update.trackingCarrier;
-  if (update.trackingNumber !== undefined)
-    payload.tracking_number = update.trackingNumber;
-  if (update.trackingUrl !== undefined) payload.tracking_url = update.trackingUrl;
-
-  const { error } = await db.from("orders").update(payload).eq("id", orderId);
-  if (error) throw new Error(error.message);
-
-  if (update.paymentStatus === "paid") {
-    await db
-      .from("vendor_order_items")
-      .update({ fulfillment_status: "awaiting_hub_delivery" })
-      .eq("order_id", orderId)
-      .eq("fulfillment_status", "awaiting_payment");
-  }
 }
 
 export async function fetchConciergeRequests() {

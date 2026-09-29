@@ -93,7 +93,31 @@ export function CuratedSection({ products }: CuratedSectionProps) {
 
   const step = cardWidth > 0 ? cardWidth + GAP_PX : 0;
 
-  if (count === 0) return null;
+  if (count === 0) {
+    return (
+      <section
+        className="bg-kay-bg px-4 py-12 lg:px-10 lg:py-16"
+        aria-label="Picked for you"
+      >
+        <div className="mx-auto max-w-[1280px]">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-[28px] text-kay-fg">Picked for you</h2>
+            <Link
+              href="/gifts"
+              className="flex items-center gap-1 text-[13px] font-medium text-kay-muted transition-colors hover:text-kay-fg"
+            >
+              View all
+              <IconArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <p className="mt-8 max-w-md text-[14px] leading-relaxed text-kay-muted">
+            Fresh picks will appear here as the catalogue fills. Browse gifts in the
+            meantime.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

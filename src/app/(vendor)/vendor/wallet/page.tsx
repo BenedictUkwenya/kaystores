@@ -22,7 +22,7 @@ export default async function VendorWalletPage() {
       nav={VENDOR_NAV}
       eyebrow="Earnings"
       title="Wallet"
-      description="Pending clears after hub QC. Available balances can be withdrawn once bank details are set."
+      description="Pending clears once the customer receives the order. Available balances can be withdrawn once bank details are set."
       actions={
         <Link
           href="/vendor/wallet/withdraw"
@@ -44,7 +44,7 @@ export default async function VendorWalletPage() {
           {
             label: "Pending",
             value: formatNaira(wallet.pending),
-            hint: "Awaiting QC / release",
+            hint: "Released on delivery",
           },
           {
             label: "Paid out",

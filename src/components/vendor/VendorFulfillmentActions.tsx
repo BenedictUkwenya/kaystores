@@ -42,28 +42,47 @@ export function VendorFulfillmentActions({ item, hubOptions }: Props) {
     }
   }
 
-  if (item.paymentStatus === "unpaid") {
+  if (item.paymentStatus !== "paid" || item.fulfillmentStatus === "awaiting_payment") {
     return (
       <p className="text-[12px] text-kay-muted">
-        Awaiting customer payment confirmation from Kay.
+        Awaiting customer payment — don&apos;t send this yet. We&apos;ll email
+        you the moment it&apos;s paid.
+      </p>
+    );
+  }
+
+  if (item.fulfillmentStatus === "cancelled") {
+    return (
+      <p className="text-[12px] text-red-600">
+        This item was cancelled — please don&apos;t send it.
+      </p>
+    );
+  }
+
+  if (item.fulfillmentStatus === "awaiting_hub_delivery" && item.vendorDispatchedAt) {
+    return (
+      <p className="text-[12px] text-kay-fg">
+        On its way to {item.selectedHubName ?? "the hub"} — Kay will confirm when
+        it arrives
+        {item.selectedHubPhone ? ` · ${item.selectedHubPhone}` : ""}
       </p>
     );
   }
 
   if (item.fulfillmentStatus === "at_hub") {
     return (
-      <p className="text-[12px] text-emerald-700">
-        Dispatched to {item.selectedHubName ?? "hub"} — awaiting Kay QC
-        {item.selectedHubPhone ? ` · ${item.selectedHubPhone}` : ""}
+      <p className="text-[12px] text-kay-fg">
+        Received at {item.selectedHubName ?? "the hub"} — in quality check.
       </p>
     );
   }
 
-  if (
-    item.fulfillmentStatus !== "awaiting_hub_delivery" &&
-    item.fulfillmentStatus !== "awaiting_payment"
-  ) {
-    return null;
+  if (item.fulfillmentStatus !== "awaiting_hub_delivery") {
+    return (
+      <p className="text-[12px] text-kay-muted">
+        Passed Kay&apos;s quality check — nothing more to do.
+      </p>
+    );
   }
 
   const needsHubPick = !item.selectedHubId;
@@ -148,7 +167,7 @@ export function VendorFulfillmentActions({ item, hubOptions }: Props) {
           }
           className="w-full sm:w-auto"
         >
-          Mark as dispatched
+          I&apos;ve sent it to the hub
         </Button>
       )}
     </div>

@@ -7,6 +7,7 @@ import { OTPInput } from "@/components/auth/OTPInput";
 import { KaySuspenseFallback } from "@/components/brand/KaySuspenseFallback";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { AUTH_OTP_LENGTH } from "@/lib/auth/otp";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 const OTP_LENGTH = AUTH_OTP_LENGTH;
 
@@ -14,7 +15,7 @@ function VerifyFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
-  const next = searchParams.get("next") ?? "/account";
+  const next = safeNextPath(searchParams.get("next"));
   const type = (searchParams.get("type") ?? "signup") as
     | "signup"
     | "recovery"

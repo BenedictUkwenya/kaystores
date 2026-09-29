@@ -97,7 +97,7 @@ export default async function VendorOverviewPage() {
           {
             label: "Pending",
             value: formatNaira(wallet.pending),
-            hint: "Clears after QC",
+            hint: "Clears on delivery",
             icon: <IconPackage className="h-[18px] w-[18px]" />,
             href: "/vendor/wallet",
           },

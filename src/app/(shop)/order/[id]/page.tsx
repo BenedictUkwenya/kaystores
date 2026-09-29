@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrder } from "@/lib/orders/store";
@@ -18,10 +19,48 @@ import { PaymentReturnVerifier } from "@/components/payments/PaystackPayButton";
 import { buildTxRef, isPaystackConfigured } from "@/lib/payments/config";
 import { IconLock } from "@/components/ui/Icons";
 import { OrderSupportChat } from "@/components/orders/OrderSupportChat";
+import { resolveOrderViewer } from "@/lib/orders/access";
+import { ClearCartOnPaid } from "@/components/checkout/ClearCartOnPaid";
 import {
   formatAddressLines,
   getDeliveryAddress,
 } from "@/lib/orders/address";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function OrderLocked() {
+  return (
+    <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-10">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-kay-surface text-kay-gold">
+        <IconLock className="h-6 w-6" />
+      </div>
+      <h1 className="mt-6 font-serif text-[28px] text-kay-fg">This order is private</h1>
+      <p className="mt-3 text-[14px] leading-relaxed text-kay-muted">
+        Sign in with the account you ordered with, or confirm your order
+        reference and checkout email to view it.
+      </p>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <Link
+          href="/track-order"
+          className="inline-flex h-11 items-center justify-center rounded-full bg-kay-fg px-8 text-[13px] font-medium text-kay-bg transition-opacity hover:opacity-90"
+        >
+          Find my order
+        </Link>
+        <Link
+          href="/login"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-kay-fg px-8 text-[13px] font-medium text-kay-fg transition-colors hover:bg-kay-surface"
+        >
+          Sign in
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -31,6 +70,7 @@ type PageProps = {
     trxref?: string;
     tx_ref?: string;
     status?: string;
+    k?: string;
   }>;
 };
 
@@ -40,8 +80,12 @@ export default async function OrderConfirmationPage({
 }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
+  if (!UUID_RE.test(id)) notFound();
   const order = await getOrder(id);
   if (!order) notFound();
+  const viewer = await resolveOrderViewer(order, query.k);
+  if (!viewer) return <OrderLocked />;
+  const keyQuery = query.k ? `?k=${encodeURIComponent(query.k)}` : "";
 
   const paid = order.paymentStatus === "paid";
   const paystackEnabled = isPaystackConfigured();
@@ -98,7 +142,11 @@ export default async function OrderConfirmationPage({
           {discreet ? "Private reference" : "Order"}{" "}
           <span className="font-medium text-kay-fg">{order.orderNumber}</span>
           <span className="mx-2 text-kay-border">·</span>
-          {ORDER_STATUS_LABELS[order.status]}
+          {paid || order.status === "cancelled"
+            ? ORDER_STATUS_LABELS[order.status]
+            : order.paymentReference === "manual-claim"
+              ? "Verifying payment"
+              : "Awaiting payment"}
         </p>
         {discreet && (
           <p className="mx-auto mt-3 max-w-md text-[13px] leading-relaxed text-kay-muted">
@@ -107,6 +155,14 @@ export default async function OrderConfirmationPage({
           </p>
         )}
       </div>
+
+      <ClearCartOnPaid orderId={order.id} paid={paid} />
+
+      {query.payment === "retry" && !paid && (
+        <p className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-[13px] text-kay-fg">
+          We saved your order but couldn&apos;t open Paystack. Tap Pay below to try again — your bag is still saved.
+        </p>
+      )}
 
       <div className="mt-8">
         <OrderTrackingTimeline order={order} />
@@ -128,7 +184,7 @@ export default async function OrderConfirmationPage({
                 : "This order is being paid in shares. Track who has paid and resend links."}
             </p>
             <Link
-              href={`/order/${order.id}/split`}
+              href={`/order/${order.id}/split${keyQuery}`}
               className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-kay-fg px-5 text-[13px] font-medium text-kay-accent-fg transition-opacity hover:opacity-90"
             >
               View share links
@@ -263,7 +319,7 @@ export default async function OrderConfirmationPage({
               gift box — before we ship.
             </p>
             <Link
-              href={`/order/${order.id}/reveal`}
+              href={`/order/${order.id}/reveal${keyQuery}`}
               className="mt-4 inline-flex h-9 items-center justify-center rounded-full border border-kay-fg px-4 text-[12px] font-medium text-kay-fg transition-colors hover:bg-kay-surface"
             >
               Manage Kay Reveal

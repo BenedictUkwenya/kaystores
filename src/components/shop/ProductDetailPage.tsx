@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { isAfterDarkProduct } from "@/lib/pricing/segment";
 import {
   getProductBySlug,
   getRelatedProducts,
@@ -17,6 +18,9 @@ type ProductDetailPageProps = {
 export async function ProductDetailPage({ slug }: ProductDetailPageProps) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
+  if (isAfterDarkProduct(product)) {
+    redirect(`/after-dark/products/${product.slug}`);
+  }
 
   const related = await getRelatedProducts(product);
 

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { claimChatNotification, sendNotice } from "@/lib/email/notice";
 import { getEmailSiteUrl } from "@/lib/site";
+import { orderAccessPath, tableAccessPath } from "@/lib/orders/access";
 import type { ChatChannel } from "@/types/order-support";
 
 type SenderRole = "admin" | "vendor" | "customer";
@@ -89,7 +90,7 @@ export async function notifyKitchenChatMessage(input: {
       title: "New Kay Kitchen message",
       lead: `${who} (${input.senderName}) sent a message on request ${input.reference}.`,
       body: input.body,
-      ctaUrl: `${appUrl}/admin/table?request=${input.requestId}`,
+      ctaUrl: `${appUrl}/admin/table#request-${input.requestId}`,
     });
     return;
   }
@@ -103,7 +104,7 @@ export async function notifyKitchenChatMessage(input: {
       title: "New reply from Kay",
       lead: `Kay sent you a message about your Kay Kitchen request ${input.reference}.`,
       body: input.body,
-      ctaUrl: `${appUrl}/table/request/${input.requestId}`,
+      ctaUrl: `${appUrl}${tableAccessPath(input.requestId)}`,
     });
     return;
   }
@@ -160,7 +161,7 @@ export async function notifyOrderChatMessage(input: {
       title: "New reply from Kay",
       lead: `Kay sent you a message about order ${input.orderNumber}.`,
       body: input.body,
-      ctaUrl: `${appUrl}/order/${input.orderId}`,
+      ctaUrl: `${appUrl}${orderAccessPath(input.orderId)}`,
     });
     return;
   }

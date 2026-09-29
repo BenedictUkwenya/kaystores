@@ -65,6 +65,14 @@ export default async function VendorOrdersPage() {
         </Link>
       }
     >
+      {!vendor.pickupAddress?.state && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] text-amber-900">
+          Add your pickup location so we can suggest the Kay hubs closest to you.{" "}
+          <Link href="/vendor/settings" className="font-medium underline underline-offset-2">
+            Update settings
+          </Link>
+        </div>
+      )}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[
           {

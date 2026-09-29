@@ -18,20 +18,16 @@ export function getDeliveryAddress(order: {
 
 export function formatAddressLines(address?: AddressDetails | null): string[] {
   if (!address) return [];
-  if (address.formattedAddress?.trim()) {
-    const extras = [address.country].filter(
-      (part) => part && !address.formattedAddress!.includes(part),
-    );
-    return [address.formattedAddress.trim(), ...extras];
-  }
-
+  // The typed street wins over the geocoded label — buyers often correct it.
+  const street = address.line1?.trim() || address.formattedAddress?.trim();
   return [
-    address.line1,
+    street,
     address.line2,
     [address.city, address.state, address.postalCode]
       .filter(Boolean)
       .join(", "),
     address.country,
+    address.instructions ? `Note: ${address.instructions}` : undefined,
   ].filter((line): line is string => Boolean(line && line.trim()));
 }
 
@@ -40,7 +36,7 @@ export function mapsUrl(address?: AddressDetails | null): string | null {
   if (address.lat != null && address.lng != null) {
     return `https://www.google.com/maps?q=${address.lat},${address.lng}`;
   }
-  const query = formatAddressLines(address).join(", ");
+  const query = formatAddressLines({ ...address, instructions: undefined }).join(", ");
   if (!query) return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }

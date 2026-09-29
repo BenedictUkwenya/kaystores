@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { apiErrorResponse, getAuthContext } from "@/lib/auth/roles";
 import { getOrder } from "@/lib/orders/store";
+import { resolveOrderViewer } from "@/lib/orders/access";
 import {
   insertOrderSupportMessage,
   listOrderSupportMessages,
@@ -20,6 +21,7 @@ type Access = {
   name: string;
   userId: string | null;
   order: Order;
+  vendorId?: string;
 };
 
 async function resolveAccess(orderId: string): Promise<Access> {
@@ -47,6 +49,7 @@ async function resolveAccess(orderId: string): Promise<Access> {
       name: ctx.vendor.businessName || ctx.profile.fullName || "Vendor",
       userId: ctx.userId,
       order,
+      vendorId: ctx.vendor.id,
     };
   }
 
@@ -59,13 +62,18 @@ async function resolveAccess(orderId: string): Promise<Access> {
     };
   }
 
-  // Anyone with the order link can message Kay (same as viewing the order).
-  return {
-    role: "customer",
-    name: order.buyer.fullName?.trim() || "Customer",
-    userId: ctx?.userId ?? null,
-    order,
-  };
+  if (await resolveOrderViewer(order)) {
+    return {
+      role: "customer",
+      name: order.buyer.fullName?.trim() || "Customer",
+      userId: ctx?.userId ?? null,
+      order,
+    };
+  }
+
+  return Promise.reject(
+    Object.assign(new Error("Order not found."), { status: 404 }),
+  );
 }
 
 /** Customers only see the customer<->admin line; vendors only vendor<->admin. */
@@ -87,11 +95,11 @@ export async function GET(
   try {
     const { id } = await params;
     const access = await resolveAccess(id);
-    const channel = channelFor(
-      access.role,
-      new URL(request.url).searchParams.get("channel"),
-    );
-    const messages = await listOrderSupportMessages(id, channel);
+    const search = new URL(request.url).searchParams;
+    const channel = channelFor(access.role, search.get("channel"));
+    const vendorId =
+      access.role === "vendor" ? access.vendorId : search.get("vendorId") || null;
+    const messages = await listOrderSupportMessages(id, channel, vendorId);
     return NextResponse.json({ messages, channel });
   } catch (err) {
     if (tableMissing(err)) {
@@ -115,7 +123,11 @@ export async function POST(
   try {
     const { id } = await params;
     const access = await resolveAccess(id);
-    const body = (await request.json()) as { body?: string; channel?: string };
+    const body = (await request.json()) as {
+      body?: string;
+      channel?: string;
+      vendorId?: string;
+    };
     const text = typeof body.body === "string" ? body.body.trim() : "";
     if (!text) {
       return NextResponse.json({ error: "Message is required." }, { status: 400 });
@@ -128,6 +140,27 @@ export async function POST(
     }
 
     const channel = channelFor(access.role, body.channel);
+    let vendorId: string | null = null;
+    let recipients: { email: string; name: string }[] = [];
+    if (access.role === "vendor") {
+      vendorId = access.vendorId ?? null;
+    } else if (access.role === "admin" && channel === "vendor") {
+      const contacts = await listOrderVendorContacts(id);
+      const target = body.vendorId
+        ? contacts.find((c) => c.vendorId === body.vendorId)
+        : contacts.length === 1
+          ? contacts[0]
+          : undefined;
+      if (!target) {
+        return NextResponse.json(
+          { error: "Pick which vendor this message is for." },
+          { status: 400 },
+        );
+      }
+      vendorId = target.vendorId;
+      recipients = target.email ? [target] : [];
+    }
+
     const message = await insertOrderSupportMessage({
       orderId: id,
       senderId: access.userId,
@@ -135,14 +168,12 @@ export async function POST(
       senderName: access.name,
       body: text,
       channel,
+      vendorId,
     });
 
     after(async () => {
       try {
-        const vendors =
-          access.role === "admin" && channel === "vendor"
-            ? await listOrderVendorContacts(id)
-            : [];
+        const vendors = recipients;
         await notifyOrderChatMessage({
           orderId: id,
           orderNumber: access.order.orderNumber,

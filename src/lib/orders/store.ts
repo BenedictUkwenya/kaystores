@@ -39,7 +39,7 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
     payload.deliveryType === "gift" && payload.gift
       ? { ...payload.gift, addressUnknown: false }
       : payload.gift;
-  const paid = Boolean(payload.paymentConfirmed);
+  const claimed = Boolean(payload.paymentConfirmed);
 
   const order: Order = {
     id,
@@ -54,9 +54,9 @@ function createOrderInMemory(payload: CreateOrderPayload): Order {
     gift,
     anonymousPackaging: Boolean(payload.anonymousPackaging),
     handoverStatus: "not_required",
-    paymentStatus: paid ? "paid" : "unpaid",
-    paymentReference: paid ? "manual-confirm" : null,
-    paidAt: paid ? new Date().toISOString() : null,
+    paymentStatus: claimed ? "pending" : "unpaid",
+    paymentReference: claimed ? "manual-claim" : null,
+    paidAt: null,
     createdAt: new Date().toISOString(),
   };
 
@@ -93,8 +93,8 @@ export async function createOrder(
           gift: { ...payload.gift, addressUnknown: false },
         }
       : payload;
-  const paid = Boolean(normalized.paymentConfirmed);
-  const paidAt = paid ? new Date().toISOString() : null;
+  // A customer "I have paid" claim is never trusted — admin verifies it.
+  const claimed = Boolean(normalized.paymentConfirmed);
 
   if (isSupabaseOrdersEnabled()) {
     try {
@@ -104,13 +104,16 @@ export async function createOrder(
         userId: options?.userId,
         status: "confirmed",
         handoverStatus: "not_required",
-        paymentStatus: paid ? "paid" : "unpaid",
-        paymentReference: paid ? "manual-confirm" : null,
-        paidAt,
+        paymentStatus: claimed ? "pending" : "unpaid",
+        paymentReference: claimed ? "manual-claim" : null,
+        paidAt: null,
       });
       return attachGiftReveal(inserted);
     } catch (err) {
-      console.error("[orders] Supabase insert failed, using memory:", err);
+      console.error("[orders] Supabase insert failed:", err);
+      if (process.env.NODE_ENV === "production") {
+        throw err instanceof Error ? err : new Error("Order insert failed");
+      }
     }
   }
 

@@ -13,7 +13,16 @@ import {
   IconPinterest,
 } from "@/components/ui/Icons";
 
+const SOCIAL_LINKS = [
+  { label: "Instagram", href: "#", Icon: IconInstagram },
+  { label: "Facebook", href: "#", Icon: IconFacebook },
+  { label: "Pinterest", href: "#", Icon: IconPinterest },
+];
+
 export function Footer() {
+  const socialLinks = SOCIAL_LINKS.filter((link) => link.href && link.href !== "#");
+  const year = new Date().getFullYear();
+
   return (
     <footer className="border-t border-kay-border bg-kay-bg">
       <div className="mx-auto max-w-[1280px] px-4 py-12 lg:px-10 lg:py-16">
@@ -23,17 +32,22 @@ export function Footer() {
             <p className="mt-3 text-[13px] leading-relaxed text-kay-muted">
               Making every gift meaningful.
             </p>
-            <div className="mt-5 flex gap-4">
-              <a href="#" aria-label="Instagram" className="text-kay-muted transition-colors hover:text-kay-fg">
-                <IconInstagram />
-              </a>
-              <a href="#" aria-label="Facebook" className="text-kay-muted transition-colors hover:text-kay-fg">
-                <IconFacebook />
-              </a>
-              <a href="#" aria-label="Pinterest" className="text-kay-muted transition-colors hover:text-kay-fg">
-                <IconPinterest />
-              </a>
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="mt-5 flex gap-4">
+                {socialLinks.map(({ label, href, Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-kay-muted transition-colors hover:text-kay-fg"
+                  >
+                    <Icon />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -93,7 +107,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-kay-border pt-8 text-[12px] text-kay-muted sm:flex-row">
-          <p>© 2025 Kay Stores. All rights reserved.</p>
+          <p>© {year} Kay Stores. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href={SITE_ROUTES.privacy} className="transition-colors hover:text-kay-fg">
               Privacy Policy

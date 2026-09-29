@@ -49,8 +49,8 @@ export function ManualPaymentConfirm({
             Yes, I have paid
           </span>
           <span className="mt-1 block text-[12px] leading-relaxed text-kay-muted">
-            I confirm payment for this order has been sent. Kay may verify before
-            fulfilment.
+            I confirm payment for this order has been sent. Kay will verify the
+            transfer and email you once it&apos;s confirmed.
           </span>
         </span>
       </label>

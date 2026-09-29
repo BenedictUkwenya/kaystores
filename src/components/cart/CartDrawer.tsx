@@ -9,10 +9,12 @@ import { calculateOrderPricing } from "@/lib/pricing/calculate";
 import { OrderPricingBreakdown } from "@/components/pricing/OrderPricingBreakdown";
 import { MovAlert } from "@/components/pricing/MovAlert";
 import { IconBag, IconCompare, IconX } from "@/components/ui/Icons";
+import { hasAfterDarkItems } from "@/lib/after-dark/checkout-privacy";
 
 export function CartDrawer() {
   const { items, itemCount, isOpen, closeCart } = useCart();
   const pricing = useMemo(() => calculateOrderPricing(items), [items]);
+  const hasAd = useMemo(() => hasAfterDarkItems(items), [items]);
   const { startCompareWithSlugs, closeCompare } = useCompare();
 
   function handleCompareBag() {
@@ -94,6 +96,12 @@ export function CartDrawer() {
         ) : (
           <>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {hasAd && (
+                <p className="mx-5 mt-4 rounded-lg border border-kay-border-light bg-kay-surface px-3 py-2 text-[11px] leading-relaxed text-kay-muted sm:mx-6">
+                  After Dark items ship in plain packaging. Line names stay discreet on
+                  shared receipts.
+                </p>
+              )}
               <ul className="px-5 sm:px-6">
                 {items.map((item) => (
                   <CartLineItem key={item.productId} item={item} />

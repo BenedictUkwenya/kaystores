@@ -55,8 +55,10 @@ export async function GET(request: Request) {
       "id, product_name, updated_at, created_at, order_id, hub_reminder_count, vendors(contact_name, contact_email, business_name, pickup_address), orders(order_number, paid_at, updated_at)",
     )
     .eq("fulfillment_status", "awaiting_hub_delivery")
+    .is("vendor_dispatched_at", null)
     .lt("hub_reminder_count", REMINDER_DUE_MS.length)
-    .limit(100);
+    .order("created_at", { ascending: true })
+    .limit(200);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { updateOrderAdmin } from "@/lib/admin/repository";
 import { fetchOrderById } from "@/lib/orders/repository";
 import { notifyOrderEmails } from "@/lib/email/send";
 import { notifyVendorsForPaidOrder } from "@/lib/email/vendor-orders";
@@ -14,6 +13,8 @@ import {
 import { sendNotice } from "@/lib/email/notice";
 import { formatNaira } from "@/lib/data/home";
 
+import { orderAccessPath } from "@/lib/orders/access";
+import { notifyAdminsNewOrder } from "@/lib/orders/notify";
 function admin() {
   const client = createAdminClient();
   if (!client) throw new Error("Admin client not configured");
@@ -37,6 +38,13 @@ export async function setPaymentPending(
     return;
   }
 
+  if (kind === "table") {
+    const { setTablePaymentPending } = await import("@/lib/table/payment");
+    await setTablePaymentPending(id);
+    return;
+  }
+  if (kind !== "concierge") return;
+
   const { error } = await db
     .from("concierge_requests")
     .update({
@@ -57,21 +65,53 @@ export async function confirmOrderPayment(
 
   const { data: existing } = await db
     .from("orders")
-    .select("payment_status")
+    .select("payment_status, status")
     .eq("id", orderId)
     .maybeSingle();
 
   if (!existing) return false;
   if (existing.payment_status === "paid") return true;
 
-  await updateOrderAdmin(orderId, {
-    paymentStatus: "paid",
-    paymentReference,
-  });
+  if (existing.status === "cancelled") {
+    await sendNotice({
+      type: "admin_alert",
+      toTeam: true,
+      subject: "Refund needed — payment on a cancelled order",
+      title: "Payment received for a cancelled order",
+      paragraphs: [
+        `A payment (reference ${paymentReference}) arrived for order ${orderId} after it was cancelled. The order was not reopened — please refund it in Paystack.`,
+      ],
+      ctaUrl: `${getEmailSiteUrl()}/admin/orders/${orderId}`,
+      ctaLabel: "Open order",
+    });
+    return true;
+  }
+
+  // Claim the transition atomically so webhook + return-page verify
+  // can't both send the paid emails.
+  const { data: claimed, error } = await db
+    .from("orders")
+    .update({
+      payment_status: "paid",
+      payment_reference: paymentReference,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .neq("payment_status", "paid")
+    .select("id");
+  if (error) throw new Error(error.message);
+  if (!claimed?.length) return true;
+
+  await db
+    .from("vendor_order_items")
+    .update({ fulfillment_status: "awaiting_hub_delivery" })
+    .eq("order_id", orderId)
+    .eq("fulfillment_status", "awaiting_payment");
 
   const order = await fetchOrderById(orderId);
   if (order) {
     await notifyOrderEmails(order, getEmailSiteUrl());
+    await notifyAdminsNewOrder(order);
     await notifyVendorsForPaidOrder(orderId);
   }
 
@@ -86,7 +126,9 @@ export async function confirmConciergePayment(
 
   const { data: existing } = await db
     .from("concierge_requests")
-    .select("payment_status, status")
+    .select(
+      "payment_status, status, reference_number, product_name, contact_name, contact_email, payment_amount, selected_assignment_id, delivery_address, recipient_name, recipient_phone",
+    )
     .eq("id", requestId)
     .maybeSingle();
 
@@ -94,7 +136,7 @@ export async function confirmConciergePayment(
   if (existing.payment_status === "paid") return true;
 
   const now = new Date().toISOString();
-  const { error } = await db
+  const { data: claimed, error } = await db
     .from("concierge_requests")
     .update({
       payment_status: "paid",
@@ -103,10 +145,100 @@ export async function confirmConciergePayment(
       status:
         existing.status === "vendor_selected" ? "in_fulfilment" : existing.status,
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .neq("payment_status", "paid")
+    .select("id");
 
   if (error) throw new Error(error.message);
+  if (!claimed?.length) return true;
+
+  await notifyConciergePaid(requestId, existing).catch((err) =>
+    console.error("[concierge paid notify]", err),
+  );
   return true;
+}
+
+async function notifyConciergePaid(
+  requestId: string,
+  row: {
+    reference_number?: string | null;
+    product_name?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    payment_amount?: number | null;
+    selected_assignment_id?: string | null;
+    delivery_address?: unknown;
+    recipient_name?: string | null;
+    recipient_phone?: string | null;
+  },
+) {
+  const address = row.delivery_address as
+    | { line1?: string; city?: string; state?: string }
+    | null
+    | undefined;
+  const deliverTo = address
+    ? `Deliver to ${row.recipient_name ?? row.contact_name ?? "the client"}${row.recipient_phone ? ` (${row.recipient_phone})` : ""}: ${[address.line1, address.city, address.state].filter(Boolean).join(", ")}.`
+    : "";
+  const site = getEmailSiteUrl();
+  const ref = row.reference_number ?? requestId.slice(0, 8);
+  const amount = row.payment_amount ? formatNaira(Number(row.payment_amount)) : "";
+
+  const { data: assignment } = row.selected_assignment_id
+    ? await admin()
+        .from("concierge_vendor_assignments")
+        .select("vendors(contact_email, contact_name, business_name)")
+        .eq("id", row.selected_assignment_id)
+        .maybeSingle()
+    : { data: null };
+  const vendor = (assignment?.vendors ?? null) as {
+    contact_email?: string;
+    contact_name?: string;
+    business_name?: string;
+  } | null;
+
+  await Promise.all([
+    row.contact_email
+      ? sendNotice({
+          type: "concierge_update",
+          to: [row.contact_email],
+          subject: `Payment received — Kay Concierge ${ref}`,
+          title: "Payment received",
+          paragraphs: [
+            `Hi ${row.contact_name || "there"},`,
+            `We've received your payment${amount ? ` of ${amount}` : ""} for ${row.product_name ?? "your request"}. Your partner is preparing it and we'll email you when it's on its way.`,
+          ],
+          ctaUrl: `${site}/concierge/status/${requestId}`,
+          ctaLabel: "View your request",
+        })
+      : Promise.resolve(),
+    sendNotice({
+      type: "concierge_update",
+      toTeam: true,
+      subject: `Concierge paid — ${ref}${amount ? ` (${amount})` : ""}`,
+      title: "Concierge request paid",
+      paragraphs: [
+        `${row.contact_name ?? "A client"} paid for ${row.product_name ?? "their request"} (${ref}).`,
+        vendor?.business_name ? `Partner: ${vendor.business_name}.` : "",
+        deliverTo,
+      ].filter(Boolean),
+      ctaUrl: `${site}/admin/concierge`,
+      ctaLabel: "Open concierge",
+    }),
+    vendor?.contact_email
+      ? sendNotice({
+          type: "concierge_update",
+          to: [vendor.contact_email],
+          subject: `Go ahead — concierge ${ref} is paid`,
+          title: "The client has paid",
+          paragraphs: [
+            `Hi ${vendor.contact_name || vendor.business_name || "there"},`,
+            `${row.product_name ?? "The item"} (${ref}) is paid. Please prepare it and bring it to the Kay hub shown in your vendor portal.`,
+          ],
+          ctaUrl: `${site}/vendor/concierge`,
+          ctaLabel: "Open vendor portal",
+        })
+      : Promise.resolve(),
+  ]);
 }
 
 /**
@@ -183,8 +315,7 @@ export async function confirmSharePayment(
             `${payer} just paid ${formatNaira(share.amount)} towards order #${summary.orderNumber}.`,
             `${paidCount} of ${shares.length} shares are paid. Nudge the others before the link expires.`,
           ],
-      ctaUrl: `${getEmailSiteUrl()}/order/${share.orderId}/split`,
-      ctaLabel: "View split",
+      ctaUrl: `${getEmailSiteUrl()}${orderAccessPath(share.orderId, "/split")}`,
     });
   }
 
@@ -208,6 +339,12 @@ export async function confirmPaymentFromTxRef(
     return ok ? parsed : null;
   }
 
+  if (parsed.kind === "table") {
+    const { confirmTablePayment } = await import("@/lib/table/payment");
+    const ok = await confirmTablePayment(parsed.id, paymentReference, paidAmountNaira);
+    return ok ? parsed : null;
+  }
+
   if (parsed.kind === "order") {
     if (paidAmountNaira !== undefined) {
       const order = await loadOrderForPayment(parsed.id);
@@ -220,6 +357,15 @@ export async function confirmPaymentFromTxRef(
   }
 
   const ok = await confirmConciergePayment(parsed.id, paymentReference);
+  if (paidAmountNaira !== undefined) {
+    const { data: req } = await admin()
+      .from("concierge_requests")
+      .select("payment_amount")
+      .eq("id", parsed.id)
+      .maybeSingle();
+    const expected = Number(req?.payment_amount ?? 0);
+    if (!expected || Math.abs(paidAmountNaira - expected) > 0.5) return null;
+  }
   return ok ? parsed : null;
 }
 

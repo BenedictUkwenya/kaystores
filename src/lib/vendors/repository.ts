@@ -20,6 +20,7 @@ import {
 } from "@/lib/products/variations";
 import { scheduleProductEmbeddingRefresh } from "@/lib/ai/embeddings";
 import { isValidNin, normalizeNin } from "@/lib/vendor/nin";
+import { matchNigerianState } from "@/lib/geo/nigeria";
 
 export async function submitVendorApplication(input: {
   userId: string;
@@ -592,7 +593,8 @@ function mapVendorOrderItem(
 export async function fetchVendorOrderItems(
   vendorId: string,
 ): Promise<VendorOrderItem[]> {
-  const supabase = await createClient();
+  // Vendors can't read `orders` under RLS; the vendor_id filter scopes this.
+  const supabase = createAdminClient() ?? (await createClient());
   const { data, error } = await supabase
     .from("vendor_order_items")
     .select("*, orders(order_number, payment_status)")
@@ -615,27 +617,49 @@ export async function updateVendorFulfillment(
     selectedHubId?: string;
   },
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error("Service unavailable.");
 
   const { data: existing, error: fetchError } = await supabase
     .from("vendor_order_items")
-    .select("*")
+    .select("*, orders(order_number, payment_status, status)")
     .eq("id", itemId)
     .eq("vendor_id", vendorId)
     .maybeSingle();
   if (fetchError) throw new Error(fetchError.message);
   if (!existing) throw new Error("Order item not found.");
 
+  const order = existing.orders as {
+    order_number?: string;
+    payment_status?: string;
+    status?: string;
+  } | null;
+  const alreadySent = Boolean(existing.vendor_dispatched_at);
+  const open =
+    existing.fulfillment_status === "awaiting_hub_delivery" && !alreadySent;
+
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
 
-  if (update.hubNotes !== undefined) payload.hub_notes = update.hubNotes;
+  if (update.hubNotes !== undefined) {
+    payload.hub_notes = String(update.hubNotes).slice(0, 500);
+  }
 
   if (update.selectedHubId) {
-    const { getShippingHubById } = await import("@/lib/shipping/hubs");
-    const hub = await getShippingHubById(update.selectedHubId);
-    if (!hub || !hub.isActive) {
+    if (!open) {
+      throw new Error("The hub can't be changed after the item is sent.");
+    }
+    const { nearestHubsForVendor } = await import("@/lib/shipping/hubs");
+    const { data: vendorRow } = await supabase
+      .from("vendors")
+      .select("pickup_address")
+      .eq("id", vendorId)
+      .maybeSingle();
+    const pickupState = (vendorRow?.pickup_address as { state?: string } | null)?.state;
+    const offered = await nearestHubsForVendor(pickupState, 2);
+    const hub = offered.find((h) => h.id === update.selectedHubId);
+    if (!hub) {
       throw new Error("That hub is not available. Pick another option.");
     }
     payload.selected_hub_id = hub.id;
@@ -645,21 +669,26 @@ export async function updateVendorFulfillment(
     payload.hub_selected_at = new Date().toISOString();
   }
 
+  let dispatched = false;
   if (update.fulfillmentStatus) {
-    if (update.fulfillmentStatus === "at_hub") {
-      const hubId =
-        (payload.selected_hub_id as string | undefined) ??
-        (existing.selected_hub_id as string | null);
-      if (!hubId) {
-        throw new Error(
-          "Choose which hub you are sending to before marking dispatched.",
-        );
-      }
-      payload.fulfillment_status = "at_hub";
-      payload.vendor_dispatched_at = new Date().toISOString();
-    } else {
-      payload.fulfillment_status = update.fulfillmentStatus;
+    // Vendors can only report "sent to hub"; Kay confirms receipt and QC.
+    if (update.fulfillmentStatus !== "at_hub") {
+      throw new Error("You can't set that status.");
     }
+    if (order?.payment_status !== "paid" || order?.status === "cancelled") {
+      throw new Error("This order isn't paid yet — don't send it.");
+    }
+    if (!open) throw new Error("This item was already marked as sent.");
+    const hubId =
+      (payload.selected_hub_id as string | undefined) ??
+      (existing.selected_hub_id as string | null);
+    if (!hubId) {
+      throw new Error(
+        "Choose which hub you are sending to before marking dispatched.",
+      );
+    }
+    payload.vendor_dispatched_at = new Date().toISOString();
+    dispatched = true;
   }
 
   const { error } = await supabase
@@ -668,6 +697,24 @@ export async function updateVendorFulfillment(
     .eq("id", itemId)
     .eq("vendor_id", vendorId);
   if (error) throw new Error(error.message);
+
+  if (dispatched) {
+    const { data: vendor } = await supabase
+      .from("vendors")
+      .select("business_name")
+      .eq("id", vendorId)
+      .maybeSingle();
+    const { notifyAdminsVendorDispatched } = await import("@/lib/orders/notify");
+    await notifyAdminsVendorDispatched({
+      orderId: String(existing.order_id),
+      orderNumber: String(order?.order_number ?? ""),
+      productName: String(existing.product_name),
+      vendorName: String(vendor?.business_name ?? "A vendor"),
+      hubName:
+        (payload.selected_hub_name as string | undefined) ??
+        (existing.selected_hub_name as string | null),
+    }).catch((err) => console.error("[vendor dispatch notify]", err));
+  }
 }
 
 export async function createVendorOrderItemsFromOrder(
@@ -749,29 +796,6 @@ export async function createVendorOrderItemsFromOrder(
   }
 }
 
-export async function markVendorItemQcPassed(itemId: string): Promise<void> {
-  const admin = createAdminClient();
-  if (!admin) return;
-
-  await admin
-    .from("vendor_order_items")
-    .update({ fulfillment_status: "qc_passed" })
-    .eq("id", itemId);
-
-  const { data: item } = await admin
-    .from("vendor_order_items")
-    .select("id, vendor_id, line_total")
-    .eq("id", itemId)
-    .single();
-
-  if (item) {
-    await admin
-      .from("vendor_earnings")
-      .update({ status: "available" })
-      .eq("vendor_order_item_id", itemId);
-  }
-}
-
 export async function getVendorWalletSummary(vendorId: string) {
   const supabase = await createClient();
 
@@ -788,21 +812,35 @@ export async function getVendorWalletSummary(vendorId: string) {
   ]);
 
   const earnings = earningsRes.data ?? [];
-  const pending = earnings
-    .filter((e) => e.status === "pending")
-    .reduce((s, e) => s + Number(e.net_amount), 0);
-  const available = earnings
-    .filter((e) => e.status === "available")
-    .reduce((s, e) => s + Number(e.net_amount), 0);
-  const paidOut = earnings
-    .filter((e) => e.status === "paid_out")
-    .reduce((s, e) => s + Number(e.net_amount), 0);
+  const withdrawals = withdrawalsRes.data ?? [];
+  return { ...summarizeWallet(earnings, withdrawals), withdrawals };
+}
 
+/**
+ * Ledger view: released earnings minus withdrawals that are paid or still
+ * in flight. Earnings rows are never partially consumed.
+ */
+export function summarizeWallet(
+  earnings: { net_amount: unknown; status: unknown }[],
+  withdrawals: { amount: unknown; status: unknown }[],
+) {
+  const sum = (rows: { amount?: unknown; net_amount?: unknown }[]) =>
+    rows.reduce((s, r) => s + Number(r.net_amount ?? r.amount ?? 0), 0);
+  const pending = sum(earnings.filter((e) => e.status === "pending"));
+  const released = sum(
+    earnings.filter((e) => e.status === "available" || e.status === "paid_out"),
+  );
+  const paidOut = sum(withdrawals.filter((w) => w.status === "paid"));
+  const inFlight = sum(
+    withdrawals.filter((w) =>
+      ["pending", "approved", "processing"].includes(String(w.status)),
+    ),
+  );
   return {
     pending,
-    available,
+    available: Math.max(0, released - paidOut - inFlight),
     paidOut,
-    withdrawals: withdrawalsRes.data ?? [],
+    inFlight,
   };
 }
 
@@ -833,7 +871,27 @@ export async function requestWithdrawal(
       account_name: vendor.accountName,
     },
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(
+      error.message.includes("insufficient_balance")
+        ? "Insufficient available balance."
+        : error.message,
+    );
+  }
+
+  const { sendNotice } = await import("@/lib/email/notice");
+  const { getEmailSiteUrl } = await import("@/lib/site");
+  await sendNotice({
+    type: "admin_alert",
+    toTeam: true,
+    subject: `Payout request — ${vendor.businessName} · ₦${amount.toLocaleString("en-NG")}`,
+    title: "New vendor payout request",
+    paragraphs: [
+      `${vendor.businessName} requested ₦${amount.toLocaleString("en-NG")} to ${vendor.bankName} · ${vendor.accountNumber} (${vendor.accountName}).`,
+    ],
+    ctaUrl: `${getEmailSiteUrl()}/admin/payouts`,
+    ctaLabel: "Review payouts",
+  }).catch(() => undefined);
 }
 
 export async function updateVendorProfile(
@@ -861,8 +919,21 @@ export async function updateVendorProfile(
   if (update.bankName) payload.bank_name = update.bankName;
   if (update.accountNumber) payload.account_number = update.accountNumber;
   if (update.accountName) payload.account_name = update.accountName;
-  if (update.pickupAddress !== undefined) payload.pickup_address = update.pickupAddress;
-  if (update.returnAddress !== undefined) payload.return_address = update.returnAddress;
+  if (update.pickupAddress) {
+    const state = matchNigerianState(update.pickupAddress.state);
+    if (!update.pickupAddress.line1?.trim() || !update.pickupAddress.city?.trim() || !state) {
+      throw new Error("Add your pickup street, city and state so Kay can route you to the nearest hub.");
+    }
+    payload.pickup_address = { ...update.pickupAddress, state, country: "Nigeria" };
+  }
+  if (update.returnAddress !== undefined) {
+    payload.return_address = update.returnAddress
+      ? {
+          ...update.returnAddress,
+          state: matchNigerianState(update.returnAddress.state) ?? update.returnAddress.state,
+        }
+      : null;
+  }
 
   const { data, error } = await supabase
     .from("vendors")
@@ -871,7 +942,22 @@ export async function updateVendorProfile(
     .select("*")
     .single();
   if (error) throw new Error(error.message);
-  return mapVendorRow(data);
+  const vendor = mapVendorRow(data);
+
+  if (update.bankName || update.accountNumber || update.accountName) {
+    const { sendNotice } = await import("@/lib/email/notice");
+    await sendNotice({
+      type: "admin_alert",
+      toTeam: true,
+      subject: `Bank details changed — ${vendor.businessName}`,
+      title: "Vendor bank details changed",
+      paragraphs: [
+        `${vendor.businessName} updated their payout account to ${vendor.bankName} · ${vendor.accountNumber} (${vendor.accountName}).`,
+        "If you didn't expect this, pause their payouts and contact them before sending any transfer.",
+      ],
+    }).catch(() => undefined);
+  }
+  return vendor;
 }
 
 export async function fetchProductVendorMap(

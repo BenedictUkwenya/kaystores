@@ -31,6 +31,8 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               key={src}
               type="button"
               onClick={() => setActive(i)}
+              aria-label={`View image ${i + 1}`}
+              aria-pressed={i === active}
               className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-colors ${
                 i === active ? "border-kay-fg" : "border-kay-border"
               }`}

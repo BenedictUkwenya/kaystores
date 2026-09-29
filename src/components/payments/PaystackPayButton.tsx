@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 
 type Props = {
-  kind: "order" | "concierge";
+  kind: "order" | "concierge" | "table";
   id: string;
   email?: string;
   label?: string;
@@ -22,9 +22,11 @@ export function PaystackPayButton({
   disabled,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function pay() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/payments/paystack/initialize", {
         method: "POST",
@@ -41,20 +43,27 @@ export function PaystackPayButton({
       }
       throw new Error("Payment link was not returned.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Payment failed.");
+      setError(err instanceof Error ? err.message : "Payment failed.");
       setLoading(false);
     }
   }
 
   return (
-    <Button
-      type="button"
-      onClick={pay}
-      disabled={disabled || loading}
-      className={className}
-    >
-      {loading ? "Redirecting to Paystack…" : label}
-    </Button>
+    <>
+      <Button
+        type="button"
+        onClick={pay}
+        disabled={disabled || loading}
+        className={className}
+      >
+        {loading ? "Redirecting to Paystack…" : label}
+      </Button>
+      {error && (
+        <p role="alert" className="mt-2 text-[12px] text-red-600">
+          {error}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -107,9 +116,10 @@ export function PaymentReturnVerifier({ reference }: ReturnProps) {
 
 /** Start Paystack checkout and redirect — used right after placing an order. */
 export async function redirectToPaystackCheckout(input: {
-  kind: "order" | "concierge";
+  kind: "order" | "concierge" | "table";
   id: string;
   email?: string;
+  delivery?: Record<string, string>;
 }): Promise<void> {
   const res = await fetch("/api/payments/paystack/initialize", {
     method: "POST",

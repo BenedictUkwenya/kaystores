@@ -114,6 +114,11 @@ export default async function AdminConciergePage({ searchParams }: PageProps) {
                   <p className="mt-2 text-[13px] text-kay-muted">
                     {r.contactName} · {r.contactEmail} · {r.contactPhone}
                   </p>
+                  {r.deliverySummary && (
+                    <p className="mt-1 text-[13px] text-kay-fg">
+                      Deliver to {r.deliverySummary}
+                    </p>
+                  )}
                   <p className="mt-3 text-[13px] leading-relaxed text-kay-muted whitespace-pre-wrap">
                     {r.description}
                   </p>

@@ -4,6 +4,7 @@ import {
   type ProductVariation,
   type ProductVariationOption,
 } from "@/lib/products/variations";
+import type { CatalogSegment } from "@/lib/pricing/config";
 
 export type Product = {
   id: string;
@@ -25,7 +26,8 @@ export type Product = {
   created_at: string;
   vendor_id?: string | null;
   status?: string;
-  segment?: string;
+  /** `products.segment` — the single source of truth for After Dark. */
+  segment?: CatalogSegment;
   rejection_reason?: string | null;
   shipping_weight_kg?: number | null;
   shipping_length_cm?: number | null;
@@ -62,14 +64,25 @@ export type ProductFilters = {
   recipients?: string[];
   collections?: string[];
   tags?: string[];
+  /** Hide products in any of these collections (e.g. Kay Kitchen on /gifts). */
+  excludeCollections?: string[];
   search?: string;
 };
+
+/**
+ * Which catalogue segment to read. Defaults to `gifting` so After Dark never
+ * leaks into the general store; pass `after_dark` only on age-gated surfaces.
+ */
+export type ProductSegmentScope = CatalogSegment | "all";
 
 export type GetProductsParams = {
   filters?: ProductFilters;
   sort?: ProductSort;
   page?: number;
   pageSize?: number;
+  segment?: ProductSegmentScope;
+  /** Seed for `random` sort — same seed gives the same order across pages. */
+  seed?: string;
 };
 
 export type ProductsResult = {
@@ -123,7 +136,10 @@ export function mapProductRow(row: Record<string, unknown>): Product {
     created_at: String(row.created_at ?? new Date().toISOString()),
     vendor_id: row.vendor_id != null ? String(row.vendor_id) : null,
     status: row.status != null ? String(row.status) : undefined,
-    segment: row.segment != null ? String(row.segment) : undefined,
+    segment:
+      row.segment === "after_dark" || row.segment === "gifting"
+        ? row.segment
+        : undefined,
     rejection_reason:
       row.rejection_reason != null ? String(row.rejection_reason) : null,
     shipping_weight_kg:

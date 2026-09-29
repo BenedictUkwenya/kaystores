@@ -99,6 +99,11 @@ export default async function ConciergeStatusDetailPage({
             </dd>
           </div>
         </dl>
+        {paid && detail.paymentBreakdown && (
+          <p className="mt-4 text-[13px] text-kay-muted">
+            Paid {formatNaira(detail.paymentBreakdown.clientPrice)} — sourcing begins now.
+          </p>
+        )}
       </div>
 
       <p className="mt-8 text-center text-[13px] text-kay-muted">

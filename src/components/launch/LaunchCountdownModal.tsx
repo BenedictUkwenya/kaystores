@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { LAUNCH_LABEL } from "@/lib/launch";
 import { FlipDigit } from "@/components/launch/FlipDigit";
@@ -32,17 +32,52 @@ export function LaunchCountdownModal({ open, onClose, state }: Props) {
   const [message, setMessage] = useState("");
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onClose = () => onCloseRef.current();
+    const opener =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !dialogRef.current.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
+    const raf = window.requestAnimationFrame(() => closeRef.current?.focus());
     return () => {
+      window.cancelAnimationFrame(raf);
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
+      if (opener && document.contains(opener)) opener.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -70,6 +105,7 @@ export function LaunchCountdownModal({ open, onClose, state }: Props) {
 
   return createPortal(
     <div
+      ref={dialogRef}
       className="kay-launch-modal"
       role="dialog"
       aria-modal="true"
@@ -113,6 +149,7 @@ export function LaunchCountdownModal({ open, onClose, state }: Props) {
       )}
 
       <button
+        ref={closeRef}
         type="button"
         onClick={onClose}
         className="kay-launch-close"

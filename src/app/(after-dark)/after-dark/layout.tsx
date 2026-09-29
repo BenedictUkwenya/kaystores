@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { AfterDarkShell } from "@/components/after-dark/AfterDarkShell";
+import { isAfterDarkAgeVerified } from "@/lib/after-dark/age-gate";
 
 export const metadata: Metadata = {
   title: "Kay After Dark — The Intimate Edit",
@@ -8,10 +10,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AfterDarkLayout({
+export default async function AfterDarkLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AfterDarkShell>{children}</AfterDarkShell>;
+  const ageVerified = isAfterDarkAgeVerified(await cookies());
+  return <AfterDarkShell initialAgeVerified={ageVerified}>{children}</AfterDarkShell>;
 }

@@ -8,16 +8,17 @@ import {
   createVendorOrderItemsFromOrder,
   fetchProductVendorMap,
 } from "@/lib/vendors/repository";
-import { notifyOrderEmails } from "@/lib/email/send";
-import { notifyVendorsForPaidOrder } from "@/lib/email/vendor-orders";
-import { getEmailSiteUrl } from "@/lib/site";
+import { notifyManualPaymentClaim } from "@/lib/orders/notify";
+import { grantOrderAccess } from "@/lib/orders/access";
+import { repriceCartItems } from "@/lib/pricing/server-cart";
 import {
   attachQuoteToOrder,
   getSelectedQuoteAmount,
 } from "@/lib/shipping/terminal";
 import { isPaystackConfigured } from "@/lib/payments/config";
 import { createPaymentShares, validateSplitCount } from "@/lib/payments/shares";
-import type { CreateOrderPayload } from "@/types/order";
+import { GIFT_NOTE_MAX_LENGTH, type CreateOrderPayload } from "@/types/order";
+import { isValidEmail, matchNigerianState, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 
 export async function POST(request: Request) {
   try {
@@ -34,6 +35,33 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (!isValidEmail(body.buyer.email)) {
+      return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
+    }
+    const buyerPhone = normalizeNigerianPhone(body.buyer.phone);
+    if (!buyerPhone) {
+      return NextResponse.json(
+        { error: "Enter a valid Nigerian phone number." },
+        { status: 400 },
+      );
+    }
+    body.buyer.phone = buyerPhone;
+
+    const destination =
+      body.deliveryType === "gift" ? body.gift?.recipientAddress : body.buyerAddress;
+    if (!destination?.line1?.trim() || !destination.city?.trim() || !destination.state?.trim()) {
+      return NextResponse.json(
+        { error: "A full delivery address is required." },
+        { status: 400 },
+      );
+    }
+    for (const addr of [body.buyerAddress, body.gift?.recipientAddress]) {
+      if (!addr) continue;
+      addr.line1 = addr.line1.trim().slice(0, 200);
+      addr.line2 = addr.line2?.trim().slice(0, 160) || undefined;
+      addr.instructions = addr.instructions?.trim().slice(0, 300) || undefined;
+      addr.state = matchNigerianState(addr.state) ?? addr.state.trim();
+    }
 
     if (!body.pricing) {
       return NextResponse.json(
@@ -42,16 +70,31 @@ export async function POST(request: Request) {
       );
     }
 
+    const repriced = await repriceCartItems(body.items);
+    if (!repriced.ok) {
+      return NextResponse.json({ error: repriced.error }, { status: 400 });
+    }
+    body.items = repriced.items;
+
     if (!body.shippingQuoteToken) {
       return NextResponse.json(
         { error: "Select a live delivery service before placing your order." },
         { status: 400 },
       );
     }
-    const quoteDeliveryFee = await getSelectedQuoteAmount(
-      body.shippingQuoteToken,
-      body.items,
-    );
+    let quoteDeliveryFee: number;
+    try {
+      quoteDeliveryFee = await getSelectedQuoteAmount(
+        body.shippingQuoteToken,
+        body.items,
+        destination,
+      );
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Please pick a delivery rate again." },
+        { status: 400 },
+      );
+    }
     const deliveryFee = isTestCheckoutMode() ? 0 : quoteDeliveryFee;
     const pricingCheck = validateOrderPricing(
       body.items,
@@ -69,11 +112,25 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      if (!body.gift?.recipientEmail?.trim()) {
+      if (!isValidEmail(body.gift?.recipientEmail)) {
         return NextResponse.json(
-          { error: "Recipient email is required for gift orders." },
+          { error: "A valid recipient email is required for gift orders." },
           { status: 400 },
         );
+      }
+      const recipientPhone = normalizeNigerianPhone(
+        body.gift?.recipientPhone ?? body.gift?.recipientWhatsApp,
+      );
+      if (!recipientPhone) {
+        return NextResponse.json(
+          { error: "Add the recipient's phone number so the rider can reach them." },
+          { status: 400 },
+        );
+      }
+      body.gift!.recipientPhone = recipientPhone;
+      body.gift!.recipientWhatsApp = recipientPhone;
+      if ((body.gift?.note ?? "").length > GIFT_NOTE_MAX_LENGTH) {
+        return NextResponse.json({ error: "Gift note is too long." }, { status: 400 });
       }
       const addr = body.gift.recipientAddress;
       if (!addr?.line1?.trim() || !addr.city?.trim() || !addr.state?.trim()) {
@@ -125,8 +182,8 @@ export async function POST(request: Request) {
     body.buyer = {
       ...body.buyer,
       email: body.buyer.email.trim().toLowerCase(),
-      fullName: body.buyer.fullName.trim(),
-      phone: body.buyer.phone.trim(),
+      fullName: body.buyer.fullName.trim().slice(0, 120),
+      phone: buyerPhone,
     };
 
     const stockCheck = await reserveStockForOrder(body.items);
@@ -162,21 +219,22 @@ export async function POST(request: Request) {
 
       if (splitCount !== undefined) {
         await createPaymentShares(order.id, order.pricing.grandTotal, splitCount);
-        return NextResponse.json({ ...order, paymentMode: "split" });
+        return grantOrderAccess(
+          NextResponse.json({ ...order, paymentMode: "split" }),
+          order.id,
+        );
       }
 
-      // Emails / vendor notify only after payment (Paystack webhook or manual confirm).
-      if (order.paymentStatus === "paid") {
-        const appUrl = getEmailSiteUrl();
-        await notifyOrderEmails(order, appUrl);
-        await notifyVendorsForPaidOrder(order.id);
+      // Emails / vendor notify only after payment is verified (webhook or admin).
+      if (order.paymentStatus === "pending" && order.paymentReference === "manual-claim") {
+        await notifyManualPaymentClaim(order);
       }
     } catch (err) {
       await restoreStockForOrder(body.items);
       throw err;
     }
 
-    return NextResponse.json(order);
+    return grantOrderAccess(NextResponse.json(order), order.id);
   } catch {
     return NextResponse.json(
       { error: "Failed to create order." },

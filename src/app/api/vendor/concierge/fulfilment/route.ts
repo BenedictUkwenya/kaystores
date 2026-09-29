@@ -2,11 +2,8 @@ import { apiErrorResponse, requireVendor } from "@/lib/auth/roles";
 import { updateConciergeFulfilment } from "@/lib/concierge/dispatch";
 import type { ConciergeFulfilmentStatus } from "@/types/concierge";
 
-const VALID = new Set<ConciergeFulfilmentStatus>([
-  "sourcing",
-  "at_hub",
-  "completed",
-]);
+// Kay marks the request completed after delivery; vendors stop at the hub.
+const VALID = new Set<ConciergeFulfilmentStatus>(["sourcing", "at_hub"]);
 
 export async function PATCH(request: Request) {
   try {

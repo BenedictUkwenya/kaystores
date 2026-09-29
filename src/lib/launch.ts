@@ -43,4 +43,16 @@ export function launchProgress(now = Date.now()): number {
   return Math.min(1, Math.max(0, (now - start) / (end - start)));
 }
 
-export const LAUNCH_LABEL = "Sunday, 11 October";
+/** How long the "we're live" bar stays up after launch. */
+export const LAUNCH_LIVE_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+export function isLiveWindowOver(now = Date.now()): boolean {
+  return now > launchTime() + LAUNCH_LIVE_WINDOW_MS;
+}
+
+export const LAUNCH_LABEL = new Intl.DateTimeFormat("en-NG", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  timeZone: "Africa/Lagos",
+}).format(new Date(LAUNCH_AT));

@@ -5,6 +5,7 @@ import {
 } from "@/lib/payments/paystack";
 import { confirmPaymentFromTxRef } from "@/lib/payments/confirm";
 import { isPaystackConfigured } from "@/lib/payments/config";
+import { sendNotice } from "@/lib/email/notice";
 
 export async function POST(request: Request) {
   if (!isPaystackConfigured()) {
@@ -31,7 +32,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    await confirmPaymentFromTxRef(tx.txRef, tx.reference, tx.amountNaira);
+    const confirmed = await confirmPaymentFromTxRef(
+      tx.txRef,
+      tx.reference,
+      tx.amountNaira,
+    );
+    if (!confirmed) {
+      await sendNotice({
+        type: "admin_alert",
+        toTeam: true,
+        subject: "Paystack payment needs review",
+        title: "Payment couldn't be matched",
+        paragraphs: [
+          `Paystack reported a successful payment (reference ${tx.txRef}, ₦${tx.amountNaira ?? "?"}) that didn't match an open order, share or concierge request at the expected amount.`,
+          "Check it in the Paystack dashboard and refund or apply it manually.",
+        ],
+      });
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[webhooks/paystack]", err);

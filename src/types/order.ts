@@ -16,6 +16,8 @@ export type AddressDetails = {
   state: string;
   postalCode?: string;
   country: string;
+  /** Rider notes: gate code, best time, who to call. */
+  instructions?: string;
   /** Optional map pin from Google Places / Maps picker */
   lat?: number;
   lng?: number;

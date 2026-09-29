@@ -399,18 +399,30 @@ export async function attachQuoteToOrder(orderId: string, token: string, items: 
   return Number(data.amount);
 }
 
-export async function getSelectedQuoteAmount(token: string, items: OrderItem[]) {
+export async function getSelectedQuoteAmount(
+  token: string,
+  items: OrderItem[],
+  destination?: Pick<AddressDetails, "city" | "state"> | null,
+) {
   const admin = createAdminClient();
   if (!admin) throw new Error("Shipping is temporarily unavailable.");
   const { data, error } = await admin
     .from("shipping_quotes")
-    .select("amount")
+    .select("amount, destination")
     .eq("token", token)
     .eq("cart_fingerprint", cartFingerprint(items))
     .gt("expires_at", new Date().toISOString())
     .is("order_id", null)
     .maybeSingle();
   if (error || !data) throw new Error("This delivery rate has expired. Please select a new rate.");
+  const quoted = data.destination as Partial<AddressDetails> | null;
+  if (destination && quoted) {
+    const same = (a?: string, b?: string) =>
+      (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+    if (!same(quoted.state, destination.state) || !same(quoted.city, destination.city)) {
+      throw new Error("Your delivery address changed. Please pick a delivery rate again.");
+    }
+  }
   return Number(data.amount);
 }
 

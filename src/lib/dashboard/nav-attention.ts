@@ -72,6 +72,7 @@ async function overdueDispatchCount(
     .from("vendor_order_items")
     .select("id", { count: "exact", head: true })
     .eq("fulfillment_status", "awaiting_hub_delivery")
+    .is("vendor_dispatched_at", null)
     .not("hub_reminder_sent_at", "is", null);
   return count ?? 0;
 }
@@ -93,6 +94,10 @@ export async function fetchAdminNavAttention(): Promise<DashboardNavAttention> {
       orderChatsNeedAdmin(db).catch(() => false),
       overdueDispatchCount(db).catch(() => 0),
     ]);
+  const { count: payoutCount } = await db
+    .from("withdrawal_requests")
+    .select("id", { count: "exact", head: true })
+    .in("status", ["pending", "approved"]);
 
   const conciergeAttention =
     counts.needsDispatch + counts.readyToRelease + counts.clientDeciding > 0;
@@ -102,6 +107,7 @@ export async function fetchAdminNavAttention(): Promise<DashboardNavAttention> {
     "/admin/orders": (ordersRes.count ?? 0) > 0 || orderChats || overdue > 0,
     "/admin/support": supportAttention > 0,
     "/admin/table": kitchen,
+    "/admin/payouts": (payoutCount ?? 0) > 0,
   };
 }
 
@@ -132,7 +138,10 @@ export async function fetchVendorNavAttention(
 
   const orderItems = await fetchVendorOrderItems(vendorId).catch(() => []);
   const openOrders = orderItems.some(
-    (item) => !["completed", "cancelled"].includes(item.fulfillmentStatus),
+    (item) =>
+      item.paymentStatus === "paid" &&
+      item.fulfillmentStatus === "awaiting_hub_delivery" &&
+      !item.vendorDispatchedAt,
   );
 
   let kitchenAttention = false;

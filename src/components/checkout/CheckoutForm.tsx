@@ -37,10 +37,8 @@ import { SITE_ROUTES } from "@/lib/data/site-routes";
 import { useCheckoutPrefill } from "@/hooks/useCheckoutPrefill";
 import { CheckoutProcessing } from "@/components/checkout/CheckoutProcessing";
 import { AfterDarkPrivacyBanner } from "@/components/checkout/AfterDarkPrivacyBanner";
-
-const paystackEnabled = Boolean(
-  process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.trim(),
-);
+import { markCartPendingOrder } from "@/components/checkout/ClearCartOnPaid";
+import { isValidEmail, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 
 const emptyAddress: AddressDetails = {
   line1: "",
@@ -53,11 +51,14 @@ const emptyAddress: AddressDetails = {
 
 export function CheckoutForm({
   isPrivateCheckout = false,
+  paystackEnabled,
 }: {
   isPrivateCheckout?: boolean;
+  paystackEnabled: boolean;
 }) {
   const router = useRouter();
   const { items, clearCart } = useCart();
+  const hasPrivateItems = items.some((item) => item.segment === "after_dark");
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("self");
   const [shippingQuotes, setShippingQuotes] = useState<
     {
@@ -98,8 +99,9 @@ export function CheckoutForm({
   const [giftNote, setGiftNote] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [anonymousPackaging, setAnonymousPackaging] = useState(
-    isPrivateCheckout,
+    isPrivateCheckout || hasPrivateItems,
   );
+  const [deliveryNotes, setDeliveryNotes] = useState("");
   const [recipientAddress, setRecipientAddress] = useState(emptyAddress);
   const [addReveal, setAddReveal] = useState(false);
   const [revealVideo, setRevealVideo] = useState<File | null>(null);
@@ -127,8 +129,24 @@ export function CheckoutForm({
   useCheckoutPrefill({ setFirstName, setLastName, setBuyer });
 
   useEffect(() => {
-    if (isPrivateCheckout) setAnonymousPackaging(true);
-  }, [isPrivateCheckout]);
+    if (isPrivateCheckout || hasPrivateItems) setAnonymousPackaging(true);
+  }, [isPrivateCheckout, hasPrivateItems]);
+
+  // A quote is tied to the address and contact it was priced for.
+  const quoteKey = JSON.stringify(
+    deliveryType === "gift"
+      ? [deliveryType, recipientAddress.line1, recipientAddress.city, recipientAddress.state, recipientName, recipientEmail, recipientWhatsApp]
+      : [deliveryType, buyerAddress.line1, buyerAddress.city, buyerAddress.state, fullName, buyer.email, buyer.phone],
+  );
+  const itemsKey = items.map((i) => `${i.productId}:${i.variationOptionId ?? ""}:${i.quantity}`).join("|");
+  const lastQuoteKey = useRef(quoteKey + itemsKey);
+  useEffect(() => {
+    const key = quoteKey + itemsKey;
+    if (key === lastQuoteKey.current) return;
+    lastQuoteKey.current = key;
+    setShippingQuotes([]);
+    setSelectedShippingToken("");
+  }, [quoteKey, itemsKey]);
 
   useEffect(() => {
     void (async () => {
@@ -217,6 +235,15 @@ export function CheckoutForm({
       setError("Please complete your contact details.");
       return;
     }
+    if (!isValidEmail(buyer.email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    const buyerPhone = normalizeNigerianPhone(buyer.phone);
+    if (!buyerPhone) {
+      setError("Enter a valid Nigerian phone number, e.g. 0803 123 4567.");
+      return;
+    }
 
     if (deliveryType === "self") {
       if (!buyerAddress.line1 || !buyerAddress.city || !buyerAddress.state) {
@@ -230,8 +257,12 @@ export function CheckoutForm({
         setError("Please enter the recipient's name.");
         return;
       }
-      if (!recipientEmail.trim()) {
-        setError("Please enter the recipient's email.");
+      if (!isValidEmail(recipientEmail)) {
+        setError("Enter a valid email for the recipient.");
+        return;
+      }
+      if (!normalizeNigerianPhone(recipientWhatsApp)) {
+        setError("Add the recipient's phone number so the rider can reach them.");
         return;
       }
       if (
@@ -254,7 +285,10 @@ export function CheckoutForm({
     }
 
     setSubmitting(true);
+    const instructions = deliveryNotes.trim() || undefined;
+    const recipientPhone = normalizeNigerianPhone(recipientWhatsApp) ?? undefined;
 
+    let createdOrderId: string | null = null;
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -265,22 +299,23 @@ export function CheckoutForm({
           subtotal: pricing.productSubtotal,
           pricing: toPricingPayload(pricing),
           shippingQuoteToken: selectedShippingToken,
-          buyer: { fullName, email: buyer.email, phone: buyer.phone },
-          buyerAddress: deliveryType === "self" ? buyerAddress : undefined,
+          buyer: { fullName, email: buyer.email.trim(), phone: buyerPhone },
+          buyerAddress:
+            deliveryType === "self" ? { ...buyerAddress, instructions } : undefined,
           paymentConfirmed: paystackEnabled ? false : true,
           split: splitActive ? { count: splitPeople } : undefined,
           anonymousPackaging,
           gift:
             deliveryType === "gift"
               ? {
-                  recipientName,
+                  recipientName: recipientName.trim(),
                   recipientEmail: recipientEmail.trim(),
-                  recipientPhone: recipientWhatsApp || undefined,
-                  recipientWhatsApp: recipientWhatsApp || undefined,
+                  recipientPhone,
+                  recipientWhatsApp: recipientPhone,
                   note: giftNote,
                   anonymous,
                   addressUnknown: false,
-                  recipientAddress,
+                  recipientAddress: { ...recipientAddress, instructions },
                 }
               : undefined,
         }),
@@ -292,11 +327,13 @@ export function CheckoutForm({
       }
 
       const order = await res.json();
+      createdOrderId = order.id;
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
-      clearCart();
 
       // Pay first — don't block redirect on optional Reveal media upload.
       if (paystackEnabled) {
+        // The bag is emptied on the order page once payment is confirmed.
+        markCartPendingOrder(order.id);
         if (
           deliveryType === "gift" &&
           (addReveal || revealVideo || revealPhoto || giftNote.trim())
@@ -304,6 +341,7 @@ export function CheckoutForm({
           void uploadRevealForOrder(order.id, buyer.email.trim().toLowerCase());
         }
         if (splitActive) {
+          clearCart();
           router.replace(`/order/${order.id}/split`);
           return;
         }
@@ -314,6 +352,8 @@ export function CheckoutForm({
         });
         return;
       }
+
+      clearCart();
 
       if (
         deliveryType === "gift" &&
@@ -330,6 +370,11 @@ export function CheckoutForm({
 
       router.replace(`/order/${order.id}`);
     } catch (err) {
+      if (createdOrderId) {
+        // Order exists but Paystack didn't open — the order page has a Pay button.
+        router.replace(`/order/${createdOrderId}?payment=retry`);
+        return;
+      }
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }
@@ -405,7 +450,7 @@ export function CheckoutForm({
 
           <CheckoutStep
             step={1}
-            title={isPrivateCheckout ? "Discrete delivery" : "Shipping Information"}
+            title={isPrivateCheckout ? "Discreet delivery" : "Shipping Information"}
           >
             <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
@@ -521,8 +566,11 @@ export function CheckoutForm({
               />
               <Input
                 variant="checkout"
-                label={isPrivateCheckout ? "Discrete phone" : "Phone"}
+                label={isPrivateCheckout ? "Discreet phone" : "Phone"}
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="0803 123 4567"
                 value={buyer.phone}
                 onChange={(e) => setBuyer({ ...buyer, phone: e.target.value })}
                 hint={
@@ -539,7 +587,7 @@ export function CheckoutForm({
                   onChange={setBuyerAddress}
                   label={
                     isPrivateCheckout
-                      ? "Discrete delivery address"
+                      ? "Discreet delivery address"
                       : "Shipping Address"
                   }
                   required
@@ -572,10 +620,15 @@ export function CheckoutForm({
                   />
                   <Input
                     variant="checkout"
-                    label="Recipient WhatsApp (optional)"
+                    label="Recipient phone"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="off"
                     value={recipientWhatsApp}
                     onChange={(e) => setRecipientWhatsApp(e.target.value)}
+                    hint="Only used by the rider on delivery day."
+                    placeholder="0803 123 4567"
+                    required
                   />
 
                   <AddressLocationPicker
@@ -583,7 +636,7 @@ export function CheckoutForm({
                     onChange={setRecipientAddress}
                     label={
                       isPrivateCheckout
-                        ? "Discrete delivery address"
+                        ? "Discreet delivery address"
                         : "Shipping address"
                     }
                     hint="Search or drop a pin — Kay delivers to this address."
@@ -768,6 +821,17 @@ export function CheckoutForm({
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="mt-4">
+              <Textarea
+                label="Delivery instructions (optional)"
+                value={deliveryNotes}
+                onChange={(e) => setDeliveryNotes(e.target.value)}
+                maxLength={300}
+                rows={2}
+                placeholder="Gate code, best time to deliver, who to ask for…"
+              />
             </div>
           </CheckoutStep>
 

@@ -10,7 +10,8 @@ export async function POST(request: Request) {
   const signature = request.headers.get("verif-hash");
   const secret = getFlutterwaveWebhookSecret();
 
-  if (secret && !verifyFlutterwaveWebhookSignature(signature, secret)) {
+  // Without a secret anyone could post a fake "successful" payment.
+  if (!secret || !verifyFlutterwaveWebhookSignature(signature, secret)) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
 

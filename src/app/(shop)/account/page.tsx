@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { AccountPanel } from "@/components/auth/AccountPanel";
 import {
@@ -7,6 +8,10 @@ import {
 import { fetchConciergeRequestsForAccount } from "@/lib/concierge/repository";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 import { getVendorByUserId } from "@/lib/auth/roles";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountPage() {
   if (!getSupabaseConfig().isConfigured) {

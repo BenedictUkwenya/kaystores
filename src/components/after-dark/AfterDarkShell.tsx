@@ -1,24 +1,53 @@
 "use client";
 
+import { Suspense } from "react";
 import { AfterDarkAgeGate } from "@/components/after-dark/AfterDarkAgeGate";
 import { AfterDarkAgeProvider } from "@/components/after-dark/AfterDarkAgeProvider";
 import { AfterDarkFooter } from "@/components/after-dark/AfterDarkFooter";
 import { AfterDarkHeader } from "@/components/after-dark/AfterDarkHeader";
-import { AfterDarkMotionOverride } from "@/components/after-dark/AfterDarkMotionOverride";
 import { AfterDarkThemeEffect } from "@/components/after-dark/AfterDarkThemeEffect";
 import "@/components/after-dark/after-dark-motion.css";
 
-export function AfterDarkShell({ children }: { children: React.ReactNode }) {
+function AfterDarkShellInner({
+  children,
+  initialAgeVerified,
+}: {
+  children: React.ReactNode;
+  initialAgeVerified: boolean;
+}) {
   return (
-    <AfterDarkAgeProvider>
-      <AfterDarkMotionOverride />
+    <AfterDarkAgeProvider initialVerified={initialAgeVerified}>
       <AfterDarkThemeEffect />
-      <div className="after-dark-experience force-motion min-h-screen bg-black text-white">
+      <div className="after-dark-experience min-h-screen bg-black text-white">
         <AfterDarkHeader />
         <main>{children}</main>
         <AfterDarkFooter />
         <AfterDarkAgeGate />
       </div>
     </AfterDarkAgeProvider>
+  );
+}
+
+export function AfterDarkShell({
+  children,
+  initialAgeVerified = false,
+}: {
+  children: React.ReactNode;
+  initialAgeVerified?: boolean;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="after-dark-experience min-h-screen bg-black text-white">
+          <AfterDarkHeader />
+          <main>{children}</main>
+          <AfterDarkFooter />
+        </div>
+      }
+    >
+      <AfterDarkShellInner initialAgeVerified={initialAgeVerified}>
+        {children}
+      </AfterDarkShellInner>
+    </Suspense>
   );
 }

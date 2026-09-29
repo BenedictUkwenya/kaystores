@@ -1,4 +1,4 @@
-export type PaymentKind = "order" | "concierge" | "share";
+export type PaymentKind = "order" | "concierge" | "share" | "table";
 
 export function isPaystackConfigured(): boolean {
   return Boolean(
@@ -49,7 +49,7 @@ export function buildTxRef(kind: PaymentKind, id: string): string {
 export function parseTxRef(
   txRef: string,
 ): { kind: PaymentKind; id: string } | null {
-  const match = /^(order|concierge|share)[_:]([0-9a-f-]{36})$/i.exec(txRef.trim());
+  const match = /^(order|concierge|share|table)[_:]([0-9a-f-]{36})$/i.exec(txRef.trim());
   if (!match) return null;
   return { kind: match[1].toLowerCase() as PaymentKind, id: match[2] };
 }

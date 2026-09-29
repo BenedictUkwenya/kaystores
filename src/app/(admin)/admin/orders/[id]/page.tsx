@@ -7,7 +7,7 @@ import {
   DashboardLayout,
 } from "@/components/dashboard/DashboardLayout";
 import { AdminOrderWorkspace } from "@/components/admin/AdminOrderWorkspace";
-import { AdminQcPassButton } from "@/components/admin/AdminQcPassButton";
+import { AdminItemHubActions } from "@/components/admin/AdminItemHubActions";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { formatNaira } from "@/lib/data/home";
 import {
@@ -28,16 +28,28 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   const { data: vendorItems } =
     (await admin
       ?.from("vendor_order_items")
-      .select("*")
+      .select(
+        "*, vendors(business_name, contact_name, contact_phone, contact_email, pickup_address)",
+      )
       .eq("order_id", id)) ?? { data: [] };
 
   const { data: orderMeta } = admin
     ? await admin
         .from("orders")
-        .select("payment_status, tracking_number, tracking_carrier")
+        .select(
+          "payment_status, payment_reference, paid_at, tracking_number, tracking_carrier, tracking_url",
+        )
         .eq("id", id)
         .maybeSingle()
     : { data: null };
+  const orderPaid = orderMeta?.payment_status === "paid";
+  const fmtTime = (value: unknown) =>
+    value
+      ? new Date(String(value)).toLocaleString("en-NG", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+      : null;
 
   const { data: quote } = admin
     ? await admin
@@ -110,8 +122,43 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           )}
         </div>
         <p className="mt-3 text-[13px] text-kay-muted">
-          Buyer: {order.buyer.fullName} · {order.buyer.email} · {order.buyer.phone}
+          Buyer: {order.buyer.fullName} ·{" "}
+          <a href={`mailto:${order.buyer.email}`} className="underline underline-offset-2">
+            {order.buyer.email}
+          </a>{" "}
+          ·{" "}
+          <a href={`tel:${order.buyer.phone}`} className="underline underline-offset-2">
+            {order.buyer.phone}
+          </a>
         </p>
+        {(orderMeta?.payment_reference || orderMeta?.paid_at) && (
+          <p className="mt-1 text-[12px] text-kay-subtle">
+            {orderMeta?.payment_reference === "manual-claim"
+              ? "Customer says they paid by transfer — verify before marking paid"
+              : orderMeta?.payment_reference
+                ? `Payment ref: ${String(orderMeta.payment_reference)}`
+                : null}
+            {orderMeta?.paid_at ? ` · Paid ${fmtTime(orderMeta.paid_at)}` : ""}
+          </p>
+        )}
+        {orderMeta?.tracking_number && (
+          <p className="mt-1 text-[12px] text-kay-subtle">
+            Tracking: {String(orderMeta.tracking_carrier ?? "")} {String(orderMeta.tracking_number)}
+            {orderMeta.tracking_url && (
+              <>
+                {" · "}
+                <a
+                  href={String(orderMeta.tracking_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  Track
+                </a>
+              </>
+            )}
+          </p>
+        )}
         {quote && (
           <p className="mt-2 text-[13px] text-kay-muted">
             Delivery: {quote.carrier_name}
@@ -149,20 +196,74 @@ export default async function AdminOrderDetailPage({ params }: Props) {
               Vendor fulfilment
             </p>
             <ul className="mt-3 space-y-3">
-              {(vendorItems ?? []).map((vi) => (
+              {(vendorItems ?? []).map((vi) => {
+                const vendor = vi.vendors as {
+                  business_name?: string;
+                  contact_name?: string;
+                  contact_phone?: string;
+                  contact_email?: string;
+                  pickup_address?: { line1?: string; city?: string; state?: string } | null;
+                } | null;
+                const pickup = vendor?.pickup_address
+                  ? [vendor.pickup_address.line1, vendor.pickup_address.city, vendor.pickup_address.state]
+                      .filter(Boolean)
+                      .join(", ")
+                  : "";
+                return (
                 <li
                   key={vi.id}
-                  className="flex flex-col gap-2 text-[13px] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-xl border border-kay-border-light p-3 text-[13px] sm:flex-row sm:flex-wrap sm:items-start sm:justify-between"
                 >
-                  <div className="min-w-0">
-                    <span className="block">{vi.product_name}</span>
-                    {vi.selected_hub_name && (
-                      <span className="mt-0.5 block text-[11px] text-kay-muted">
+                  <div className="min-w-0 space-y-0.5">
+                    <span className="block font-medium">
+                      {vi.product_name} × {vi.quantity}
+                    </span>
+                    {vendor && (
+                      <span className="block text-[11px] text-kay-muted">
+                        {vendor.business_name}
+                        {vendor.contact_name ? ` · ${vendor.contact_name}` : ""}
+                        {vendor.contact_phone && (
+                          <>
+                            {" · "}
+                            <a href={`tel:${vendor.contact_phone}`} className="underline underline-offset-2">
+                              {vendor.contact_phone}
+                            </a>
+                          </>
+                        )}
+                        {vendor.contact_email && (
+                          <>
+                            {" · "}
+                            <a href={`mailto:${vendor.contact_email}`} className="underline underline-offset-2">
+                              {vendor.contact_email}
+                            </a>
+                          </>
+                        )}
+                      </span>
+                    )}
+                    {pickup && (
+                      <span className="block text-[11px] text-kay-muted">Vendor location: {pickup}</span>
+                    )}
+                    {vi.selected_hub_name ? (
+                      <span className="block text-[11px] text-kay-muted">
                         Hub: {String(vi.selected_hub_name)}
                         {vi.selected_hub_phone
                           ? ` · ${String(vi.selected_hub_phone)}`
                           : ""}
-                        {vi.vendor_dispatched_at ? " · vendor dispatched" : ""}
+                        {vi.vendor_dispatched_at
+                          ? ` · sent ${fmtTime(vi.vendor_dispatched_at)}`
+                          : " · not sent yet"}
+                      </span>
+                    ) : (
+                      orderPaid &&
+                      vi.fulfillment_status === "awaiting_hub_delivery" && (
+                        <span className="block text-[11px] text-amber-700">
+                          Vendor hasn&apos;t picked a hub yet
+                        </span>
+                      )
+                    )}
+                    {vi.hub_notes && (
+                      <span className="block text-[11px] text-kay-fg">
+                        Vendor note: {String(vi.hub_notes)}
                       </span>
                     )}
                     {vi.hub_reminder_sent_at &&
@@ -172,14 +273,18 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                         </span>
                       )}
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex flex-col gap-2 sm:items-end">
                     <StatusBadge status={vi.fulfillment_status} />
-                    {vi.fulfillment_status === "at_hub" && (
-                      <AdminQcPassButton orderId={id} itemId={String(vi.id)} />
-                    )}
+                    <AdminItemHubActions
+                      orderId={id}
+                      itemId={String(vi.id)}
+                      status={String(vi.fulfillment_status)}
+                      orderPaid={orderPaid}
+                    />
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
         )}
@@ -199,9 +304,29 @@ export default async function AdminOrderDetailPage({ params }: Props) {
       <AdminOrderWorkspace
         orderId={id}
         paymentStatus={orderMeta?.payment_status as string | undefined}
+        paymentReference={orderMeta?.payment_reference as string | undefined}
+        orderStatus={order.status}
+        allItemsQcPassed={(vendorItems ?? [])
+          .filter((vi) => vi.fulfillment_status !== "cancelled")
+          .every((vi) => ["qc_passed", "dispatched", "completed"].includes(String(vi.fulfillment_status)))}
         trackingNumber={orderMeta?.tracking_number as string | undefined}
         trackingCarrier={orderMeta?.tracking_carrier as string | undefined}
+        trackingUrl={orderMeta?.tracking_url as string | undefined}
         isGift={order.deliveryType === "gift"}
+        vendorThreads={[
+          ...new Map(
+            (vendorItems ?? [])
+              .filter((vi) => vi.vendor_id)
+              .map((vi) => [
+                String(vi.vendor_id),
+                {
+                  id: String(vi.vendor_id),
+                  name:
+                    (vi.vendors as { business_name?: string } | null)?.business_name ?? "Vendor",
+                },
+              ]),
+          ).values(),
+        ]}
         details={details}
       />
     </DashboardLayout>

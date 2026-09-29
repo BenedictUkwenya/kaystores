@@ -54,6 +54,16 @@ function mapRequest(
     assignedVendorName: vendorName ?? null,
     quoteAmount: row.quote_amount != null ? Number(row.quote_amount) : null,
     quoteNote: row.quote_note != null ? String(row.quote_note) : null,
+    paymentStatus: (["pending", "paid", "refunded"].includes(String(row.payment_status))
+      ? row.payment_status
+      : "unpaid") as TableRequest["paymentStatus"],
+    paymentReference: row.payment_reference != null ? String(row.payment_reference) : null,
+    paidAt: row.paid_at != null ? String(row.paid_at) : null,
+    deliveryAddress: row.delivery_address != null ? String(row.delivery_address) : null,
+    recipientName: row.recipient_name != null ? String(row.recipient_name) : null,
+    recipientPhone: row.recipient_phone != null ? String(row.recipient_phone) : null,
+    allergies: row.allergies != null ? String(row.allergies) : null,
+    messageOnItem: row.message_on_item != null ? String(row.message_on_item) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -80,6 +90,11 @@ export function toVendorSafeRequest(request: TableRequest): TableRequest {
     contactName: request.contactName.trim().split(/\s+/)[0] || "Client",
     contactEmail: "",
     contactPhone: null,
+    // Kay delivers from the hub; the baker only needs the city.
+    deliveryAddress: null,
+    recipientName: null,
+    recipientPhone: null,
+    paymentReference: null,
   };
 }
 
@@ -119,6 +134,12 @@ export async function createTableRequest(
           ? Math.max(0, Math.floor(input.budget))
           : null,
       category: input.category ?? "cake",
+      delivery_address:
+        method === "delivery" ? input.deliveryAddress?.trim().slice(0, 300) || null : null,
+      recipient_name: input.recipientName?.trim().slice(0, 120) || null,
+      recipient_phone: input.recipientPhone?.trim().slice(0, 30) || null,
+      allergies: input.allergies?.trim().slice(0, 500) || null,
+      message_on_item: input.messageOnItem?.trim().slice(0, 120) || null,
     })
     .select("*")
     .single();

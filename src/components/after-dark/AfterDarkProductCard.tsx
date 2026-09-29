@@ -24,7 +24,7 @@ export function AfterDarkProductCard({
   return (
     <article className="ad-product-card group flex flex-col">
       <div className="ad-product-image-wrap relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#121212] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-        <Link href={`/products/${product.slug}`} className="block overflow-hidden">
+        <Link href={`/after-dark/products/${product.slug}`} className="block overflow-hidden">
           {isBestseller && (
             <span className="ad-animate-badge absolute left-3 top-3 z-10 bg-ad-amber px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-black">
               Best Seller
@@ -48,7 +48,7 @@ export function AfterDarkProductCard({
         <p className="text-[10px] uppercase tracking-[0.16em] text-ad-amber/70">
           {product.brand}
         </p>
-        <Link href={`/products/${product.slug}`}>
+        <Link href={`/after-dark/products/${product.slug}`}>
           <h3 className="ad-shimmer-hover mt-1 bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-[14px] font-medium leading-snug text-white transition-colors group-hover:from-ad-amber group-hover:via-ad-amber group-hover:to-ad-amber/80">
             {product.name}
           </h3>

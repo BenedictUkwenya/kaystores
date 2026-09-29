@@ -7,20 +7,18 @@ import { OrderSupportChat } from "@/components/orders/OrderSupportChat";
 type Props = {
   orderId: string;
   paymentStatus?: string;
+  paymentReference?: string;
+  orderStatus: string;
+  allItemsQcPassed: boolean;
   trackingNumber?: string;
   trackingCarrier?: string;
+  trackingUrl?: string;
   isGift?: boolean;
+  vendorThreads?: { id: string; name: string }[];
   details: React.ReactNode;
 };
 
-export function AdminOrderWorkspace({
-  orderId,
-  paymentStatus,
-  trackingNumber,
-  trackingCarrier,
-  isGift,
-  details,
-}: Props) {
+export function AdminOrderWorkspace({ details, vendorThreads, ...actions }: Props) {
   const [tab, setTab] = useState<"details" | "support">("details");
 
   return (
@@ -50,16 +48,14 @@ export function AdminOrderWorkspace({
       {tab === "details" ? (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           {details}
-          <AdminOrderActions
-            orderId={orderId}
-            paymentStatus={paymentStatus}
-            trackingNumber={trackingNumber}
-            trackingCarrier={trackingCarrier}
-            isGift={isGift}
-          />
+          <AdminOrderActions {...actions} />
         </div>
       ) : (
-        <OrderSupportChat orderId={orderId} viewerRole="admin" />
+        <OrderSupportChat
+          orderId={actions.orderId}
+          viewerRole="admin"
+          vendorThreads={vendorThreads}
+        />
       )}
     </div>
   );

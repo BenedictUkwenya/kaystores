@@ -82,6 +82,8 @@ export type ConciergeRequest = {
   paymentStatus?: ConciergePaymentStatus;
   paymentAmount?: number | null;
   paidAt?: string | null;
+  /** "Name (phone): street, city, state" — set when the client pays. */
+  deliverySummary?: string | null;
   createdAt: string;
 };
 

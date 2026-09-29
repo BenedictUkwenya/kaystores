@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { StateSelect } from "@/components/ui/StateSelect";
 import type { Vendor } from "@/types/dashboard";
 import type { AddressDetails } from "@/types/order";
 
@@ -92,8 +93,11 @@ export function VendorSettingsForm({ vendor }: Props) {
         />
         <Input
           label="Phone"
+          type="tel"
           value={contactPhone}
           onChange={(e) => setContactPhone(e.target.value)}
+          required
+          hint="Kay's hub team calls this number about your parcels."
         />
       </div>
       <Textarea
@@ -117,6 +121,7 @@ export function VendorSettingsForm({ vendor }: Props) {
             onChange={(e) =>
               setPickupAddress({ ...pickupAddress, line1: e.target.value })
             }
+            required
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
@@ -125,29 +130,24 @@ export function VendorSettingsForm({ vendor }: Props) {
               onChange={(e) =>
                 setPickupAddress({ ...pickupAddress, city: e.target.value })
               }
+              required
             />
-            <Input
-              label="State"
+            <StateSelect
               value={pickupAddress.state}
-              onChange={(e) =>
-                setPickupAddress({ ...pickupAddress, state: e.target.value })
+              onChange={(state) =>
+                setPickupAddress({ ...pickupAddress, state, country: "Nigeria" })
               }
+              required
+              hint="Used to pick the Kay hubs closest to you."
             />
             <Input
-              label="Postal code"
+              label="Postal code (optional)"
               value={pickupAddress.postalCode ?? ""}
               onChange={(e) =>
                 setPickupAddress({
                   ...pickupAddress,
                   postalCode: e.target.value,
                 })
-              }
-            />
-            <Input
-              label="Country"
-              value={pickupAddress.country}
-              onChange={(e) =>
-                setPickupAddress({ ...pickupAddress, country: e.target.value })
               }
             />
           </div>
@@ -167,11 +167,11 @@ export function VendorSettingsForm({ vendor }: Props) {
                 setReturnAddress({ ...returnAddress, city: e.target.value })
               }
             />
-            <Input
+            <StateSelect
               label="Return state"
               value={returnAddress.state}
-              onChange={(e) =>
-                setReturnAddress({ ...returnAddress, state: e.target.value })
+              onChange={(state) =>
+                setReturnAddress({ ...returnAddress, state, country: "Nigeria" })
               }
             />
           </div>

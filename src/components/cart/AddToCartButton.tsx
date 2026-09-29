@@ -96,20 +96,7 @@ export function BuyNowButton({
   );
 }
 
-export function WishlistButton({ className = "" }: { className?: string }) {
-  const [saved, setSaved] = useState(false);
-
-  return (
-    <button
-      type="button"
-      aria-label={saved ? "Saved to wishlist" : "Add to wishlist"}
-      aria-pressed={saved}
-      onClick={() => setSaved((v) => !v)}
-      className={`group flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-kay-border bg-kay-bg text-kay-fg shadow-sm hover:-translate-y-0.5 hover:border-kay-fg hover:bg-kay-surface hover:shadow-md ${interactive} ${saved ? "border-kay-gold bg-kay-beta-bg text-kay-gold" : ""} ${className}`}
-    >
-      <IconHeart
-        className={`transition-transform duration-200 group-hover:scale-110 ${saved ? "scale-110" : ""}`}
-      />
-    </button>
-  );
+/** Hidden until wishlists are persisted; kept so existing imports still compile. */
+export function WishlistButton(_props: { className?: string }) {
+  return null;
 }

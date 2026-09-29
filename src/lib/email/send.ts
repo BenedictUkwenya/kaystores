@@ -37,9 +37,13 @@ export async function notifyOrderEmails(
   order: Order,
   appUrl: string,
 ): Promise<SendEmailResult[]> {
+  const { orderAccessPath } = await import("@/lib/orders/access");
   const tasks: Promise<SendEmailResult>[] = [
-    sendKayEmail({ type: "order_confirmation", order, appUrl }),
-    sendKayEmail({ type: "order_internal", order, appUrl }),
+    sendKayEmail({
+      type: "order_confirmation",
+      order: { ...order, accessUrl: `${appUrl}${orderAccessPath(order.id)}` },
+      appUrl,
+    }),
   ];
 
   if (order.deliveryType === "gift" && order.gift?.recipientEmail) {

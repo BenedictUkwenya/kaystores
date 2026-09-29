@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrder } from "@/lib/orders/store";
+import { resolveOrderViewer } from "@/lib/orders/access";
 import { resendGiftRecipientEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
 
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const order = await getOrder(orderId);
-    if (!order) {
+    if (!order || !(await resolveOrderViewer(order))) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
 

@@ -11,6 +11,7 @@ import { TableRequestChat } from "@/components/table/TableRequestChat";
 import { TABLE_STATUS_LABELS } from "@/components/table/TableRequestStatusTimeline";
 import { formatNaira } from "@/lib/data/home";
 import { isTableCatalogProduct } from "@/lib/table/catalog";
+import { listShippingHubs, nearestHubsForVendor } from "@/lib/shipping/hubs";
 
 export default async function VendorTablePage() {
   const { vendor } = await requireVendor();
@@ -50,6 +51,11 @@ export default async function VendorTablePage() {
       limit: 50,
     })
   ).map(toVendorSafeRequest);
+  const [allHubs, nearest] = await Promise.all([
+    listShippingHubs({ activeOnly: true }),
+    nearestHubsForVendor(vendor.pickupAddress?.state, 1),
+  ]);
+  const nearestHub = nearest[0];
 
   return (
     <DashboardLayout
@@ -97,27 +103,91 @@ export default async function VendorTablePage() {
           Assigned requests
         </h2>
         <ul className="mt-4 space-y-4">
-          {requests.map((request) => (
+          {requests.map((request) => {
+            const paid = request.paymentStatus === "paid";
+            const pickupHub =
+              request.fulfillmentMethod === "pickup" && request.pickupHubId
+                ? allHubs.find((h) => h.id === request.pickupHubId)
+                : undefined;
+            const dropHub = pickupHub ?? nearestHub;
+            return (
             <li
               key={request.id}
-              className="rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-5"
+              id={`request-${request.id}`}
+              className="scroll-mt-24 rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-5 target:ring-2 target:ring-kay-gold"
             >
-              <p className="font-serif text-[20px] text-kay-fg">
-                {request.occasion || request.category}
-              </p>
-              <p className="text-[13px] text-kay-muted">
-                {request.reference} · {TABLE_STATUS_LABELS[request.status]}
-              </p>
-              {request.flavourNotes && (
-                <p className="mt-2 text-[13px] text-kay-muted">
-                  {request.flavourNotes}
-                </p>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="font-serif text-[20px] text-kay-fg">
+                    {request.occasion || request.category}
+                  </p>
+                  <p className="text-[13px] text-kay-muted">
+                    {request.reference} · {TABLE_STATUS_LABELS[request.status]}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                    paid ? "bg-emerald-100 text-emerald-800" : "bg-kay-surface text-kay-subtle"
+                  }`}
+                >
+                  {paid ? "Paid — start now" : "Not paid yet — don't start"}
+                </span>
+              </div>
+
+              <dl className="mt-4 grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
+                {[
+                  ["Category", request.category],
+                  ["Servings / size", request.servings],
+                  ["Needed by", request.neededBy],
+                  ["Flavours", request.flavourNotes],
+                  ["Style", request.styleNotes],
+                  ["Message on item", request.messageOnItem],
+                  ["Allergies / dietary", request.allergies],
+                  ["Kay quote", request.quoteAmount ? formatNaira(request.quoteAmount) : null],
+                ]
+                  .filter(([, v]) => v)
+                  .map(([label, value]) => (
+                    <div key={label as string}>
+                      <dt className="text-[10px] uppercase tracking-[0.12em] text-kay-subtle">
+                        {label}
+                      </dt>
+                      <dd
+                        className={
+                          label === "Allergies / dietary" ? "text-amber-800" : "text-kay-fg"
+                        }
+                      >
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
+
+              {dropHub && (
+                <div className="mt-4 rounded-xl border border-kay-gold/25 bg-kay-gold-light/30 p-3 text-[12px] text-kay-fg">
+                  <p className="font-medium">
+                    When it&apos;s ready, bring it to {dropHub.name}
+                  </p>
+                  <p className="mt-1 text-kay-muted">
+                    {[dropHub.address.line1, dropHub.address.city, dropHub.address.state]
+                      .filter(Boolean)
+                      .join(", ")}
+                    {dropHub.contactPhone ? ` · ${dropHub.contactPhone}` : ""}
+                  </p>
+                  <p className="mt-1 text-kay-muted">
+                    Label it with {request.reference}.{" "}
+                    {request.fulfillmentMethod === "pickup"
+                      ? "The client collects from this hub."
+                      : `Kay delivers to the client${request.city ? ` in ${request.city}` : ""}.`}
+                  </p>
+                </div>
               )}
+
               <div className="mt-4">
                 <TableRequestChat requestId={request.id} viewerRole="vendor" />
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
         {requests.length === 0 && (
           <p className="mt-3 text-[13px] text-kay-muted">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { IconBag, IconChevronDown, IconSearch } from "@/components/ui/Icons";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
@@ -63,7 +63,27 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const pathname = usePathname();
   const { itemCount, openCart } = useCart();
+
+  useEffect(() => {
+    setMenuOpen(false);
+    setOpenDropdown(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -88,23 +108,53 @@ export function Header() {
               link.priority > 1 ? "hidden xl:flex" : "flex";
 
             if (link.hasDropdown && dropdown) {
+              const isOpen = openDropdown === link.label;
+              const menuId = `nav-menu-${link.short.toLowerCase()}`;
               return (
                 <div
                   key={link.label}
-                  className={`relative ${showClass}`}
+                  className={`relative ${showClass} items-center`}
                   onMouseEnter={() => setOpenDropdown(link.label)}
                   onMouseLeave={() => setOpenDropdown(null)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                      setOpenDropdown((cur) => (cur === link.label ? null : cur));
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape" && isOpen) {
+                      e.stopPropagation();
+                      setOpenDropdown(null);
+                      e.currentTarget
+                        .querySelector<HTMLButtonElement>("button[aria-controls]")
+                        ?.focus();
+                    }
+                  }}
                 >
                   <Link
                     href={getNavHref(link.label)}
-                    className="inline-flex items-center gap-1 whitespace-nowrap py-2 text-[12px] tracking-[0.02em] text-kay-fg transition-opacity hover:opacity-55 xl:text-[13px]"
+                    className="inline-flex items-center whitespace-nowrap py-2 text-[12px] tracking-[0.02em] text-kay-fg transition-opacity hover:opacity-55 xl:text-[13px]"
                   >
                     <span className="xl:hidden">{link.short}</span>
                     <span className="hidden xl:inline">{link.label}</span>
-                    <IconChevronDown className="mt-px opacity-45" />
                   </Link>
-                  {openDropdown === link.label && (
-                    <div className="absolute left-1/2 top-full z-50 min-w-[180px] -translate-x-1/2 pt-2">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={menuId}
+                    aria-label={`${link.label} menu`}
+                    onClick={() => setOpenDropdown(isOpen ? null : link.label)}
+                    className="ml-0.5 inline-flex h-6 w-5 items-center justify-center rounded text-kay-fg transition-opacity hover:opacity-55"
+                  >
+                    <IconChevronDown
+                      className={`mt-px opacity-45 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div
+                      id={menuId}
+                      className="absolute left-1/2 top-full z-50 min-w-[180px] -translate-x-1/2 pt-2"
+                    >
                       <ul className="rounded-xl border border-kay-border bg-kay-surface-elevated py-2 shadow-sm">
                         {dropdown.map((item) => (
                           <li key={item.href}>
@@ -246,15 +296,6 @@ export function Header() {
           </div>
 
           <ul className="space-y-4">
-            <li>
-              <Link
-                href="/gifts"
-                onClick={() => setMenuOpen(false)}
-                className="text-[15px] font-medium text-kay-fg"
-              >
-                All Gifts
-              </Link>
-            </li>
             {NAV_ITEMS.map((link) => {
               const dropdown =
                 NAV_DROPDOWN_LINKS[

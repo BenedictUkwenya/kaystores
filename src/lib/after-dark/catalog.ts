@@ -1,12 +1,11 @@
 import type { Product } from "@/types/product";
+import { getProductSegment } from "@/lib/pricing/segment";
 
-export const AFTER_DARK_AGE_KEY = "kay-after-dark-age-verified";
+export { AFTER_DARK_AGE_LOCAL_KEY as AFTER_DARK_AGE_KEY } from "@/lib/after-dark/age-gate";
 
-/** Products in the dedicated 18+ After Dark catalog. */
-export function isAfterDarkCatalogProduct(
-  product: Pick<Product, "collections">,
-): boolean {
-  return product.collections.includes("after-dark");
+/** 18+ catalogue membership — `products.segment` is authoritative. */
+export function isAfterDarkCatalogProduct(product: Pick<Product, "segment" | "tags" | "collections">): boolean {
+  return getProductSegment(product) === "after_dark";
 }
 
 export const AFTER_DARK_ROUTES = {
@@ -15,7 +14,7 @@ export const AFTER_DARK_ROUTES = {
   about: "/after-dark/about",
   contact: "/after-dark/contact",
   concierge: "/concierge",
-  search: "/search?collection=after-dark",
+  search: "/after-dark/search",
 } as const;
 
 export const AFTER_DARK_NAV = [

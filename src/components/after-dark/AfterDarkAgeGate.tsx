@@ -2,11 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { AFTER_DARK_COPY } from "@/lib/after-dark/catalog";
 import { useAfterDarkAge } from "@/components/after-dark/AfterDarkAgeProvider";
 
 export function AfterDarkAgeGate() {
   const { verified, confirm, mounted } = useAfterDarkAge();
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mounted || verified) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    confirmRef.current?.focus();
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mounted, verified]);
 
   if (!mounted || verified) return null;
 
@@ -48,6 +60,7 @@ export function AfterDarkAgeGate() {
         </p>
 
         <button
+          ref={confirmRef}
           type="button"
           onClick={confirm}
           className="ad-animate-cta mt-8 flex h-12 w-full items-center justify-center rounded-lg bg-ad-amber text-[14px] font-semibold text-black transition-transform hover:scale-[1.01] active:scale-[0.99]"

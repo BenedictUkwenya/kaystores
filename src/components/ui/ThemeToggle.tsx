@@ -3,7 +3,7 @@
 import { useTheme } from "@/providers/ThemeProvider";
 import { IconMoon, IconSun } from "@/components/ui/Icons";
 
-/** Toggles light ↔ After Dark across the main Kay storefront. */
+/** Toggles light ↔ dark appearance on the main storefront (not the /after-dark catalogue). */
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { isAfterDark, toggleTheme } = useTheme();
 
@@ -11,8 +11,8 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={isAfterDark ? "Switch to light mode" : "Switch to After Dark"}
-      title={isAfterDark ? "Light mode" : "After Dark"}
+      aria-label={isAfterDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={isAfterDark ? "Light theme" : "Dark theme"}
       className={`relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-kay-border/70 text-kay-fg transition-[border-color,background-color,color] duration-300 hover:border-kay-gold/50 hover:bg-kay-surface ${className}`}
     >
       <span

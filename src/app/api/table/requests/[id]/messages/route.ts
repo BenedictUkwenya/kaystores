@@ -6,6 +6,7 @@ import {
   listTableRequestMessages,
 } from "@/lib/table/repository";
 import { notifyKitchenChatMessage } from "@/lib/email/chat";
+import { resolveTableViewer } from "@/lib/orders/access";
 import { parseChatChannel, type ChatChannel } from "@/types/order-support";
 import type { TableRequest, TableSenderRole } from "@/types/table";
 
@@ -57,13 +58,18 @@ async function resolveAccess(requestId: string): Promise<Access> {
     };
   }
 
-  // Guests with the request link may message (same pattern as order support).
-  return {
-    role: "customer",
-    name: request.contactName?.trim() || "Customer",
-    userId: ctx?.userId ?? null,
-    request,
-  };
+  if (!ctx?.vendor && (await resolveTableViewer(request))) {
+    return {
+      role: "customer",
+      name: request.contactName?.trim() || "Customer",
+      userId: ctx?.userId ?? null,
+      request,
+    };
+  }
+
+  return Promise.reject(
+    Object.assign(new Error("Request not found."), { status: 404 }),
+  );
 }
 
 /** Customers only see the customer<->admin line; vendors only vendor<->admin. */

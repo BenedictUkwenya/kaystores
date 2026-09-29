@@ -45,9 +45,19 @@ export type TableRequest = {
   assignedVendorName?: string | null;
   quoteAmount?: number | null;
   quoteNote?: string | null;
+  paymentStatus: TablePaymentStatus;
+  paymentReference?: string | null;
+  paidAt?: string | null;
+  deliveryAddress?: string | null;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
+  allergies?: string | null;
+  messageOnItem?: string | null;
   createdAt: string;
   updatedAt: string;
 };
+
+export type TablePaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
 
 export type TableRequestMessage = {
   id: string;
@@ -77,4 +87,9 @@ export type CreateTableRequestInput = {
   budget?: number;
   category?: TableRequestCategory;
   userId?: string | null;
+  deliveryAddress?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  allergies?: string;
+  messageOnItem?: string;
 };

@@ -27,6 +27,8 @@ type Props = {
   vendorLabel?: string;
   /** Disable the vendor tab (e.g. no baker assigned yet). */
   vendorUnavailable?: string;
+  /** Admin only: one private thread per vendor on multi-vendor orders. */
+  vendorThreads?: { id: string; name: string }[];
   minHeight?: string;
 };
 
@@ -45,12 +47,14 @@ export function RelayChat({
   customerLabel = "Customer",
   vendorLabel = "Vendor",
   vendorUnavailable,
+  vendorThreads,
   minHeight = "min-h-[400px]",
 }: Props) {
   const isAdmin = viewerRole === "admin";
   const [channel, setChannel] = useState<ChatChannel>(
     viewerRole === "vendor" ? "vendor" : "customer",
   );
+  const [vendorId, setVendorId] = useState(vendorThreads?.[0]?.id ?? "");
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(true);
@@ -59,7 +63,9 @@ export function RelayChat({
   const [notice, setNotice] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
-  const url = isAdmin ? `${apiBase}?channel=${channel}` : apiBase;
+  const url = isAdmin
+    ? `${apiBase}?channel=${channel}${channel === "vendor" && vendorId ? `&vendorId=${vendorId}` : ""}`
+    : apiBase;
 
   const load = useCallback(
     async (silent = false) => {
@@ -97,7 +103,11 @@ export function RelayChat({
     const res = await fetch(apiBase, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: text, channel: target }),
+      body: JSON.stringify({
+        body: text,
+        channel: target,
+        ...(isAdmin && target === "vendor" && vendorId ? { vendorId } : {}),
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? "Could not send.");
@@ -176,6 +186,25 @@ export function RelayChat({
               </button>
             ))}
           </div>
+        )}
+        {isAdmin && channel === "vendor" && vendorThreads && vendorThreads.length > 1 && (
+          <label className="mt-3 flex items-center gap-2 text-[12px] text-kay-muted">
+            Thread with
+            <select
+              value={vendorId}
+              onChange={(e) => {
+                setVendorId(e.target.value);
+                setNotice("");
+              }}
+              className="h-8 rounded-lg border border-kay-border bg-kay-input-bg px-2 text-[12px] text-kay-fg"
+            >
+              {vendorThreads.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
 

@@ -1154,8 +1154,26 @@ html[data-splash-boot="1"] body::before {
   transition: max-height 0.6s ease, opacity 0.6s ease;
 }
 .kay-launch-bar--in {
-  max-height: 64px;
+  display: flex;
+  align-items: stretch;
+  max-height: 96px;
   opacity: 1;
+}
+.kay-launch-bar-dismiss {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  font-size: 18px;
+  line-height: 1;
+  color: #bfa679;
+  transition: color 0.2s ease;
+}
+.kay-launch-bar-dismiss:hover,
+.kay-launch-bar-dismiss:focus-visible {
+  color: #f4ead8;
 }
 [data-theme="after-dark"] .kay-launch-bar {
   background: linear-gradient(90deg, #120d06, #1c1409 50%, #120d06);
@@ -1164,11 +1182,13 @@ html[data-splash-boot="1"] body::before {
 .kay-launch-bar-inner {
   position: relative;
   display: flex;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 8px 16px;
+  gap: 6px 14px;
+  padding: 8px 4px 8px 16px;
   font-size: 12px;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -1223,6 +1243,32 @@ html[data-splash-boot="1"] body::before {
 @media (min-width: 768px) {
   .kay-launch-bar-cta {
     display: inline;
+  }
+}
+@media (max-width: 379px) {
+  .kay-launch-bar-inner {
+    gap: 4px 8px;
+    padding-left: 8px;
+    font-size: 11px;
+  }
+  .kay-launch-bar-digits {
+    gap: 3px;
+  }
+  .kay-launch-bar-digits .kay-flip-card {
+    min-width: 20px;
+    padding: 1px 3px;
+    font-size: 11px;
+  }
+  .kay-launch-bar-digits .kay-flip-label {
+    font-size: 9px;
+  }
+  .kay-launch-bar-dismiss {
+    width: 30px;
+  }
+}
+@media (max-width: 339px) {
+  .kay-launch-bar-label {
+    display: none;
   }
 }
 

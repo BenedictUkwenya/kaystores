@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { AuthLinkRow } from "@/components/auth/AuthLinks";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/account";
+  const next = safeNextPath(searchParams.get("next"));
   const resetSuccess = searchParams.get("reset") === "success";
 
   const [email, setEmail] = useState("");

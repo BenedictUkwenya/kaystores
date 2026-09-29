@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOrderByHandoverToken } from "@/lib/orders/store";
 import { HandoverForm } from "@/components/checkout/HandoverForm";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type PageProps = {
   params: Promise<{ token: string }>;

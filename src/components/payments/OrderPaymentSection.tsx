@@ -72,6 +72,21 @@ export function OrderPaymentSection({
     );
   }
 
+  if (order.paymentReference === "manual-claim") {
+    return (
+      <div className="mt-6 rounded-xl border border-kay-gold/40 bg-kay-gold-light/25 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-kay-gold">
+          Verifying payment
+        </p>
+        <p className="mt-2 text-[14px] text-kay-fg">
+          Thanks — we&apos;re checking your transfer of{" "}
+          <span className="font-semibold">{formatNaira(order.pricing.grandTotal)}</span>.
+          You&apos;ll get an email as soon as it&apos;s confirmed, usually within a few hours.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 rounded-xl border border-amber-200/70 bg-amber-50/60 p-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-900">

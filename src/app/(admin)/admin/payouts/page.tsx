@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/roles";
 import { fetchPendingWithdrawals } from "@/lib/admin/repository";
 import {
@@ -10,9 +11,27 @@ import { formatNaira } from "@/lib/data/home";
 import { IconWallet } from "@/components/ui/Icons";
 import type { WithdrawalRequest } from "@/types/dashboard";
 
-export default async function AdminPayoutsPage() {
+const TABS = [
+  { id: "open", label: "Open", statuses: ["pending", "approved", "processing"] },
+  { id: "paid", label: "Paid", statuses: ["paid"] },
+  { id: "rejected", label: "Rejected", statuses: ["rejected"] },
+] as const;
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Awaiting approval",
+  approved: "Approved — send transfer",
+  processing: "Transfer in progress",
+  paid: "Paid",
+  rejected: "Rejected",
+};
+
+type PageProps = { searchParams: Promise<{ tab?: string }> };
+
+export default async function AdminPayoutsPage({ searchParams }: PageProps) {
   await requireAdmin();
-  const withdrawals = await fetchPendingWithdrawals();
+  const { tab: tabParam } = await searchParams;
+  const tab = TABS.find((t) => t.id === tabParam) ?? TABS[0];
+  const withdrawals = await fetchPendingWithdrawals([...tab.statuses]);
 
   return (
     <DashboardLayout
@@ -20,15 +39,29 @@ export default async function AdminPayoutsPage() {
       nav={ADMIN_NAV}
       eyebrow="Finance"
       title="Payout queue"
-      description={`${withdrawals.length} pending withdrawal${
-        withdrawals.length === 1 ? "" : "s"
-      }. Approve, then mark paid once the transfer is complete.`}
+      description="Approve requests, send the bank transfer, then mark them paid. A vendor's balance drops as soon as they request."
       badge="Admin"
     >
+      <div className="mb-6 flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <Link
+            key={t.id}
+            href={`/admin/payouts?tab=${t.id}`}
+            className={`rounded-full border px-4 py-1.5 text-[12px] font-medium transition ${
+              t.id === tab.id
+                ? "border-kay-fg bg-kay-fg text-kay-accent-fg"
+                : "border-kay-border text-kay-fg hover:border-kay-fg"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </div>
+
       {withdrawals.length === 0 ? (
         <DashboardEmptyState
           icon={<IconWallet className="h-6 w-6" />}
-          title="No pending payouts"
+          title={tab.id === "open" ? "No open payouts" : `No ${tab.label.toLowerCase()} payouts`}
           description="When vendors request withdrawals, they appear here with bank snapshots for review."
         />
       ) : (
@@ -40,7 +73,10 @@ export default async function AdminPayoutsPage() {
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="font-serif text-[28px] text-kay-fg">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-kay-gold">
+                    {STATUS_LABEL[String(w.status)] ?? String(w.status)}
+                  </p>
+                  <p className="mt-1 font-serif text-[28px] text-kay-fg">
                     {formatNaira(w.amount)}
                   </p>
                   <p className="mt-1 text-[13px] text-kay-muted">
@@ -51,10 +87,17 @@ export default async function AdminPayoutsPage() {
                     {w.bankSnapshot.bank_name} · {w.bankSnapshot.account_number}{" "}
                     · {w.bankSnapshot.account_name}
                   </p>
+                  {w.paymentReference && (
+                    <p className="mt-2 text-[12px] text-kay-muted">
+                      Ref: {w.paymentReference}
+                    </p>
+                  )}
                 </div>
-                <div className="w-full lg:max-w-xs">
-                  <AdminWithdrawalActions withdrawal={w} />
-                </div>
+                {tab.id === "open" && (
+                  <div className="w-full lg:max-w-xs">
+                    <AdminWithdrawalActions withdrawal={w} />
+                  </div>
+                )}
               </div>
             </li>
           ))}

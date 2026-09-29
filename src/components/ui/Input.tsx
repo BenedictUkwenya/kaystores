@@ -15,13 +15,17 @@ export function Input({
   ...props
 }: InputProps) {
   const inputId = id ?? label.toLowerCase().replace(/\s+/g, "-");
+  const tokens = className.split(/\s+/).filter(Boolean);
+  const isLayout = (t: string) => /(^|:)(col-span-|row-span-|col-start-|order-)/.test(t);
+  const wrapperClass = tokens.filter(isLayout).join(" ");
+  const fieldClass = tokens.filter((t) => !isLayout(t)).join(" ");
   const labelClass =
     variant === "checkout"
       ? "mb-1.5 block text-[12px] font-medium text-kay-muted"
       : "mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-kay-subtle";
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${wrapperClass}`}>
       <label htmlFor={inputId} className={labelClass}>
         {label}
       </label>
@@ -29,7 +33,7 @@ export function Input({
         id={inputId}
         className={`h-11 w-full rounded-lg border bg-kay-input-bg px-3.5 text-[14px] text-kay-fg outline-none transition-colors placeholder:text-kay-subtle focus:border-kay-fg ${
           error ? "border-red-500" : "border-kay-border"
-        } ${className}`}
+        } ${fieldClass}`}
         {...props}
       />
       {hint && !error && (

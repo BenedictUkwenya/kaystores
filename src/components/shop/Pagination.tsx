@@ -60,6 +60,8 @@ export function Pagination({
             )}
             <Link
               href={buildHref(basePath, p, searchParams)}
+              aria-current={p === page ? "page" : undefined}
+              aria-label={`Page ${p}`}
               className={`flex h-9 min-w-[36px] items-center justify-center rounded-md px-2 text-[13px] font-medium transition-colors ${
                 p === page
                   ? "bg-kay-accent text-kay-accent-fg"

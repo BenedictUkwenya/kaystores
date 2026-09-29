@@ -2,6 +2,7 @@ import type {
   GetProductsParams,
   Product,
   ProductFilters,
+  ProductSegmentScope,
   ProductsResult,
 } from "@/types/product";
 import { mapProductRow } from "@/types/product";
@@ -11,26 +12,57 @@ import {
   getMarkupTiers,
   vendorPriceBoundFromClient,
 } from "@/lib/pricing/markup";
+import { getProductSegment } from "@/lib/pricing/segment";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 import { FALLBACK_PRODUCTS } from "@/lib/data/products-fallback";
-import { isAfterDarkCatalogProduct } from "@/lib/after-dark/catalog";
 import { findSimilarProducts } from "@/lib/ai/similarity";
 import {
   expandSearchQuery,
   matchesProductSearch,
 } from "@/lib/products/catalog-attributes";
-import { shuffleItems } from "@/lib/products/shuffle";
+import {
+  dailyShuffleSeed,
+  randomShuffleSeed,
+  seededShuffle,
+} from "@/lib/products/shuffle";
 
 const DEFAULT_PAGE_SIZE = 12;
 /** Pool size for random discovery so more of the catalogue gets shown. */
 const RANDOM_POOL_SIZE = 500;
+const BRAND_SCAN_LIMIT = 2000;
+
+type ProductsQuery = ReturnType<
+  Awaited<ReturnType<typeof createClient>>["from"]
+>;
+
+function matchesSegmentScope(
+  product: Product,
+  scope: ProductSegmentScope,
+): boolean {
+  if (scope === "all") return true;
+  return getProductSegment(product) === scope;
+}
+
+/** `segment` is NOT NULL (default 'gifting') — see migration 006. */
+function applySegmentScope<Q extends { eq: (col: string, val: string) => Q }>(
+  query: Q,
+  scope: ProductSegmentScope,
+): Q {
+  if (scope === "all") return query;
+  return query.eq("segment", scope);
+}
+
+function toPgArrayLiteral(values: string[]): string {
+  return `{${values.map((v) => `"${v.replace(/["\\]/g, "")}"`).join(",")}}`;
+}
 
 function applyFiltersLocally(
   products: Product[],
   filters: ProductFilters = {},
+  scope: ProductSegmentScope = "gifting",
 ): Product[] {
-  let result = [...products];
+  let result = products.filter((p) => matchesSegmentScope(p, scope));
 
   if (filters.search) {
     result = result.filter((p) => matchesProductSearch(p, filters.search!));
@@ -66,6 +98,12 @@ function applyFiltersLocally(
     );
   }
 
+  if (filters.excludeCollections?.length) {
+    result = result.filter(
+      (p) => !filters.excludeCollections!.some((c) => p.collections.includes(c)),
+    );
+  }
+
   if (filters.tags?.length) {
     result = result.filter((p) =>
       filters.tags!.some((t) => p.tags.includes(t)),
@@ -75,11 +113,18 @@ function applyFiltersLocally(
   return result;
 }
 
-function sortProducts(products: Product[], sort: GetProductsParams["sort"]) {
+function sortProducts(
+  products: Product[],
+  sort: GetProductsParams["sort"],
+  seed: string,
+) {
   const sorted = [...products];
   switch (sort) {
     case "random":
-      return shuffleItems(sorted);
+      return seededShuffle(
+        sorted.sort((a, b) => a.id.localeCompare(b.id)),
+        seed,
+      );
     case "price-asc":
       return sorted.sort((a, b) => a.price - b.price);
     case "price-desc":
@@ -120,8 +165,16 @@ async function getProductsFromFallback(
   const page = params.page ?? 1;
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const marked = await applyClientMarkupToProducts(FALLBACK_PRODUCTS);
-  const filtered = applyFiltersLocally(marked, params.filters ?? {});
-  const sorted = sortProducts(filtered, params.sort ?? "random");
+  const filtered = applyFiltersLocally(
+    marked,
+    params.filters ?? {},
+    params.segment ?? "gifting",
+  );
+  const sorted = sortProducts(
+    filtered,
+    params.sort ?? "random",
+    params.seed ?? dailyShuffleSeed(),
+  );
   return paginateProducts(sorted, page, pageSize);
 }
 
@@ -133,6 +186,8 @@ export async function getProducts(
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
   const sort = params.sort ?? "random";
   const filters = params.filters ?? {};
+  const scope = params.segment ?? "gifting";
+  const seed = params.seed ?? dailyShuffleSeed();
 
   if (!isConfigured) {
     return getProductsFromFallback(params);
@@ -140,7 +195,13 @@ export async function getProducts(
 
   try {
     const supabase = await createClient();
-    let query = supabase.from("products").select("*", { count: "exact" }).eq("status", "live");
+    let query = applySegmentScope(
+      supabase
+        .from("products")
+        .select("*", { count: "exact" })
+        .eq("status", "live"),
+      scope,
+    );
 
     if (filters.search) {
       const terms = expandSearchQuery(filters.search);
@@ -189,26 +250,38 @@ export async function getProducts(
       );
     }
 
-    if (filters.occasions?.length === 1) {
-      query = query.contains("occasions", [filters.occasions[0]]);
+    // Multi-select = match any selected value (array overlap).
+    if (filters.occasions?.length) {
+      query = query.overlaps("occasions", filters.occasions);
     }
 
-    if (filters.recipients?.length === 1) {
-      query = query.contains("recipients", [filters.recipients[0]]);
+    if (filters.recipients?.length) {
+      query = query.overlaps("recipients", filters.recipients);
     }
 
-    if (filters.collections?.length === 1) {
-      query = query.contains("collections", [filters.collections[0]]);
+    if (filters.collections?.length) {
+      query = query.overlaps("collections", filters.collections);
     }
 
-    if (filters.tags?.length === 1) {
-      query = query.contains("tags", [filters.tags[0]]);
+    if (filters.excludeCollections?.length) {
+      query = query.not(
+        "collections",
+        "ov",
+        toPgArrayLiteral(filters.excludeCollections),
+      );
     }
 
-    // Random: pull a pool, shuffle per request, then paginate locally so every
-    // visit gives different products a chance at the top.
+    if (filters.tags?.length) {
+      query = query.overlaps("tags", filters.tags);
+    }
+
+    // Random: pull a pool, shuffle with a stable seed, then paginate locally so
+    // page 2 continues page 1 instead of reshuffling into repeats.
     if (sort === "random") {
-      query = query.order("created_at", { ascending: false }).limit(RANDOM_POOL_SIZE);
+      query = query
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .limit(RANDOM_POOL_SIZE);
       const { data, error, count } = await query;
 
       if (error) {
@@ -237,8 +310,7 @@ export async function getProducts(
         );
       }
 
-      const shuffled = shuffleItems(products);
-      return paginateProducts(shuffled, page, pageSize);
+      return paginateProducts(sortProducts(products, "random", seed), page, pageSize);
     }
 
     switch (sort) {
@@ -254,6 +326,7 @@ export async function getProducts(
       default:
         query = query.order("created_at", { ascending: false });
     }
+    query = query.order("id", { ascending: true });
 
     const from = (page - 1) * pageSize;
     query = query.range(from, from + pageSize - 1);
@@ -269,10 +342,10 @@ export async function getProducts(
     if (!data || data.length === 0) {
       // Soft fallback: broader fetch + local fuzzy/synonym match for typos.
       if (filters.search) {
-        const { data: pool } = await supabase
-          .from("products")
-          .select("*")
-          .eq("status", "live")
+        const { data: pool } = await applySegmentScope(
+          supabase.from("products").select("*").eq("status", "live"),
+          scope,
+        )
           .order("created_at", { ascending: false })
           .limit(200);
         if (pool?.length) {
@@ -280,8 +353,8 @@ export async function getProducts(
           const marked = pool.map((row) =>
             applyClientMarkupToProduct(mapProductRow(row), tiers),
           );
-          const filtered = applyFiltersLocally(marked, filters);
-          const sorted = sortProducts(filtered, sort);
+          const filtered = applyFiltersLocally(marked, filters, scope);
+          const sorted = sortProducts(filtered, sort, seed);
           return paginateProducts(sorted, page, pageSize);
         }
       }
@@ -323,6 +396,10 @@ export async function getProducts(
   }
 }
 
+/**
+ * Looks up any live product regardless of segment. Callers rendering After
+ * Dark products must check `isAfterDarkProduct` and enforce the age gate.
+ */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const { isConfigured } = getSupabaseConfig();
   const tiers = await getMarkupTiers();
@@ -353,18 +430,67 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 }
 
+/** Related picks stay inside the anchor's segment (After Dark ↔ After Dark). */
 export async function getRelatedProducts(
   product: Product,
   limit = 4,
 ): Promise<Product[]> {
-  const { products: catalog } = await getProducts({ pageSize: 100 });
+  const segment = getProductSegment(product);
+  const { products: catalog } = await getProducts({
+    pageSize: 100,
+    segment,
+    sort: "newest",
+  });
   const { products } = await findSimilarProducts(product, catalog, limit);
   return products;
 }
 
-export async function getDistinctBrands(): Promise<string[]> {
-  const { products } = await getProducts({ pageSize: 100 });
-  return [...new Set(products.map((p) => p.brand))].sort();
+export async function getDistinctBrands(
+  segment: ProductSegmentScope = "gifting",
+): Promise<string[]> {
+  const { isConfigured } = getSupabaseConfig();
+
+  const fromProducts = (products: Product[]) =>
+    [
+      ...new Set(
+        products
+          .filter((p) => matchesSegmentScope(p, segment))
+          .map((p) => p.brand.trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+  if (!isConfigured) return fromProducts(FALLBACK_PRODUCTS);
+
+  try {
+    const supabase = await createClient();
+    let brandQuery = supabase
+      .from("products")
+      .select("brand")
+      .eq("status", "live");
+    if (segment !== "all") {
+      brandQuery = brandQuery.eq("segment", segment);
+    }
+    const { data, error } = await brandQuery
+      .not("brand", "is", null)
+      .order("brand", { ascending: true })
+      .limit(BRAND_SCAN_LIMIT);
+
+    if (error) {
+      console.error("getDistinctBrands:", error.message);
+      return [];
+    }
+
+    return [
+      ...new Set(
+        (data ?? [])
+          .map((row) => String((row as { brand?: unknown }).brand ?? "").trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  } catch {
+    return [];
+  }
 }
 
 export async function getCuratedProducts(limit = 5): Promise<Product[]> {
@@ -372,32 +498,22 @@ export async function getCuratedProducts(limit = 5): Promise<Product[]> {
   const { products } = await getProducts({
     sort: "random",
     pageSize: poolSize,
+    // Single-page surface — a fresh seed per visit keeps the home page lively.
+    seed: randomShuffleSeed(),
   });
   return products.slice(0, limit);
 }
 
+/** Age-gated surfaces only — callers must verify the After Dark age cookie. */
 export async function getAfterDarkProducts(
-  params: Omit<GetProductsParams, "filters"> = {},
+  params: Omit<GetProductsParams, "segment"> = {},
 ): Promise<ProductsResult> {
-  const { isConfigured } = getSupabaseConfig();
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 24;
-  const sort = params.sort ?? "random";
-
-  if (!isConfigured) {
-    const filtered = await applyClientMarkupToProducts(
-      FALLBACK_PRODUCTS.filter(isAfterDarkCatalogProduct),
-    );
-    const sorted = sortProducts(filtered, sort);
-    return paginateProducts(sorted, page, pageSize);
-  }
-
   return getProducts({
     ...params,
-    filters: { collections: ["after-dark"] },
-    page,
-    pageSize,
-    sort,
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 24,
+    sort: params.sort ?? "random",
+    segment: "after_dark",
   });
 }
 
@@ -422,7 +538,7 @@ export async function getTableProducts(
         tagFilters.some((t) => p.tags.includes(t)),
       );
     }
-    const sorted = sortProducts(filtered, sort);
+    const sorted = sortProducts(filtered, sort, params.seed ?? dailyShuffleSeed());
     return paginateProducts(sorted, page, pageSize);
   }
 

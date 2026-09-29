@@ -24,15 +24,21 @@ function mapMessage(row: Record<string, unknown>): OrderSupportMessage {
   };
 }
 
+/** `vendorId` scopes the vendor channel to one vendor's thread (plus legacy shared messages). */
 export async function listOrderSupportMessages(
   orderId: string,
   channel: ChatChannel,
+  vendorId?: string | null,
 ): Promise<OrderSupportMessage[]> {
-  const { data, error } = await db()
+  let query = db()
     .from("order_support_messages")
     .select("*")
     .eq("order_id", orderId)
-    .eq("channel", channel)
+    .eq("channel", channel);
+  if (channel === "vendor" && vendorId && /^[0-9a-f-]{36}$/i.test(vendorId)) {
+    query = query.or(`vendor_id.eq.${vendorId},vendor_id.is.null`);
+  }
+  const { data, error } = await query
     .order("created_at", { ascending: true })
     .limit(200);
 
@@ -47,6 +53,7 @@ export async function insertOrderSupportMessage(input: {
   senderName: string;
   body: string;
   channel: ChatChannel;
+  vendorId?: string | null;
 }): Promise<OrderSupportMessage> {
   const { data, error } = await db()
     .from("order_support_messages")
@@ -57,6 +64,7 @@ export async function insertOrderSupportMessage(input: {
       sender_name: input.senderName,
       body: input.body,
       channel: input.channel,
+      ...(input.channel === "vendor" && input.vendorId ? { vendor_id: input.vendorId } : {}),
     })
     .select("*")
     .single();
@@ -83,26 +91,31 @@ export async function vendorHasOrder(
   return Boolean(data);
 }
 
-/** Vendor emails for everyone with items on this order. */
+/** Vendors with items on this order (for the admin thread picker + emails). */
 export async function listOrderVendorContacts(
   orderId: string,
-): Promise<{ email: string; name: string }[]> {
+): Promise<{ vendorId: string; email: string; name: string; businessName: string }[]> {
   const { data, error } = await db()
     .from("vendor_order_items")
     .select("vendor_id, vendors(contact_email, contact_name, business_name)")
     .eq("order_id", orderId);
   if (error) throw new Error(error.message);
-  const seen = new Map<string, { email: string; name: string }>();
+  const seen = new Map<
+    string,
+    { vendorId: string; email: string; name: string; businessName: string }
+  >();
   for (const row of data ?? []) {
     const v = row.vendors as
       | { contact_email?: string; contact_name?: string; business_name?: string }
       | { contact_email?: string; contact_name?: string; business_name?: string }[]
       | null;
     const vendor = Array.isArray(v) ? v[0] : v;
-    if (!vendor?.contact_email) continue;
+    if (!row.vendor_id || !vendor) continue;
     seen.set(String(row.vendor_id), {
-      email: vendor.contact_email,
+      vendorId: String(row.vendor_id),
+      email: vendor.contact_email ?? "",
       name: vendor.contact_name || vendor.business_name || "there",
+      businessName: vendor.business_name || vendor.contact_name || "Vendor",
     });
   }
   return [...seen.values()];

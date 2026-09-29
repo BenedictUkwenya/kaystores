@@ -19,6 +19,11 @@ type Order = {
   };
   handoverToken?: string;
   revealToken?: string;
+  accessUrl?: string;
+  id?: string;
+  anonymousPackaging?: boolean;
+  buyerAddress?: Address;
+  recipientAddress?: Address;
   pricing: { grandTotal: number };
   items: {
     name: string;
@@ -27,6 +32,25 @@ type Order = {
     segment?: string;
   }[];
 };
+
+type Address = {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  instructions?: string;
+};
+
+function formatAddressHtml(address?: Address): string {
+  if (!address) return "";
+  const lines = [
+    address.line1,
+    address.line2,
+    [address.city, address.state, address.postalCode].filter(Boolean).join(", "),
+  ].filter(Boolean);
+  return lines.join("<br/>");
+}
 
 const DISCREET_ITEM = "Private catalogue selection";
 
@@ -192,6 +216,11 @@ type Payload =
         state?: string;
         pickupHubName?: string;
         statusUrl?: string;
+        allergies?: string;
+        messageOnItem?: string;
+        deliveryAddress?: string;
+        recipientName?: string;
+        recipientPhone?: string;
       };
     }
   | {
@@ -229,6 +258,8 @@ type Payload =
         pickupHubName?: string;
         quoteAmount?: number;
         quoteNote?: string;
+        allergies?: string;
+        messageOnItem?: string;
       };
     }
   | {
@@ -236,7 +267,12 @@ type Payload =
         | "chat_message"
         | "table_status_update"
         | "vendor_dispatch_overdue"
-        | "split_payment_update";
+        | "split_payment_update"
+        | "admin_alert"
+        | "order_update"
+        | "vendor_update"
+        | "kitchen_update"
+        | "concierge_update";
       appUrl: string;
       /** Direct recipients. */
       to?: string[];
@@ -334,6 +370,9 @@ function buildMessage(
       const recipient = order.gift?.recipientName ?? "your recipient";
       const recipientEmail = order.gift?.recipientEmail ?? "";
       const refLabel = discreet ? "private reference" : "order";
+      const viewCta = order.accessUrl
+        ? ctaButton(order.accessUrl, discreet ? "View private order" : "View your order")
+        : "";
       const html = layout(
           discreet
             ? "Your private order is confirmed"
@@ -344,17 +383,20 @@ function buildMessage(
             ? `<p style="color:#5c5c5c;line-height:1.6">Hi ${order.buyer.fullName}, we've received your confidential ${refLabel} <strong>${order.orderNumber}</strong>. Item titles are never included in this email.</p>
             <ul style="color:#5c5c5c;padding-left:18px">${items}</ul>
             <p style="font-size:18px;color:#000"><strong>Total: ${naira(order.pricing.grandTotal)}</strong></p>
-            <p style="color:#5c5c5c;font-size:13px">Packaging is plain and unmarked. Payment will be collected separately — our discreet fulfilment team will be in touch shortly.</p>`
+            <p style="color:#5c5c5c;font-size:13px">Payment received. Packaging is plain and unmarked — we'll email you when it's on its way.</p>
+            ${viewCta}`
             : isGift
               ? `<p style="color:#5c5c5c;line-height:1.6">Hi ${order.buyer.fullName}, we've received your gift order <strong>${order.orderNumber}</strong> for <strong>${recipient}</strong>.</p>
             <ul style="color:#5c5c5c;padding-left:18px">${items}</ul>
             <p style="font-size:18px;color:#000"><strong>Total: ${naira(order.pricing.grandTotal)}</strong></p>
             <p style="color:#5c5c5c;font-size:13px">We've emailed <strong>${recipient}</strong>${recipientEmail ? ` at ${recipientEmail}` : ""} about this gift${order.gift?.addressUnknown ? " with a secure link to share their delivery address" : ""}. If they don't see it, ask them to check Spam and Promotions.</p>
-            <p style="color:#5c5c5c;font-size:13px;margin-top:8px">Payment will be collected separately — our team will be in touch shortly.</p>`
+            <p style="color:#5c5c5c;font-size:13px;margin-top:8px">Payment received — we'll email you when it ships.</p>
+            ${viewCta}`
               : `<p style="color:#5c5c5c;line-height:1.6">Hi ${order.buyer.fullName}, we've received your order <strong>${order.orderNumber}</strong>.</p>
           <ul style="color:#5c5c5c;padding-left:18px">${items}</ul>
           <p style="font-size:18px;color:#000"><strong>Total: ${naira(order.pricing.grandTotal)}</strong></p>
-          <p style="color:#5c5c5c;font-size:13px">Payment will be collected separately. Our team will be in touch shortly.</p>`,
+          <p style="color:#5c5c5c;font-size:13px">Payment received — we'll email you when it ships.</p>
+          ${viewCta}`,
         );
       const subject = discreet
         ? `Private order confirmed — ${order.orderNumber}`
@@ -384,12 +426,29 @@ function buildMessage(
     }
     case "order_internal": {
       if (!teamEmail) return null;
-      const { order } = payload;
+      const { order, appUrl } = payload;
+      const isGift = order.deliveryType === "gift";
+      const destination = isGift ? order.recipientAddress : order.buyerAddress;
+      const destinationHtml = formatAddressHtml(destination);
+      const instructions = destination?.instructions;
+      const items = order.items
+        .map((item) => `<li>${item.name} × ${item.quantity} — ${naira(item.price * item.quantity)}</li>`)
+        .join("");
       const html = layout(
           "New order received",
           `<p style="color:#5c5c5c"><strong>${order.orderNumber}</strong> — ${order.buyer.fullName}<br/>
           ${order.buyer.email} · ${order.buyer.phone}<br/>
-          Total: ${naira(order.pricing.grandTotal)}</p>`,
+          Total: ${naira(order.pricing.grandTotal)}</p>
+          <ul style="color:#5c5c5c;padding-left:18px">${items}</ul>
+          ${
+            isGift
+              ? `<p style="color:#5c5c5c"><strong>Gift for:</strong> ${order.gift?.recipientName ?? "—"}${order.gift?.recipientEmail ? ` · ${order.gift.recipientEmail}` : ""}${order.gift?.addressUnknown ? "<br/><em>Recipient will share their address via the handover link.</em>" : ""}</p>`
+              : ""
+          }
+          ${destinationHtml ? `<p style="color:#5c5c5c"><strong>Deliver to:</strong><br/>${destinationHtml}</p>` : ""}
+          ${instructions ? `<p style="color:#5c5c5c"><strong>Delivery note:</strong> ${instructions}</p>` : ""}
+          ${order.anonymousPackaging ? `<p style="color:#5c5c5c"><strong>Plain packaging requested.</strong></p>` : ""}
+          ${order.id ? ctaButton(`${appUrl}/admin/orders/${order.id}`, "Open in admin") : ""}`,
         );
       return {
         to: [teamEmail],
@@ -766,7 +825,8 @@ function buildMessage(
       const html = layout(
         "You won this sourcing job",
         `<p style="color:#5c5c5c;line-height:1.6">Hi ${vendor.contactName}, the client selected your offer for <strong>${request.productName}</strong> (${request.referenceNumber}).</p>
-        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/concierge">Open vendor portal to fulfil</a></p>`,
+        <p style="color:#5c5c5c;line-height:1.6">Once they pay, open your vendor portal — you'll see which Kay hub to bring the item to and when to start sourcing.</p>
+        <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/concierge">Open vendor concierge</a></p>`,
       );
       return {
         to: [vendor.contactEmail],
@@ -855,6 +915,8 @@ function buildMessage(
         Servings: ${request.servings || "—"} · Needed by: ${request.neededBy || "—"}<br/>
         Flavours: ${request.flavourNotes || "—"}<br/>
         Style: ${request.styleNotes || "—"}<br/>
+        ${request.messageOnItem ? `Message on item: “${request.messageOnItem}”<br/>` : ""}
+        ${request.allergies ? `<strong>Allergies / dietary: ${request.allergies}</strong><br/>` : ""}
         Fulfilment: ${fulfilment}
         ${request.quoteAmount != null ? `<br/>Quote: ${naira(request.quoteAmount)}` : ""}</p>
         <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/vendor/table">Open vendor Kay Kitchen</a></p>`,
@@ -984,7 +1046,7 @@ function buildMessage(
         "Your Kay Reveal was opened",
         `<p style="color:#5c5c5c;line-height:1.6">Hi ${buyerName},</p>
         <p style="color:#5c5c5c;line-height:1.6"><strong>${recipientName}</strong> just opened the Kay Reveal on order <strong>${orderNumber}</strong>.</p>
-        ${ctaButton(`${appUrl}/order/${orderId}`, "View your order")}`,
+        ${ctaButton(payload.orderUrl || `${appUrl}/order/${orderId}`, "View your order")}`,
       );
       return {
         to: [to],
@@ -998,7 +1060,12 @@ function buildMessage(
     case "chat_message":
     case "table_status_update":
     case "vendor_dispatch_overdue":
-    case "split_payment_update": {
+    case "split_payment_update":
+    case "admin_alert":
+    case "order_update":
+    case "vendor_update":
+    case "kitchen_update":
+    case "concierge_update": {
       const recipients = new Set<string>();
       for (const raw of payload.to ?? []) {
         const email = raw.trim().toLowerCase();
@@ -1046,6 +1113,63 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+/** Notice types escape their own fields inside buildMessage. */
+const SELF_ESCAPING = new Set([
+  "chat_message",
+  "table_status_update",
+  "vendor_dispatch_overdue",
+  "split_payment_update",
+  "admin_alert",
+  "order_update",
+  "vendor_update",
+  "kitchen_update",
+  "concierge_update",
+]);
+
+/** Keys that are addresses/identifiers, never rendered as user prose. */
+const RAW_KEYS = new Set([
+  "type",
+  "to",
+  "bcc",
+  "adminEmails",
+  "token",
+  "action",
+  "audience",
+  "email",
+  "recipientEmail",
+  "contactEmail",
+]);
+
+function decodeEntities(value: string): string {
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
+}
+
+function escapeDeep<T>(value: T, key = ""): T {
+  if (RAW_KEYS.has(key)) return value;
+  if (typeof value === "string") return escapeHtml(value) as T;
+  if (Array.isArray(value)) return value.map((v) => escapeDeep(v)) as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = escapeDeep(v, k);
+    }
+    return out as T;
+  }
+  return value;
+}
+
+function isAuthorized(req: Request): boolean {
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey) return false;
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const apikey = req.headers.get("apikey");
+  return bearer === serviceKey || apikey === serviceKey;
+}
+
 async function sendResend(options: {
   from: string;
   to: string[];
@@ -1064,10 +1188,10 @@ async function sendResend(options: {
   const body: Record<string, unknown> = {
     from: options.from,
     to: options.to,
-    subject: options.subject,
+    subject: decodeEntities(options.subject),
     html: options.html,
   };
-  if (options.text) body.text = options.text;
+  if (options.text) body.text = decodeEntities(options.text);
   if (options.replyTo) body.reply_to = options.replyTo;
   if (options.bcc?.length) body.bcc = options.bcc;
   if (options.tags?.length) body.tags = options.tags;
@@ -1093,8 +1217,16 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
-    const payload = (await req.json()) as Payload;
+    const raw = (await req.json()) as Payload;
+    const payload = SELF_ESCAPING.has(raw.type) ? raw : escapeDeep(raw);
     const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
 
     if (payload.type === "concierge") {
@@ -1191,6 +1323,9 @@ Deno.serve(async (req) => {
           <p style="color:#5c5c5c;line-height:1.6">Servings: ${request.servings || "—"} · Needed by: ${request.neededBy || "—"}<br/>
           Flavours: ${request.flavourNotes || "—"}<br/>
           Style: ${request.styleNotes || "—"}<br/>
+          ${request.messageOnItem ? `Message on item: “${request.messageOnItem}”<br/>` : ""}
+          ${request.allergies ? `<strong>Allergies / dietary: ${request.allergies}</strong><br/>` : ""}
+          ${request.deliveryAddress ? `Deliver to: ${request.recipientName ? `${request.recipientName}, ` : ""}${request.deliveryAddress}${request.recipientPhone ? ` · ${request.recipientPhone}` : ""}<br/>` : ""}
           Fulfilment: ${fulfilment}</p>
           <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/admin/table">Open admin Kay Kitchen</a></p>`,
         );

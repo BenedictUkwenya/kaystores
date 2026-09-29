@@ -9,7 +9,7 @@ export type OrderEmailPayload = {
     | "handover_completed"
     | "gift_recipient";
   appUrl: string;
-  order: Order;
+  order: Order & { accessUrl?: string };
 };
 
 export type GiftRevealOpenedEmailPayload = {
@@ -20,6 +20,7 @@ export type GiftRevealOpenedEmailPayload = {
   recipientName: string;
   orderNumber: string;
   orderId: string;
+  orderUrl?: string;
 };
 
 export type ConciergeEmailPayload = {
@@ -49,6 +50,11 @@ export type TableRequestSummary = {
   quoteNote?: string;
   assignedVendorName?: string;
   statusUrl?: string;
+  allergies?: string;
+  messageOnItem?: string;
+  deliveryAddress?: string;
+  recipientName?: string;
+  recipientPhone?: string;
 };
 
 export type TableEmailPayload =
@@ -195,7 +201,12 @@ export type NoticeEmailType =
   | "chat_message"
   | "table_status_update"
   | "vendor_dispatch_overdue"
-  | "split_payment_update";
+  | "split_payment_update"
+  | "admin_alert"
+  | "order_update"
+  | "vendor_update"
+  | "kitchen_update"
+  | "concierge_update";
 
 /** Generic branded notice — recipients, copy, optional quoted text and CTA. */
 export type NoticeEmailPayload = {

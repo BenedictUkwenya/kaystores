@@ -104,7 +104,6 @@ export const FOOTER_SHOP_LINKS: Record<string, string> = {
   "Luxury Collection": "/gifts/luxury-collection",
   "Corporate Gifts": "/gifts/corporate-gifting",
   "Kay Kitchen": "/table",
-  "Gift Cards": "/gifts",
 };
 
 export function formatNaira(amount: number) {

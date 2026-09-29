@@ -14,6 +14,7 @@ import {
   updateTableRequest,
 } from "@/lib/table/repository";
 import type { TableRequestStatus } from "@/types/table";
+import { confirmTablePayment } from "@/lib/table/payment";
 
 const STATUSES = new Set<TableRequestStatus>([
   "submitted",
@@ -59,6 +60,45 @@ export async function PATCH(request: Request) {
         ? (body.status as TableRequestStatus)
         : undefined;
 
+    if (body.markPaid) {
+      const reference = String(body.paymentReference ?? "").trim();
+      if (!reference) {
+        return NextResponse.json({ error: "Add the transfer reference." }, { status: 400 });
+      }
+      if (!before.quoteAmount || before.quoteAmount < 1) {
+        return NextResponse.json({ error: "Set a quote before marking paid." }, { status: 400 });
+      }
+      await confirmTablePayment(id, `manual ${reference}`.slice(0, 120));
+      const request = await getTableRequestById(id);
+      return NextResponse.json({ request });
+    }
+
+    const nextQuote =
+      body.quoteAmount !== undefined
+        ? body.quoteAmount == null || body.quoteAmount === ""
+          ? null
+          : Number(body.quoteAmount)
+        : before.quoteAmount ?? null;
+    if (nextQuote != null && (!Number.isFinite(nextQuote) || nextQuote < 0)) {
+      return NextResponse.json({ error: "Enter a valid quote amount." }, { status: 400 });
+    }
+    if (status === "quoted" && (!nextQuote || nextQuote < 1)) {
+      return NextResponse.json(
+        { error: "Add a quote amount before sending it to the client." },
+        { status: 400 },
+      );
+    }
+    if (
+      before.paymentStatus === "paid" &&
+      body.quoteAmount !== undefined &&
+      nextQuote !== before.quoteAmount
+    ) {
+      return NextResponse.json(
+        { error: "This request is paid — the quote can't change now." },
+        { status: 409 },
+      );
+    }
+
     const updated = await updateTableRequest(id, {
       status,
       assignedVendorId:
@@ -67,12 +107,7 @@ export async function PATCH(request: Request) {
             ? String(body.assignedVendorId)
             : null
           : undefined,
-      quoteAmount:
-        body.quoteAmount !== undefined
-          ? body.quoteAmount == null
-            ? null
-            : Number(body.quoteAmount)
-          : undefined,
+      quoteAmount: body.quoteAmount !== undefined ? nextQuote : undefined,
       quoteNote:
         body.quoteNote !== undefined
           ? body.quoteNote

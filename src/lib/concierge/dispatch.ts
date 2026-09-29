@@ -13,6 +13,8 @@ import {
   signConciergeAttachments,
 } from "@/lib/storage/concierge-attachments";
 import { markupPrice } from "@/lib/pricing/markup";
+import { sendNotice } from "@/lib/email/notice";
+import { getEmailSiteUrl } from "@/lib/site";
 import type {
   ClientConciergeDetail,
   ClientConciergeOffer,
@@ -60,6 +62,9 @@ type ConciergeRow = {
   payment_status?: string | null;
   payment_amount?: number | null;
   paid_at?: string | null;
+  delivery_address?: { line1?: string; city?: string; state?: string } | null;
+  recipient_name?: string | null;
+  recipient_phone?: string | null;
   user_id: string | null;
   created_at: string;
 };
@@ -112,6 +117,15 @@ function mapRequest(row: ConciergeRow): ConciergeRequest {
     paymentStatus: (row.payment_status ?? "unpaid") as ConciergeRequest["paymentStatus"],
     paymentAmount: row.payment_amount ?? null,
     paidAt: row.paid_at ?? null,
+    deliverySummary: row.delivery_address
+      ? `${row.recipient_name ?? row.contact_name}${row.recipient_phone ? ` (${row.recipient_phone})` : ""}: ${[
+          row.delivery_address.line1,
+          row.delivery_address.city,
+          row.delivery_address.state,
+        ]
+          .filter(Boolean)
+          .join(", ")}`
+      : null,
     createdAt: row.created_at,
   };
 }
@@ -396,6 +410,13 @@ export async function presentOfferToClient(input: {
     .maybeSingle();
 
   if (error || !request) throw new Error("Request not found");
+  if (
+    request.selected_assignment_id ||
+    request.payment_status === "paid" ||
+    request.payment_status === "pending"
+  ) {
+    throw new Error("The client has already chosen and is paying — this offer can't be swapped now.");
+  }
 
   const { data: assignment, error: assignErr } = await db
     .from("concierge_vendor_assignments")
@@ -454,12 +475,33 @@ export async function respondToConciergeAssignment(input: {
 
   const { data: assignment, error: fetchErr } = await db
     .from("concierge_vendor_assignments")
-    .select("id, vendor_id, concierge_request_id")
+    .select("id, vendor_id, concierge_request_id, outcome, published_to_client")
     .eq("id", input.assignmentId)
     .maybeSingle();
 
   if (fetchErr || !assignment) throw new Error("Assignment not found");
   if (assignment.vendor_id !== input.vendorId) throw new Error("Forbidden");
+
+  const { data: parent } = await db
+    .from("concierge_requests")
+    .select("selected_assignment_id, payment_status, status")
+    .eq("id", assignment.concierge_request_id)
+    .maybeSingle();
+  if (
+    parent?.selected_assignment_id ||
+    parent?.payment_status === "paid" ||
+    parent?.payment_status === "pending" ||
+    parent?.status === "closed" ||
+    parent?.status === "completed"
+  ) {
+    throw new Error("The client has already confirmed this request — message Kay to change anything.");
+  }
+  if (
+    (assignment.published_to_client || assignment.outcome === "published") &&
+    parent?.status === "client_reviewing"
+  ) {
+    throw new Error("Kay has already shown your offer to the client, so the price is locked. Message Kay to change it.");
+  }
 
   const update: Record<string, unknown> = {
     status: input.status,
@@ -759,17 +801,34 @@ export async function updateConciergeFulfilment(input: {
   }
 
   if (input.fulfilmentStatus === "at_hub") {
-    await db
+    const { data: row } = await db
       .from("concierge_requests")
       .update({ status: "in_fulfilment" })
-      .eq("id", assignment.concierge_request_id);
-  }
-
-  if (input.fulfilmentStatus === "completed") {
-    await db
-      .from("concierge_requests")
-      .update({ status: "completed" })
-      .eq("id", assignment.concierge_request_id);
+      .eq("id", assignment.concierge_request_id)
+      .select("reference_number, product_name, recipient_name, delivery_address")
+      .maybeSingle();
+    const { data: vendor } = await db
+      .from("vendors")
+      .select("business_name")
+      .eq("id", input.vendorId)
+      .maybeSingle();
+    const address = row?.delivery_address as
+      | { line1?: string; city?: string; state?: string }
+      | null;
+    await sendNotice({
+      type: "concierge_update",
+      toTeam: true,
+      subject: `Concierge item sent to hub — ${row?.reference_number ?? ""}`,
+      title: "Concierge item on its way to the hub",
+      paragraphs: [
+        `${vendor?.business_name ?? "The partner"} says ${row?.product_name ?? "the item"} (${row?.reference_number ?? ""}) is at / on its way to the Kay hub. Check it in and run QC.`,
+        address
+          ? `Deliver to ${row?.recipient_name ?? "the client"}: ${[address.line1, address.city, address.state].filter(Boolean).join(", ")}.`
+          : "No delivery address on file — contact the client before dispatch.",
+      ],
+      ctaUrl: `${getEmailSiteUrl()}/admin/concierge`,
+      ctaLabel: "Open concierge",
+    }).catch((err) => console.error("[concierge at_hub notify]", err));
   }
 }
 

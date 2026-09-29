@@ -1,5 +1,9 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  AFTER_DARK_AGE_COOKIE,
+  requiresAfterDarkAgeCookie,
+} from "@/lib/after-dark/age-gate";
 import { getSupabaseConfig } from "@/lib/supabase/env";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
@@ -41,6 +45,17 @@ async function fetchUserProfileMeta(
 export async function updateSession(request: NextRequest) {
   const { url, anonKey, isConfigured } = getSupabaseConfig();
   const pathname = request.nextUrl.pathname;
+
+  if (
+    requiresAfterDarkAgeCookie(pathname) &&
+    request.cookies.get(AFTER_DARK_AGE_COOKIE)?.value !== "1"
+  ) {
+    const gate = new URL("/after-dark", request.url);
+    if (pathname.startsWith("/after-dark/")) {
+      gate.searchParams.set("next", pathname + request.nextUrl.search);
+    }
+    return NextResponse.redirect(gate);
+  }
 
   if (!isConfigured) {
     return NextResponse.next({ request });

@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { GiftRevealPage } from "@/components/reveal/GiftRevealPage";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type Props = { params: Promise<{ token: string }> };
 

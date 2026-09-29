@@ -72,7 +72,7 @@ export default async function VendorApplyPage({ searchParams }: Props) {
           {
             icon: <IconShield className="h-4 w-4" />,
             title: "Trusted payouts",
-            text: "Clear wallet balances after QC, with secure withdrawals.",
+            text: "Earnings clear to your wallet once the customer receives the order, with secure withdrawals.",
           },
         ].map((item) => (
           <div

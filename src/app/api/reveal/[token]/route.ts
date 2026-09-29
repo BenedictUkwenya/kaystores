@@ -7,6 +7,7 @@ import {
 import { signRevealMedia } from "@/lib/storage/gift-reveal-media";
 import { sendKayEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
+import { orderAccessPath } from "@/lib/orders/access";
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -35,6 +36,7 @@ export async function GET(_request: Request, { params }: Params) {
         recipientName: order.gift?.recipientName ?? "your recipient",
         orderNumber: order.orderNumber,
         orderId: order.id,
+        orderUrl: `${getEmailSiteUrl()}${orderAccessPath(order.id)}`,
       }).catch((err) => console.error("[reveal] opened email:", err));
     }
 

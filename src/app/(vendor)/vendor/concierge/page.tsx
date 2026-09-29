@@ -10,10 +10,24 @@ import { VendorConciergeResponse } from "@/components/vendor/VendorConciergeResp
 import { VendorReferenceAttachments } from "@/components/vendor/VendorReferenceAttachments";
 import { signConciergeAttachments } from "@/lib/storage/concierge-attachments";
 import { formatNaira } from "@/lib/data/home";
+import { nearestHubsForVendor } from "@/lib/shipping/hubs";
 
 export default async function VendorConciergePage() {
   const { vendor } = await requireVendor();
-  const items = await fetchVendorConciergeItems(vendor.id);
+  const [items, nearestHubs] = await Promise.all([
+    fetchVendorConciergeItems(vendor.id),
+    nearestHubsForVendor(vendor.pickupAddress?.state, 1),
+  ]);
+  const nearestHub = nearestHubs[0];
+  const hub = nearestHub
+    ? {
+        name: nearestHub.name,
+        address: [nearestHub.address.line1, nearestHub.address.city, nearestHub.address.state]
+          .filter(Boolean)
+          .join(", "),
+        phone: nearestHub.contactPhone,
+      }
+    : null;
 
   const itemsWithFiles = await Promise.all(
     items.map(async (item) => ({
@@ -56,7 +70,7 @@ export default async function VendorConciergePage() {
                   attachments={signedReferences}
                   legacyNames={item.attachmentNames}
                 />
-                <VendorConciergeFulfilment item={item} />
+                <VendorConciergeFulfilment item={item} hub={hub} />
               </li>
             ))}
           </ul>

@@ -47,9 +47,11 @@ export function AdminWithdrawalActions({ withdrawal }: Props) {
       />
       <Input label="Admin note" value={note} onChange={(e) => setNote(e.target.value)} />
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button type="button" size="sm" disabled={loading} onClick={() => update("approved")}>
-          Approve
-        </Button>
+        {withdrawal.status === "pending" && (
+          <Button type="button" size="sm" disabled={loading} onClick={() => update("approved")}>
+            Approve
+          </Button>
+        )}
         <Button type="button" size="sm" disabled={loading} onClick={() => update("paid")}>
           Mark paid
         </Button>

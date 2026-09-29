@@ -14,6 +14,11 @@ import {
   loadOrderForPayment,
   setPaymentPending,
 } from "@/lib/payments/confirm";
+import { getTableRequestById } from "@/lib/table/repository";
+import { setTablePaymentPending, tablePaymentBlocker } from "@/lib/table/payment";
+import { resolveTableViewer } from "@/lib/orders/access";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { matchNigerianState, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 import {
   getShareByToken,
   getShareOrderSummary,
@@ -37,6 +42,9 @@ export async function POST(request: Request) {
 
     if (body.kind === "share") {
       return initializeSharePayment(body);
+    }
+    if (body.kind === "table") {
+      return initializeTablePayment(String(body.id ?? ""));
     }
 
     const kind = body.kind === "concierge" ? "concierge" : "order";
@@ -105,6 +113,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Already paid." }, { status: 400 });
     }
 
+    const delivery = parseConciergeDelivery(body.delivery);
+    if (typeof delivery === "string") {
+      return NextResponse.json({ error: delivery }, { status: 400 });
+    }
+    await saveConciergeDelivery(id, delivery);
+
     const normalizedEmail = (user?.email ?? emailOverride ?? concierge.contactEmail)
       .trim()
       .toLowerCase();
@@ -120,7 +134,7 @@ export async function POST(request: Request) {
       name: concierge.contactName,
       phone: concierge.contactPhone,
       title: "Kay Concierge",
-      description: `${concierge.productName} (${concierge.referenceNumber})`,
+      description: `Kay Concierge ${concierge.referenceNumber}`,
       redirectPath: `/concierge/status/${id}?payment=return`,
     });
 
@@ -129,6 +143,65 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Payment init failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+type ConciergeDelivery = {
+  address: { line1: string; city: string; state: string; country: "Nigeria" };
+  recipientName: string;
+  recipientPhone: string;
+};
+
+function parseConciergeDelivery(raw: unknown): ConciergeDelivery | string {
+  const d = (raw ?? {}) as Record<string, unknown>;
+  const line1 = String(d.line1 ?? "").trim().slice(0, 200);
+  const city = String(d.city ?? "").trim().slice(0, 80);
+  const state = matchNigerianState(String(d.state ?? ""));
+  const recipientName = String(d.recipientName ?? "").trim().slice(0, 120);
+  const recipientPhone = normalizeNigerianPhone(String(d.recipientPhone ?? ""));
+  if (!line1 || !city || !state) return "Add the delivery street, city and state.";
+  if (!recipientName) return "Add who we should deliver to.";
+  if (!recipientPhone) return "Add a valid Nigerian phone number for the recipient.";
+  return { address: { line1, city, state, country: "Nigeria" }, recipientName, recipientPhone };
+}
+
+async function saveConciergeDelivery(id: string, delivery: ConciergeDelivery) {
+  const db = createAdminClient();
+  if (!db) throw new Error("Payments are unavailable.");
+  const { error } = await db
+    .from("concierge_requests")
+    .update({
+      delivery_address: delivery.address,
+      recipient_name: delivery.recipientName,
+      recipient_phone: delivery.recipientPhone,
+    })
+    .eq("id", id)
+    .neq("payment_status", "paid");
+  if (error) throw new Error(error.message);
+}
+
+async function initializeTablePayment(id: string) {
+  const request = /^[0-9a-f-]{36}$/i.test(id) ? await getTableRequestById(id) : null;
+  if (!request || !(await resolveTableViewer(request))) {
+    return NextResponse.json({ error: "Request not found." }, { status: 404 });
+  }
+  const blocker = tablePaymentBlocker(request);
+  if (blocker) {
+    return NextResponse.json({ error: blocker }, { status: 400 });
+  }
+
+  await setTablePaymentPending(id);
+  const payment = await initializePaystackPayment({
+    kind: "table",
+    id,
+    amount: Number(request.quoteAmount),
+    email: request.contactEmail,
+    name: request.contactName,
+    phone: request.contactPhone ?? undefined,
+    title: "Kay Kitchen",
+    description: `Kay Kitchen ${request.reference}`,
+    redirectPath: `/table/request/${id}?payment=return`,
+  });
+  return NextResponse.json(payment);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -208,15 +281,12 @@ export async function GET(request: Request) {
       });
     }
 
-    const kind = verified.metadata?.kind;
     const confirmed = await confirmPaymentFromTxRef(
       reference,
       String(verified.id ?? reference),
-      kind === "order" || kind === "share"
-        ? koboToNaira(verified.amount)
-        : undefined,
+      koboToNaira(verified.amount),
     );
-    if (!confirmed && (kind === "order" || kind === "share")) {
+    if (!confirmed) {
       return NextResponse.json(
         { paid: false, error: "Amount mismatch." },
         { status: 400 },

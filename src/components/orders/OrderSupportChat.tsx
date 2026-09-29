@@ -5,6 +5,7 @@ import { RelayChat } from "@/components/chat/RelayChat";
 type Props = {
   orderId: string;
   viewerRole: "admin" | "vendor" | "customer";
+  vendorThreads?: { id: string; name: string }[];
 };
 
 const DESCRIPTIONS = {

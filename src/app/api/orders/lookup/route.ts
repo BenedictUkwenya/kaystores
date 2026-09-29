@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { lookupOrder } from "@/lib/orders/store";
 import { isOrderNumber, normalizeOrderNumber } from "@/lib/orders/resolve";
+import { grantOrderAccess } from "@/lib/orders/access";
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +36,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ id: order.id, orderNumber: order.orderNumber });
+    return grantOrderAccess(
+      NextResponse.json({ id: order.id, orderNumber: order.orderNumber }),
+      order.id,
+    );
   } catch {
     return NextResponse.json(
       { error: "Could not look up order." },

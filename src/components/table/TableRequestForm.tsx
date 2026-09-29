@@ -9,6 +9,8 @@ import {
   parseIntegerInput,
 } from "@/lib/data/home";
 import { TABLE_COPY, TABLE_ROUTES } from "@/lib/table/catalog";
+import { StateSelect } from "@/components/ui/StateSelect";
+import { isValidEmail, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 import type {
   TableFulfillmentMethod,
   TableRequestCategory,
@@ -56,6 +58,11 @@ export function TableRequestForm({ defaultContact }: Props) {
     fulfillmentMethod: "delivery" as TableFulfillmentMethod,
     city: "",
     state: "",
+    deliveryAddress: "",
+    recipientName: "",
+    recipientPhone: "",
+    allergies: "",
+    messageOnItem: "",
     pickupHubId: "",
     budget: "",
     contactName: defaultContact?.name ?? "",
@@ -95,8 +102,12 @@ export function TableRequestForm({ defaultContact }: Props) {
     e.preventDefault();
     setError("");
 
-    if (!form.contactName.trim() || !form.contactEmail.trim()) {
-      setError("Name and email are required.");
+    if (!form.contactName.trim() || !isValidEmail(form.contactEmail)) {
+      setError("Enter your name and a valid email.");
+      return;
+    }
+    if (!normalizeNigerianPhone(form.contactPhone)) {
+      setError("Enter a valid Nigerian phone number so we can reach you.");
       return;
     }
     if (!form.flavourNotes.trim() && !form.styleNotes.trim()) {
@@ -105,8 +116,8 @@ export function TableRequestForm({ defaultContact }: Props) {
     }
 
     if (form.fulfillmentMethod === "delivery") {
-      if (!form.city.trim() || !form.state.trim()) {
-        setError("City and state are required for Kay delivery.");
+      if (!form.deliveryAddress.trim() || !form.city.trim() || !form.state.trim()) {
+        setError("Street address, city and state are required for Kay delivery.");
         return;
       }
     } else {
@@ -140,6 +151,14 @@ export function TableRequestForm({ defaultContact }: Props) {
             form.fulfillmentMethod === "delivery"
               ? form.state.trim()
               : undefined,
+          deliveryAddress:
+            form.fulfillmentMethod === "delivery"
+              ? form.deliveryAddress.trim()
+              : undefined,
+          recipientName: form.recipientName.trim() || undefined,
+          recipientPhone: form.recipientPhone.trim() || undefined,
+          allergies: form.allergies.trim() || undefined,
+          messageOnItem: form.messageOnItem.trim() || undefined,
           pickupHubId:
             form.fulfillmentMethod === "pickup" ? hub?.id : undefined,
           pickupHubName:
@@ -227,10 +246,28 @@ export function TableRequestForm({ defaultContact }: Props) {
       />
 
       <Input
+        label={form.category === "cake" ? "Message on the cake (optional)" : "Message / card note (optional)"}
+        value={form.messageOnItem}
+        maxLength={120}
+        onChange={(e) => patch("messageOnItem", e.target.value)}
+        placeholder="Happy 30th, Tolu!"
+      />
+
+      <Textarea
+        label="Allergies or dietary needs (optional)"
+        value={form.allergies}
+        onChange={(e) => patch("allergies", e.target.value)}
+        placeholder="Nut-free, eggless, halal, diabetic-friendly…"
+        rows={2}
+      />
+
+      <Input
         label="Date needed"
         type="date"
+        min={new Date().toISOString().slice(0, 10)}
         value={form.neededBy}
         onChange={(e) => patch("neededBy", e.target.value)}
+        hint="Custom cakes usually need at least 3 days."
       />
 
       <div>
@@ -281,21 +318,41 @@ export function TableRequestForm({ defaultContact }: Props) {
       </div>
 
       {form.fulfillmentMethod === "delivery" ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           <Input
-            label="City"
-            value={form.city}
-            onChange={(e) => patch("city", e.target.value)}
-            placeholder="e.g. Ikeja"
+            label="Delivery address"
+            value={form.deliveryAddress}
+            onChange={(e) => patch("deliveryAddress", e.target.value)}
+            placeholder="House number, street, landmark"
             required
           />
-          <Input
-            label="State"
-            value={form.state}
-            onChange={(e) => patch("state", e.target.value)}
-            placeholder="e.g. Lagos"
-            required
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="City / area"
+              value={form.city}
+              onChange={(e) => patch("city", e.target.value)}
+              placeholder="e.g. Ikeja"
+              required
+            />
+            <StateSelect
+              value={form.state}
+              onChange={(state) => patch("state", state)}
+              required
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Recipient name (if not you)"
+              value={form.recipientName}
+              onChange={(e) => patch("recipientName", e.target.value)}
+            />
+            <Input
+              label="Recipient phone (if not you)"
+              type="tel"
+              value={form.recipientPhone}
+              onChange={(e) => patch("recipientPhone", e.target.value)}
+            />
+          </div>
         </div>
       ) : (
         <div>
@@ -357,8 +414,11 @@ export function TableRequestForm({ defaultContact }: Props) {
           />
           <Input
             label="Phone"
+            type="tel"
             value={form.contactPhone}
             onChange={(e) => patch("contactPhone", e.target.value)}
+            placeholder="0803 000 0000"
+            required
           />
         </div>
       </div>

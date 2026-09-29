@@ -32,7 +32,8 @@ export async function insertOrder(
     paidAt?: string | null;
   },
 ): Promise<Order> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error("Orders are temporarily unavailable.");
   const insert = buildOrderInsert({
     id: meta.id,
     orderNumber: meta.orderNumber,
@@ -141,7 +142,8 @@ export async function updateOrderHandover(
   token: string,
   address: AddressDetails,
 ): Promise<Order | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("orders")
     .update({

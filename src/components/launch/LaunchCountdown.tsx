@@ -1,13 +1,36 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useBrandUIOptional } from "@/providers/BrandUIProvider";
-import { LAUNCH_LABEL } from "@/lib/launch";
+import { LAUNCH_LABEL, isLiveWindowOver } from "@/lib/launch";
 import { FlipDigit } from "@/components/launch/FlipDigit";
 import { LaunchCountdownModal } from "@/components/launch/LaunchCountdownModal";
 import { useLaunchCountdown } from "@/components/launch/useLaunchCountdown";
 
 export const OPEN_LAUNCH_EVENT = "kay:launch-open";
+
+const DISMISS_KEY = "kay:launch-bar-dismissed";
+
+const HIDDEN_PREFIXES = [
+  "/admin",
+  "/vendor",
+  "/checkout",
+  "/after-dark",
+  "/login",
+  "/signup",
+  "/verify",
+  "/forgot-password",
+  "/reset-password",
+  "/auth",
+];
+
+function isHiddenRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return HIDDEN_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 export function openLaunchCountdown() {
   if (typeof window !== "undefined") {
@@ -17,18 +40,31 @@ export function openLaunchCountdown() {
 
 /** Global launch bar + floating pill + full-screen countdown. */
 export function LaunchCountdown() {
+  const pathname = usePathname();
   const brand = useBrandUIOptional();
   const state = useLaunchCountdown();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [hiddenAfterLaunch, setHiddenAfterLaunch] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const hiddenRoute = isHiddenRoute(pathname);
+
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(DISMISS_KEY) === "1") setDismissed(true);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     const onOpen = () => setOpen(true);
     window.addEventListener(OPEN_LAUNCH_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_LAUNCH_EVENT, onOpen);
   }, []);
+
+  const liveOver = state.mounted && isLiveWindowOver();
+  const showChrome = !hiddenRoute && !dismissed && !liveOver;
 
   useEffect(() => {
     const bar = barRef.current;
@@ -39,57 +75,73 @@ export function LaunchCountdown() {
     );
     observer.observe(bar);
     return () => observer.disconnect();
-  }, [state.mounted]);
+  }, [state.mounted, showChrome]);
 
-  useEffect(() => {
-    if (!state.launched) return;
-    const t = window.setTimeout(() => setHiddenAfterLaunch(true), 6 * 60 * 60 * 1000);
-    return () => window.clearTimeout(t);
-  }, [state.launched]);
+  function dismiss() {
+    setDismissed(true);
+    try {
+      window.sessionStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      /* storage unavailable */
+    }
+  }
 
-  if (hiddenAfterLaunch) return null;
+  if (hiddenRoute || liveOver) {
+    return <LaunchCountdownModal open={open} onClose={() => setOpen(false)} state={state} />;
+  }
+
   const splashDone = brand?.splashDone ?? true;
 
   return (
     <>
-      <div
-        ref={barRef}
-        className={`kay-launch-bar ${splashDone ? "kay-launch-bar--in" : ""}`}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="kay-launch-bar-inner"
-          aria-label="Open launch countdown"
+      {!dismissed && (
+        <div
+          ref={barRef}
+          className={`kay-launch-bar ${splashDone ? "kay-launch-bar--in" : ""}`}
         >
-          <span className="kay-launch-bar-shimmer" aria-hidden />
-          <span className="kay-launch-bar-text">
-            <span className="kay-launch-dot" aria-hidden />
-            {state.launched ? (
-              <>Kay is live — shop the launch collection</>
-            ) : (
-              <>
-                <span className="hidden sm:inline">Kay Stores launches </span>
-                <span className="sm:hidden">Launch </span>
-                <strong>{LAUNCH_LABEL}</strong>
-              </>
-            )}
-          </span>
-          {!state.launched && (
-            <span className="kay-launch-bar-digits">
-              <FlipDigit value={state.days} label="d" size="sm" mounted={state.mounted} />
-              <FlipDigit value={state.hours} label="h" size="sm" mounted={state.mounted} />
-              <FlipDigit value={state.minutes} label="m" size="sm" mounted={state.mounted} />
-              <FlipDigit value={state.seconds} label="s" size="sm" mounted={state.mounted} />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="kay-launch-bar-inner"
+            aria-label="Open launch countdown"
+          >
+            <span className="kay-launch-bar-shimmer" aria-hidden />
+            <span className="kay-launch-bar-text">
+              <span className="kay-launch-dot" aria-hidden />
+              {state.launched ? (
+                <>Kay is live — shop the launch collection</>
+              ) : (
+                <span className="kay-launch-bar-label">
+                  <span className="hidden sm:inline">Kay Stores launches </span>
+                  <span className="sm:hidden">Launch </span>
+                  <strong>{LAUNCH_LABEL}</strong>
+                </span>
+              )}
             </span>
-          )}
-          <span className="kay-launch-bar-cta" aria-hidden>
-            {state.launched ? "Celebrate" : "Remind me"} →
-          </span>
-        </button>
-      </div>
+            {!state.launched && (
+              <span className="kay-launch-bar-digits">
+                <FlipDigit value={state.days} label="d" size="sm" mounted={state.mounted} />
+                <FlipDigit value={state.hours} label="h" size="sm" mounted={state.mounted} />
+                <FlipDigit value={state.minutes} label="m" size="sm" mounted={state.mounted} />
+                <FlipDigit value={state.seconds} label="s" size="sm" mounted={state.mounted} />
+              </span>
+            )}
+            <span className="kay-launch-bar-cta" aria-hidden>
+              {state.launched ? "Celebrate" : "Remind me"} →
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            className="kay-launch-bar-dismiss"
+            aria-label="Hide countdown"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-      {splashDone && state.mounted && (
+      {showChrome && splashDone && state.mounted && (
         <button
           type="button"
           onClick={() => setOpen(true)}

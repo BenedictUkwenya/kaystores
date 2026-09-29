@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getOrder } from "@/lib/orders/store";
+import { resolveOrderViewer } from "@/lib/orders/access";
 import { listSharesForOrder } from "@/lib/payments/shares";
 import { absoluteUrl } from "@/lib/site";
 import { SplitSharesPanel } from "@/components/payments/SplitSharesPanel";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -15,6 +21,7 @@ export default async function OrderSplitPage({ params }: PageProps) {
   const { id } = await params;
   const order = await getOrder(id);
   if (!order) notFound();
+  if (!(await resolveOrderViewer(order))) redirect("/track-order");
   if (order.paymentMode !== "split") redirect(`/order/${order.id}`);
 
   const shares = await listSharesForOrder(order.id);

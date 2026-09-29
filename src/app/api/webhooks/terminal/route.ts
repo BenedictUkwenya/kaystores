@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { adminDeliver } from "@/lib/orders/admin-actions";
 
 function verifyTerminalSignature(signature: string | null, body: unknown) {
   const secret = process.env.TERMINAL_AFRICA_SECRET_KEY;
@@ -64,19 +65,15 @@ export async function POST(request: Request) {
       })
       .eq("id", saved.id);
 
-    const orderStatus =
-      status === "delivered"
-        ? "delivered"
-        : status === "in-transit" ||
-            status === "confirmed" ||
-            payload.event === "shipment.created"
-          ? "shipped"
-          : undefined;
+    const toShipped =
+      status === "delivered" ||
+      status === "in-transit" ||
+      status === "confirmed" ||
+      payload.event === "shipment.created";
 
     await admin
       .from("orders")
       .update({
-        ...(orderStatus ? { status: orderStatus } : {}),
         ...(extras.tracking_number
           ? { tracking_number: extras.tracking_number }
           : {}),
@@ -84,15 +81,19 @@ export async function POST(request: Request) {
       })
       .eq("id", saved.order_id);
 
-    if (status === "delivered") {
+    if (toShipped) {
       await admin
-        .from("vendor_order_items")
-        .update({
-          fulfillment_status: "completed",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("order_id", saved.order_id)
-        .in("fulfillment_status", ["qc_passed", "dispatched"]);
+        .from("orders")
+        .update({ status: "shipped" })
+        .eq("id", saved.order_id)
+        .in("status", ["confirmed", "processing"]);
+    }
+
+    if (status === "delivered") {
+      // Same path as the admin button: completes items, releases earnings, emails buyer.
+      await adminDeliver(saved.order_id).catch((err) =>
+        console.error("[terminal webhook] deliver", err),
+      );
     }
 
     return Response.json({ ok: true });

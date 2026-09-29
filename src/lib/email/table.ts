@@ -2,6 +2,7 @@ import { listAdminEmails } from "@/lib/email/admins";
 import { sendKayEmail } from "@/lib/email/send";
 import { getEmailSiteUrl } from "@/lib/site";
 import { sendNotice } from "@/lib/email/notice";
+import { tableAccessPath } from "@/lib/orders/access";
 import type { TableRequest, TableRequestStatus } from "@/types/table";
 
 function tableSummary(request: TableRequest) {
@@ -23,7 +24,31 @@ function tableSummary(request: TableRequest) {
     quoteAmount: request.quoteAmount ?? undefined,
     quoteNote: request.quoteNote ?? undefined,
     assignedVendorName: request.assignedVendorName ?? undefined,
-    statusUrl: `${getEmailSiteUrl()}/table/request/${request.id}`,
+    allergies: request.allergies ?? undefined,
+    messageOnItem: request.messageOnItem ?? undefined,
+    deliveryAddress: request.deliveryAddress ?? undefined,
+    recipientName: request.recipientName ?? undefined,
+    recipientPhone: request.recipientPhone ?? undefined,
+    statusUrl: `${getEmailSiteUrl()}${tableAccessPath(request.id)}`,
+  };
+}
+
+/** Bakers get the brief, never the client's contact details or private link. */
+function vendorSafeSummary(request: TableRequest) {
+  const {
+    contactEmail: _e,
+    contactPhone: _p,
+    statusUrl: _s,
+    deliveryAddress: _a,
+    recipientName: _rn,
+    recipientPhone: _rp,
+    ...rest
+  } = tableSummary(request);
+  void [_e, _p, _s, _a, _rn, _rp];
+  return {
+    ...rest,
+    contactName: request.contactName.trim().split(/\s+/)[0] || "Kay client",
+    contactEmail: "",
   };
 }
 
@@ -58,7 +83,7 @@ const STATUS_COPY: Partial<
   quoted: {
     subject: "has a quote",
     title: "Your quote is ready",
-    body: "We've prepared a quote for your request. Open your request page to review it.",
+    body: "We've prepared a quote for your request. Open your request page to accept and pay, or message us if you'd like changes.",
   },
   accepted: {
     subject: "has been accepted",
@@ -91,7 +116,7 @@ export async function notifyTableStatusUpdate(request: TableRequest) {
     subject: `Your Kay Kitchen request ${request.reference} ${copy.subject}`,
     title: copy.title,
     paragraphs: [`Hi ${request.contactName},`, copy.body, ...extra],
-    ctaUrl: `${getEmailSiteUrl()}/table/request/${request.id}`,
+    ctaUrl: `${getEmailSiteUrl()}${tableAccessPath(request.id)}`,
     ctaLabel: "View your request",
   });
 }
@@ -109,6 +134,6 @@ export async function notifyTableVendorAssigned(
     type: "table_vendor_assigned",
     appUrl: getEmailSiteUrl(),
     vendor,
-    request: tableSummary(request),
+    request: vendorSafeSummary(request),
   });
 }

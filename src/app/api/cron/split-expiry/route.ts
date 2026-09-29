@@ -5,6 +5,7 @@ import { sendNotice } from "@/lib/email/notice";
 import { formatNaira } from "@/lib/data/home";
 import { getEmailSiteUrl } from "@/lib/site";
 import type { OrderItem } from "@/types/order";
+import { adminCancel } from "@/lib/orders/admin-actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,5 +122,55 @@ export async function GET(request: Request) {
     }
   }
 
-  return Response.json({ ok: true, cancelled, checked: orders?.length ?? 0, errors });
+  const abandonedCancelled = await cancelAbandonedOrders(db, errors);
+
+  return Response.json({
+    ok: true,
+    cancelled,
+    abandonedCancelled,
+    checked: orders?.length ?? 0,
+    errors,
+  });
+}
+
+const ABANDONED_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Single-payment orders that never got paid hold stock forever. Release
+ * them after 24h, except transfers the customer says they've sent — those
+ * wait for an admin to verify.
+ */
+async function cancelAbandonedOrders(
+  db: NonNullable<ReturnType<typeof createAdminClient>>,
+  errors: string[],
+): Promise<number> {
+  const cutoff = new Date(Date.now() - ABANDONED_AFTER_MS).toISOString();
+  const { data: stale, error } = await db
+    .from("orders")
+    .select("id, payment_reference")
+    .eq("payment_mode", "single")
+    .in("payment_status", ["unpaid", "pending"])
+    .neq("status", "cancelled")
+    .lt("created_at", cutoff)
+    .limit(50);
+  if (error) {
+    errors.push(`abandoned: ${error.message}`);
+    return 0;
+  }
+
+  let count = 0;
+  for (const row of stale ?? []) {
+    if (row.payment_reference === "manual-claim") continue;
+    try {
+      const done = await adminCancel(
+        String(row.id),
+        "We didn't receive payment within 24 hours, so we've released the items. You can place the order again any time.",
+        { requireUnpaid: true },
+      );
+      if (done) count += 1;
+    } catch (err) {
+      errors.push(`${row.id}: ${err instanceof Error ? err.message : "failed"}`);
+    }
+  }
+  return count;
 }

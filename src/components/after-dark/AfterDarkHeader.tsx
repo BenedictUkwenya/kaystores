@@ -23,9 +23,10 @@ export function AfterDarkHeader() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const q = searchQuery.trim();
-    const params = new URLSearchParams({ collection: "after-dark" });
+    const params = new URLSearchParams();
     if (q) params.set("q", q);
-    router.push(`/search?${params.toString()}`);
+    const qs = params.toString();
+    router.push(qs ? `/after-dark/search?${qs}` : "/after-dark/search");
     setSearchOpen(false);
     setMenuOpen(false);
   }

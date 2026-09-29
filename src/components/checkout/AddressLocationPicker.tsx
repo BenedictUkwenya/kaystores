@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import type { AddressDetails } from "@/types/order";
 import { Input } from "@/components/ui/Input";
+import { NIGERIAN_STATES, matchNigerianState } from "@/lib/geo/nigeria";
 import {
   nominatimToAddress,
   parseLocationFromText,
@@ -201,6 +202,13 @@ export function AddressLocationPicker({
   function patch(partial: Partial<AddressDetails>) {
     onChange({ ...value, ...partial });
   }
+
+  const stateValue = matchNigerianState(value.state);
+  useEffect(() => {
+    if (value.state && stateValue && stateValue !== value.state) {
+      onChangeRef.current({ ...valueRef.current, state: stateValue });
+    }
+  }, [value.state, stateValue]);
 
   function pickSuggestion(result: NominatimResult) {
     const next = nominatimToAddress(result, value);
@@ -416,27 +424,47 @@ export function AddressLocationPicker({
           onChange={(e) => patch({ city: e.target.value })}
           required={required}
         />
+        <div className="w-full">
+          <label
+            htmlFor={`${searchId}-state`}
+            className="mb-1.5 block text-[12px] font-medium text-kay-muted"
+          >
+            State
+          </label>
+          <select
+            id={`${searchId}-state`}
+            value={stateValue ?? ""}
+            onChange={(e) => patch({ state: e.target.value, country: "Nigeria" })}
+            required={required}
+            className="h-11 w-full rounded-lg border border-kay-border bg-kay-input-bg px-3 text-[14px] text-kay-fg outline-none transition-colors focus:border-kay-fg"
+          >
+            <option value="" disabled>
+              {value.state && !stateValue ? `${value.state} — pick a state` : "Select state"}
+            </option>
+            {NIGERIAN_STATES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <Input
           variant="checkout"
-          label="Postal Code"
+          label="Apartment, landmark (optional)"
+          value={value.line2 ?? ""}
+          onChange={(e) => patch({ line2: e.target.value })}
+          placeholder="Flat 3, opposite Shoprite…"
+          maxLength={160}
+        />
+        <Input
+          variant="checkout"
+          label="Postal code (optional)"
           value={value.postalCode ?? ""}
           onChange={(e) => patch({ postalCode: e.target.value })}
-        />
-        <Input
-          variant="checkout"
-          label="State"
-          value={value.state}
-          onChange={(e) => patch({ state: e.target.value })}
-          required={required}
-        />
-        <Input
-          variant="checkout"
-          label="Country"
-          value={value.country}
-          onChange={(e) => patch({ country: e.target.value })}
-          required={required}
+          maxLength={12}
         />
       </div>
+      <p className="text-[12px] text-kay-subtle">Kay currently delivers within Nigeria.</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { apiErrorResponse, requireAdmin } from "@/lib/auth/roles";
-import { fetchAllOrdersAdmin, updateOrderAdmin } from "@/lib/admin/repository";
+import { fetchAllOrdersAdmin } from "@/lib/admin/repository";
 import { mapOrderRow } from "@/lib/orders/map";
 
 export async function GET() {
