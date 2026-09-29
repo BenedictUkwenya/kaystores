@@ -1163,10 +1163,18 @@ function escapeDeep<T>(value: T, key = ""): T {
 }
 
 function isAuthorized(req: Request): boolean {
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const invokeSecret = Deno.env.get("EMAIL_INVOKE_SECRET")?.trim();
+  const headerSecret = req.headers.get("x-kay-email-secret")?.trim() ?? "";
+  if (invokeSecret && headerSecret && invokeSecret === headerSecret) {
+    return true;
+  }
+
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
   if (!serviceKey) return false;
-  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const apikey = req.headers.get("apikey");
+
+  const bearer =
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
+  const apikey = req.headers.get("apikey")?.trim() ?? "";
   return bearer === serviceKey || apikey === serviceKey;
 }
 

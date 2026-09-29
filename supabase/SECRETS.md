@@ -34,6 +34,7 @@ supabase secrets set KAY_REPLY_TO_EMAIL=hello@shoponkay.com
 | `RESEND_FROM_EMAIL` | Verified sender on **shoponkay.com** — use `hello@`, `support@`, or `team@` (**not** `noreply@`) |
 | `KAY_TEAM_EMAIL` | Internal alerts (new orders, concierge, contact) |
 | `KAY_REPLY_TO_EMAIL` | Inbox that receives replies (defaults to `KAY_TEAM_EMAIL`) |
+| `EMAIL_INVOKE_SECRET` | (Optional) Shared secret for `send-email` if service-role header auth fails — set the same value on **Vercel** as `EMAIL_INVOKE_SECRET` |
 
 **Spam / inbox placement:** see [`docs/EMAIL_DELIVERABILITY.md`](../docs/EMAIL_DELIVERABILITY.md) — domain must be **Verified** in Resend (Kay uses `shoponkay.com`).
 

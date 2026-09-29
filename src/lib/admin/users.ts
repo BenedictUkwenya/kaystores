@@ -466,6 +466,10 @@ export async function inviteUserByRole(input: {
 
   if (!emailResult.ok && !emailResult.skipped) {
     console.error("[invite] role_invite email failed:", emailResult.error);
+    throw new Error(
+      emailResult.error ||
+        "Invite was saved but the email could not be sent. Copy the signup link from the dashboard after fixing email config.",
+    );
   }
 
   return { action: "invited", token, inviteUrl, email, role: input.role };

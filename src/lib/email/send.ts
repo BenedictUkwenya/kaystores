@@ -1,10 +1,36 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { KayEmailPayload } from "@/lib/email/types";
 import type { Order } from "@/types/order";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 export type SendEmailResult =
   | { ok: true; id?: string }
   | { ok: false; skipped?: boolean; error: string };
+
+async function edgeFunctionErrorMessage(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = (await error.context.json()) as { error?: string };
+      if (body?.error) return body.error;
+    } catch {
+      // fall through
+    }
+    const status = error.context.status;
+    if (status === 401) {
+      return "Email service unauthorized — check SUPABASE_SERVICE_ROLE_KEY on Vercel matches your Supabase project (Settings → API).";
+    }
+    if (status === 500) {
+      return "Email provider error — confirm RESEND_API_KEY and RESEND_FROM_EMAIL in Supabase Edge secrets.";
+    }
+  }
+  if (error instanceof Error) {
+    if (error.message.includes("non-2xx")) {
+      return "Email service rejected the request. Check Supabase send-email logs and Resend configuration.";
+    }
+    return error.message;
+  }
+  return "Email send failed.";
+}
 
 /** Invokes the Supabase Edge Function — Resend API key lives in Supabase secrets only. */
 export async function sendKayEmail(
@@ -16,13 +42,33 @@ export async function sendKayEmail(
     return { ok: false, skipped: true, error: "Email not configured" };
   }
 
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey) {
+    return {
+      ok: false,
+      skipped: true,
+      error: "SUPABASE_SERVICE_ROLE_KEY is missing on the server.",
+    };
+  }
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+  };
+  const invokeSecret = process.env.EMAIL_INVOKE_SECRET?.trim();
+  if (invokeSecret) {
+    headers["x-kay-email-secret"] = invokeSecret;
+  }
+
   const { data, error } = await admin.functions.invoke("send-email", {
     body: payload,
+    headers,
   });
 
   if (error) {
-    console.error("[email] edge function error:", error.message);
-    return { ok: false, error: error.message };
+    const message = await edgeFunctionErrorMessage(error);
+    console.error("[email] edge function error:", message);
+    return { ok: false, error: message };
   }
 
   const result = data as { ok?: boolean; id?: string; error?: string };

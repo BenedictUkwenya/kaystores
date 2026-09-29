@@ -41,7 +41,9 @@ async function emailOtp(
   if (!result.ok) {
     return {
       ok: false,
-      error: result.error || "Could not send verification email.",
+      error:
+        result.error ||
+        "Could not send verification email. Try again in a few minutes.",
       status: 502,
     };
   }
