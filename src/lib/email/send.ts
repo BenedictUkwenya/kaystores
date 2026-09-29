@@ -55,7 +55,9 @@ export async function sendKayEmail(
         action: payload.action,
       });
     }
-    return sendRoleEmailDirect(payload);
+    if (payload.type === "role_invite" || payload.type === "role_upgraded") {
+      return sendRoleEmailDirect(payload);
+    }
   }
 
   const admin = createAdminClient();
@@ -102,7 +104,9 @@ export async function sendKayEmail(
           action: payload.action,
         });
       }
-      return sendRoleEmailDirect(payload);
+      if (payload.type === "role_invite" || payload.type === "role_upgraded") {
+        return sendRoleEmailDirect(payload);
+      }
     }
     return { ok: false, error: message };
   }
