@@ -8,6 +8,8 @@ import { TABLE_ROUTES } from "@/lib/table/catalog";
 import { resolveTableViewer } from "@/lib/orders/access";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
 import { TableQuoteDeclineButton } from "@/components/table/TableQuoteDeclineButton";
+import { TableReferencePhotos } from "@/components/table/TableReferencePhotos";
+import { signTableReferenceImages } from "@/lib/table/images";
 import {
   PaymentReturnVerifier,
   PaystackPayButton,
@@ -54,6 +56,7 @@ export default async function TableRequestStatusPage({ params, searchParams }: P
 
   const paid = request.paymentStatus === "paid";
   const paystackOn = isPaystackConfigured();
+  const photoUrls = await signTableReferenceImages(request.referenceImages);
   const canPay = !tablePaymentBlocker(request);
   const returnReference =
     query.payment === "return" ? query.reference || query.trxref || "" : "";
@@ -136,6 +139,16 @@ export default async function TableRequestStatusPage({ params, searchParams }: P
       )}
 
       <dl className="mt-10 grid gap-4 rounded-2xl border border-[var(--table-line)] bg-[var(--table-paper)] p-5 text-[13px] sm:grid-cols-2">
+        {photoUrls.length > 0 && (
+          <div className="sm:col-span-2">
+            <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">
+              Your photos
+            </dt>
+            <dd className="mt-2">
+              <TableReferencePhotos urls={photoUrls} />
+            </dd>
+          </div>
+        )}
         {request.servings && (
           <div>
             <dt className="text-[10px] uppercase tracking-[0.12em] text-[var(--table-muted)]">

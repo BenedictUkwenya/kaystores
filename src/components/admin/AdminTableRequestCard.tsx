@@ -8,6 +8,7 @@ import { formatIntegerInput, formatNaira, parseIntegerInput } from "@/lib/data/h
 import type { TableRequest, TableRequestStatus } from "@/types/table";
 import { TABLE_STATUS_LABELS } from "@/components/table/TableRequestStatusTimeline";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
+import { TableReferencePhotos } from "@/components/table/TableReferencePhotos";
 
 type VendorOption = { id: string; businessName: string };
 
@@ -24,9 +25,11 @@ export function AdminTableRequestCard({
   request,
   vendors,
   suggestedClientPrice,
+  referenceImageUrls = [],
 }: {
   request: TableRequest;
   vendors: VendorOption[];
+  referenceImageUrls?: string[];
   /** Vendor price + Kay markup tiers, when the vendor has quoted. */
   suggestedClientPrice?: number | null;
 }) {
@@ -201,6 +204,7 @@ export function AdminTableRequestCard({
           <p className="text-emerald-800">Payment ref: {request.paymentReference}</p>
         )}
       </div>
+      <TableReferencePhotos urls={referenceImageUrls} className="mt-3" />
 
       {request.assignedVendorId && (
         <div

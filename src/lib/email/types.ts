@@ -55,6 +55,7 @@ export type TableRequestSummary = {
   deliveryAddress?: string;
   recipientName?: string;
   recipientPhone?: string;
+  photoCount?: number;
 };
 
 export type TableEmailPayload =

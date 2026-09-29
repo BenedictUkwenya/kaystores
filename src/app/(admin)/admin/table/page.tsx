@@ -7,7 +7,7 @@ import {
 } from "@/components/dashboard/DashboardLayout";
 import { AdminTableRequestCard } from "@/components/admin/AdminTableRequestCard";
 import { applyClientMarkup, getMarkupTiers } from "@/lib/pricing/markup";
-import type { TableRequestStatus } from "@/types/table";
+import { signTableReferenceImages } from "@/lib/table/images";import type { TableRequestStatus } from "@/types/table";
 import Link from "next/link";
 
 type PageProps = {
@@ -36,6 +36,14 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
     fetchAllVendors("approved"),
     getMarkupTiers(),
   ]);
+
+  const imageUrls = new Map(
+    await Promise.all(
+      requests.map(
+        async (r) => [r.id, await signTableReferenceImages(r.referenceImages)] as const,
+      ),
+    ),
+  );
 
   const tableVendors = vendors
     .filter((v) => v.canListTable)
@@ -78,6 +86,7 @@ export default async function AdminTablePage({ searchParams }: PageProps) {
             key={request.id}
             request={request}
             vendors={tableVendors}
+            referenceImageUrls={imageUrls.get(request.id) ?? []}
             suggestedClientPrice={
               request.vendorQuoteAmount != null
                 ? applyClientMarkup(request.vendorQuoteAmount, tiers)

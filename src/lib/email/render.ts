@@ -241,6 +241,7 @@ type Payload =
         deliveryAddress?: string;
         recipientName?: string;
         recipientPhone?: string;
+        photoCount?: number;
       };
     }
   | {
@@ -1323,7 +1324,8 @@ export async function deliverKayEmail(raw: Payload): Promise<DeliverResult> {
           ${request.messageOnItem ? `Message on item: “${request.messageOnItem}”<br/>` : ""}
           ${request.allergies ? `<strong>Allergies / dietary: ${request.allergies}</strong><br/>` : ""}
           ${request.deliveryAddress ? `Deliver to: ${request.recipientName ? `${request.recipientName}, ` : ""}${request.deliveryAddress}${request.recipientPhone ? ` · ${request.recipientPhone}` : ""}<br/>` : ""}
-          Fulfilment: ${fulfilment}</p>
+          Fulfilment: ${fulfilment}
+          ${request.photoCount ? `<br/><strong>${request.photoCount} inspiration photo${request.photoCount > 1 ? "s" : ""} attached</strong> — view in admin.` : ""}</p>
           <p style="color:#5c5c5c;font-size:13px"><a href="${appUrl}/admin/table">Open admin Kay Kitchen</a></p>`,
         );
         const team = await sendResend({

@@ -9,6 +9,8 @@ import {
 } from "@/components/dashboard/DashboardLayout";
 import { TableRequestChat } from "@/components/table/TableRequestChat";
 import { VendorTableQuoteForm } from "@/components/table/VendorTableQuoteForm";
+import { TableReferencePhotos } from "@/components/table/TableReferencePhotos";
+import { signTableReferenceImages } from "@/lib/table/images";
 import { TABLE_STATUS_LABELS } from "@/components/table/TableRequestStatusTimeline";
 import { formatNaira } from "@/lib/data/home";
 import { isTableCatalogProduct } from "@/lib/table/catalog";
@@ -52,9 +54,14 @@ export default async function VendorTablePage() {
       limit: 50,
     })
   ).map(toVendorSafeRequest);
-  const [allHubs, nearest] = await Promise.all([
+  const [allHubs, nearest, imageUrls] = await Promise.all([
     listShippingHubs({ activeOnly: true }),
     nearestHubsForVendor(vendor.pickupAddress?.state, 1),
+    Promise.all(
+      requests.map(
+        async (r) => [r.id, await signTableReferenceImages(r.referenceImages)] as const,
+      ),
+    ).then((entries) => new Map(entries)),
   ]);
   const nearestHub = nearest[0];
 
@@ -162,6 +169,8 @@ export default async function VendorTablePage() {
                     </div>
                   ))}
               </dl>
+
+              <TableReferencePhotos urls={imageUrls.get(request.id) ?? []} className="mt-4" />
 
               <VendorTableQuoteForm
                 requestId={request.id}

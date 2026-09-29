@@ -29,6 +29,7 @@ function tableSummary(request: TableRequest) {
     deliveryAddress: request.deliveryAddress ?? undefined,
     recipientName: request.recipientName ?? undefined,
     recipientPhone: request.recipientPhone ?? undefined,
+    photoCount: request.referenceImages.length || undefined,
     statusUrl: `${getEmailSiteUrl()}${tableAccessPath(request.id)}`,
   };
 }

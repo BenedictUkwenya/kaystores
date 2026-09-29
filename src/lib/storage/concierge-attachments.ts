@@ -12,7 +12,7 @@ const ALLOWED_TYPES = new Set([
   "application/pdf",
 ]);
 
-const OFFER_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg"]);
+const OFFER_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.\-() ]+/g, "_").slice(0, 120);
@@ -38,7 +38,7 @@ export async function uploadConciergeFiles(
     if (file.type && !allowed.has(file.type)) {
       throw new Error(
         options?.imagesOnly
-          ? `${file.name} must be PNG or JPG.`
+          ? `${file.name} must be PNG, JPG, or WebP.`
           : `${file.name} must be PNG, JPG, or PDF.`,
       );
     }

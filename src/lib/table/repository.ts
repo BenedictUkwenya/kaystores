@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoredAttachments } from "@/lib/storage/concierge-attachments";
 import type {
   ChatChannel,
   CreateTableRequestInput,
@@ -60,6 +61,7 @@ function mapRequest(
       row.vendor_quote_note != null ? String(row.vendor_quote_note) : null,
     vendorQuotedAt:
       row.vendor_quoted_at != null ? String(row.vendor_quoted_at) : null,
+    referenceImages: parseStoredAttachments(row.reference_images),
     paymentStatus: (["pending", "paid", "refunded"].includes(String(row.payment_status))
       ? row.payment_status
       : "unpaid") as TableRequest["paymentStatus"],

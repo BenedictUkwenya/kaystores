@@ -5,6 +5,10 @@ import { createTableRequest } from "@/lib/table/repository";
 import { grantAccess } from "@/lib/orders/access";
 import { listShippingHubs } from "@/lib/shipping/hubs";
 import {
+  attachTableReferenceImages,
+  MAX_TABLE_REFERENCE_IMAGES,
+} from "@/lib/table/images";
+import {
   isValidEmail,
   matchNigerianState,
   normalizeNigerianPhone,
@@ -24,7 +28,18 @@ const CATEGORIES = new Set<TableRequestCategory>([
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    let body: Record<string, unknown>;
+    let images: File[] = [];
+    if ((request.headers.get("content-type") ?? "").includes("multipart/form-data")) {
+      const form = await request.formData();
+      body = JSON.parse(String(form.get("payload") ?? "{}"));
+      images = form
+        .getAll("images")
+        .filter((f): f is File => f instanceof File && f.size > 0)
+        .slice(0, MAX_TABLE_REFERENCE_IMAGES);
+    } else {
+      body = await request.json();
+    }
     const contactName = String(body.contactName ?? "").trim().slice(0, 120);
     const contactEmail = String(body.contactEmail ?? "").trim();
     if (!contactName || !isValidEmail(contactEmail)) {
@@ -57,7 +72,18 @@ export async function POST(request: Request) {
       }
     }
 
-    const category = CATEGORIES.has(body.category)
+    if (
+      !String(body.flavourNotes ?? "").trim() &&
+      !String(body.styleNotes ?? "").trim() &&
+      images.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "Describe what you'd like or add a photo." },
+        { status: 400 },
+      );
+    }
+
+    const category = CATEGORIES.has(body.category as TableRequestCategory)
       ? (body.category as TableRequestCategory)
       : "cake";
 
@@ -120,6 +146,14 @@ export async function POST(request: Request) {
       category,
       userId: ctx?.userId ?? null,
     });
+
+    if (images.length > 0) {
+      try {
+        created.referenceImages = await attachTableReferenceImages(created.id, images);
+      } catch (err) {
+        console.error("[table request] reference images:", err);
+      }
+    }
 
     void notifyTableRequestSubmitted(created);
 

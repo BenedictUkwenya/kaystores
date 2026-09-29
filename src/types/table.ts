@@ -49,6 +49,8 @@ export type TableRequest = {
   vendorQuoteAmount?: number | null;
   vendorQuoteNote?: string | null;
   vendorQuotedAt?: string | null;
+  /** Inspiration photos (private storage paths — sign before showing). */
+  referenceImages: TableReferenceImage[];
   paymentStatus: TablePaymentStatus;
   paymentReference?: string | null;
   paidAt?: string | null;
@@ -62,6 +64,12 @@ export type TableRequest = {
 };
 
 export type TablePaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
+
+export type TableReferenceImage = {
+  name: string;
+  path: string;
+  contentType: string;
+};
 
 export type TableRequestMessage = {
   id: string;
