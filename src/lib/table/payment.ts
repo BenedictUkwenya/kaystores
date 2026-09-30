@@ -4,6 +4,7 @@ import { getEmailSiteUrl } from "@/lib/site";
 import { formatNaira } from "@/lib/data/home";
 import { tableAccessPath } from "@/lib/orders/access";
 import { getTableRequestById } from "@/lib/table/repository";
+import { assignDropoffHub } from "@/lib/fulfilment/hub-steps";
 import type { TableRequest } from "@/types/table";
 
 function db() {
@@ -77,11 +78,14 @@ export async function confirmTablePayment(
       paragraphs: [
         `${request.contactName} paid ${amount} (ref ${paymentReference}) for ${request.reference}, which is ${request.status}. Refund it or reopen the request.`,
       ],
-      ctaUrl: `${site}/admin/table#request-${request.id}`,
-      ctaLabel: "Open request",
+      ctaUrl: `${site}/admin/jobs/kitchen/${request.id}`,
+      ctaLabel: "Open the job",
     });
     return true;
   }
+
+  await assignDropoffHub("kitchen", requestId);
+  const withHub = (await getTableRequestById(requestId).catch(() => null)) ?? request;
 
   await Promise.all([
     sendNotice({
@@ -108,10 +112,10 @@ export async function confirmTablePayment(
           : "No baker assigned yet — assign one now.",
         request.neededBy ? `Needed by ${request.neededBy}.` : "",
       ].filter(Boolean),
-      ctaUrl: `${site}/admin/table#request-${request.id}`,
-      ctaLabel: "Open request",
+      ctaUrl: `${site}/admin/jobs/kitchen/${request.id}`,
+      ctaLabel: "Open the job",
     }).catch(() => undefined),
-    notifyBakerPaid(request).catch(() => undefined),
+    notifyBakerPaid(withHub).catch(() => undefined),
   ]);
 
   return true;
@@ -133,9 +137,11 @@ async function notifyBakerPaid(request: TableRequest) {
     paragraphs: [
       `Hi ${vendor.contact_name || "there"},`,
       `${request.reference} is confirmed and paid. Please start${request.neededBy ? ` — it's needed by ${request.neededBy}` : ""}.`,
-      "Open Kay Kitchen in your vendor portal for the full brief and the hub to bring it to.",
+      request.dropoffHubName
+        ? `When it's ready, bring it to ${request.dropoffHubName}${request.dropoffHubAddress ? ` (${request.dropoffHubAddress})` : ""} and tap "I've sent it" in your portal.`
+        : "When it's ready, bring it to the Kay hub shown in your portal and tap \"I've sent it\".",
     ],
-    ctaUrl: `${getEmailSiteUrl()}/vendor/table#request-${request.id}`,
-    ctaLabel: "Open the brief",
+    ctaUrl: `${getEmailSiteUrl()}/vendor/jobs/kitchen/${request.id}`,
+    ctaLabel: "Open the job",
   });
 }

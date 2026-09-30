@@ -6,6 +6,7 @@ import type {
   ConciergeRequest,
   CreateConciergePayload,
 } from "@/types/concierge";
+import { mapHubStepFields } from "@/types/fulfilment";
 import { randomBytes } from "crypto";
 
 const requests = new Map<string, ConciergeRequest>();
@@ -73,6 +74,7 @@ function mapRow(row: ConciergeRow): ConciergeRequest {
     userId: row.user_id,
     autoReleaseOffers: false,
     createdAt: row.created_at,
+    ...mapHubStepFields(row as unknown as Record<string, unknown>),
   };
 }
 
@@ -90,6 +92,7 @@ function createInMemory(
     autoReleaseOffers: false,
     status: "pending",
     createdAt: new Date().toISOString(),
+    fulfilmentStage: "awaiting_vendor",
   };
   requests.set(id, request);
   return request;

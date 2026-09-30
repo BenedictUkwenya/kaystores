@@ -1,59 +1,58 @@
 import Link from "next/link";
 import { requireVendor } from "@/lib/auth/roles";
 import { formatNaira } from "@/lib/data/home";
-import {
-  fetchVendorOrderItems,
-  fetchVendorProducts,
-  getVendorWalletSummary,
-} from "@/lib/vendors/repository";
+import { getVendorWalletSummary } from "@/lib/vendors/repository";
+import { loadVendorJobs } from "@/lib/jobs";
+import type { VendorJobTab } from "@/lib/jobs/types";
+import { VENDOR_TAB_LABELS } from "@/lib/jobs/labels";
 import {
   DashboardLayout,
   VENDOR_NAV,
 } from "@/components/dashboard/DashboardLayout";
-import { DashboardStatRow } from "@/components/dashboard/DashboardStatRow";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
-import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
-import {
-  PortalActionCard,
-  PortalSection,
-} from "@/components/dashboard/PortalPrimitives";
-import { discreetItemLabel } from "@/lib/after-dark/checkout-privacy";
-import { hasAnyPlacement } from "@/lib/shop/taxonomy";
-import {
-  IconOrders,
-  IconPackage,
-  IconPlus,
-  IconTag,
-  IconWallet,
-} from "@/components/ui/Icons";
+import { VendorJobCard } from "@/components/jobs/JobCard";
+import { IconPlus } from "@/components/ui/Icons";
 
-export default async function VendorOverviewPage() {
+const TABS: VendorJobTab[] = ["todo", "in_progress", "done"];
+
+const EMPTY: Record<VendorJobTab, string> = {
+  todo: "Nothing for you to do right now. Kay will email you when a new job comes in.",
+  in_progress: "Nothing in progress.",
+  done: "No finished jobs yet.",
+};
+
+type Props = { searchParams: Promise<{ tab?: string }> };
+
+export default async function VendorJobsPage({ searchParams }: Props) {
   const { vendor } = await requireVendor();
-  const [products, orderItems, wallet] = await Promise.all([
-    fetchVendorProducts(vendor.id),
-    fetchVendorOrderItems(vendor.id),
+  const { tab: tabParam } = await searchParams;
+  const tab: VendorJobTab = TABS.includes(tabParam as VendorJobTab)
+    ? (tabParam as VendorJobTab)
+    : "todo";
+
+  const [jobs, wallet] = await Promise.all([
+    loadVendorJobs(vendor.id),
     getVendorWalletSummary(vendor.id),
   ]);
-
-  const liveCount = products.filter((p) => p.status === "live").length;
-  const draftCount = products.filter((p) => p.status === "draft").length;
-  const needsPlacement = products.filter(
-    (p) => p.status === "live" && !hasAnyPlacement(p),
-  ).length;
-  const openOrders = orderItems.filter(
-    (o) => !["completed", "cancelled"].includes(o.fulfillmentStatus),
-  ).length;
-  const awaitingHub = orderItems.filter(
-    (o) => o.fulfillmentStatus === "awaiting_hub_delivery",
-  ).length;
+  const counts = Object.fromEntries(
+    TABS.map((t) => [t, jobs.filter((job) => job.tab === t).length]),
+  ) as Record<VendorJobTab, number>;
+  const visible = jobs.filter((job) => job.tab === tab);
+  const shown =
+    tab === "done"
+      ? [...visible].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 30)
+      : visible;
 
   return (
     <DashboardLayout
       role="vendor"
       nav={VENDOR_NAV}
       eyebrow={vendor.businessName}
-      title="Vendor dashboard"
-      description="Grow your boutique on Kay — catalogue health, hub fulfilment, and earnings in one place."
+      title={
+        counts.todo === 0
+          ? "You're all caught up"
+          : `${counts.todo} ${counts.todo === 1 ? "job needs" : "jobs need"} you`
+      }
+      description="Everything Kay has sent you: gift orders to send to a Kay hub, cake briefs to price and make, and client requests to check stock for."
       actions={
         <Link
           href="/vendor/products/new"
@@ -64,129 +63,68 @@ export default async function VendorOverviewPage() {
         </Link>
       }
     >
-      <DashboardStatRow
-        stats={[
-          {
-            label: "Live products",
-            value: String(liveCount),
-            hint:
-              draftCount > 0
-                ? `${draftCount} draft${draftCount === 1 ? "" : "s"} waiting`
-                : "Published on the shop",
-            accent: true,
-            icon: <IconTag className="h-[18px] w-[18px]" />,
-            href: "/vendor/products",
-          },
-          {
-            label: "Open orders",
-            value: String(openOrders),
-            hint:
-              awaitingHub > 0
-                ? `${awaitingHub} awaiting hub delivery`
-                : "Fulfilment pipeline",
-            icon: <IconOrders className="h-[18px] w-[18px]" />,
-            href: "/vendor/orders",
-          },
-          {
-            label: "Available",
-            value: formatNaira(wallet.available),
-            hint: "Ready to withdraw",
-            icon: <IconWallet className="h-[18px] w-[18px]" />,
-            href: "/vendor/wallet",
-          },
-          {
-            label: "Pending",
-            value: formatNaira(wallet.pending),
-            hint: "Clears on delivery",
-            icon: <IconPackage className="h-[18px] w-[18px]" />,
-            href: "/vendor/wallet",
-          },
-        ]}
-      />
-
-      {needsPlacement > 0 && (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-[13px] text-amber-950">
-          {needsPlacement} live listing
-          {needsPlacement === 1 ? "" : "s"} missing shop categories.{" "}
-          <Link href="/vendor/products" className="font-medium underline">
-            Fix placement
+      <div className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/vendor/wallet"
+            className="rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-4 hover:border-kay-gold"
+          >
+            <p className="text-[11px] uppercase tracking-[0.14em] text-kay-subtle">Ready to withdraw</p>
+            <p className="mt-1 font-serif text-[24px] text-kay-fg">{formatNaira(wallet.available)}</p>
+          </Link>
+          <Link
+            href="/vendor/wallet"
+            className="rounded-2xl border border-kay-border-light bg-kay-surface-elevated p-4 hover:border-kay-gold"
+          >
+            <p className="text-[11px] uppercase tracking-[0.14em] text-kay-subtle">Paid after delivery</p>
+            <p className="mt-1 font-serif text-[24px] text-kay-fg">{formatNaira(wallet.pending)}</p>
           </Link>
         </div>
-      )}
 
-      <div className="mt-8 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <PortalSection
-          title="Recent orders"
-          description="12-hour hub delivery SLA — update status as items move."
-          actionHref="/vendor/orders"
-          actionLabel="View all"
-        >
-          {orderItems.length === 0 ? (
-            <div className="p-6">
-              <DashboardEmptyState
-                icon={<IconOrders className="h-6 w-6" />}
-                title="No orders yet"
-                description="Publish live products with photos, stock, and categories to start receiving Kay orders."
-                actionHref="/vendor/products/new"
-                actionLabel="Add your first product"
-              />
-            </div>
-          ) : (
-            <ul className="divide-y divide-kay-border-light">
-              {orderItems.slice(0, 5).map((item, index) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-kay-fg">
-                      {discreetItemLabel(
-                        { name: item.productName, segment: item.segment },
-                        index,
-                      )}
-                    </p>
-                    <p className="mt-1 text-[12px] text-kay-muted">
-                      {item.orderNumber ?? item.orderId.slice(0, 8)} · Qty{" "}
-                      {item.quantity}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <StatusBadge status={item.fulfillmentStatus} />
-                    <p className="font-serif text-[18px] text-kay-fg">
-                      {formatNaira(item.lineTotal)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </PortalSection>
-
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-subtle">
-            Grow your boutique
-          </p>
-          <PortalActionCard
-            href="/vendor/products/new"
-            title="List a new gift"
-            description="Photos, price, stock, and shop categories."
-            icon={<IconPlus className="h-[18px] w-[18px]" />}
-            tone="gold"
-          />
-          <PortalActionCard
-            href="/vendor/orders"
-            title="Fulfil hub deliveries"
-            description="Mark items when they leave for the Kay hub."
-            icon={<IconOrders className="h-[18px] w-[18px]" />}
-          />
-          <PortalActionCard
-            href="/vendor/wallet"
-            title="Check earnings"
-            description={`${formatNaira(wallet.available)} available to withdraw.`}
-            icon={<IconWallet className="h-[18px] w-[18px]" />}
-            tone="ink"
-          />
+        <div className="rounded-2xl border border-kay-border-light bg-kay-surface/60 px-4 py-3 text-[12px] leading-relaxed text-kay-muted">
+          <strong className="text-kay-fg">How it works:</strong> you only ever deal with Kay. Send your
+          price or item to Kay, never to the client. Once the client pays, bring it to the Kay hub shown
+          on the job and tap &quot;I&apos;ve sent it&quot;. You&apos;re paid after delivery.
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((t) => (
+            <Link
+              key={t}
+              href={t === "todo" ? "/vendor" : `/vendor?tab=${t}`}
+              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-medium ${
+                t === tab
+                  ? "border-[#111111] bg-[#111111] text-white"
+                  : "border-kay-border bg-kay-surface-elevated text-kay-muted hover:text-kay-fg"
+              }`}
+            >
+              {VENDOR_TAB_LABELS[t]}
+              <span
+                className={`rounded-full px-1.5 text-[11px] font-semibold ${
+                  t === tab
+                    ? "bg-kay-gold text-[#111111]"
+                    : t === "todo" && counts.todo > 0
+                      ? "bg-kay-gold-light text-kay-fg"
+                      : "text-kay-subtle"
+                }`}
+              >
+                {counts[t]}
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        {shown.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-kay-border-light px-6 py-12 text-center text-[13px] text-kay-muted">
+            {EMPTY[tab]}
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {shown.map((job) => (
+              <VendorJobCard key={job.key} job={job} />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

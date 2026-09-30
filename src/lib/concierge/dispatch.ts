@@ -15,6 +15,7 @@ import {
 import { markupPrice } from "@/lib/pricing/markup";
 import { sendNotice } from "@/lib/email/notice";
 import { getEmailSiteUrl } from "@/lib/site";
+import { mapHubStepFields } from "@/types/fulfilment";
 import type {
   ClientConciergeDetail,
   ClientConciergeOffer,
@@ -127,6 +128,7 @@ function mapRequest(row: ConciergeRow): ConciergeRequest {
           .join(", ")}`
       : null,
     createdAt: row.created_at,
+    ...mapHubStepFields(row as unknown as Record<string, unknown>),
   };
 }
 
@@ -269,6 +271,57 @@ export async function fetchConciergeRequestsWithAssignments(input?: {
     requests: filtered.slice(start, start + pageSize),
     total: filtered.length,
   };
+}
+
+export async function fetchConciergeRequestWithAssignments(
+  requestId: string,
+): Promise<ConciergeRequestWithAssignments | null> {
+  const db = admin();
+  const { data: request, error } = await db
+    .from("concierge_requests")
+    .select("*")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!request) return null;
+  const { data: assignments } = await db
+    .from("concierge_vendor_assignments")
+    .select("*, vendors(business_name)")
+    .eq("concierge_request_id", requestId);
+  return {
+    ...mapRequest(request as ConciergeRow),
+    assignments: (assignments ?? []).map((row) => mapAssignment(row as AssignmentRow)),
+  };
+}
+
+/** A vendor's assignments with the parent request (for their job list). */
+export async function fetchVendorConciergeAssignments(
+  vendorId: string,
+  assignmentId?: string,
+): Promise<{ assignment: ConciergeVendorAssignment; request: ConciergeRequest }[]> {
+  const db = admin();
+  let query = db
+    .from("concierge_vendor_assignments")
+    .select(
+      "*, vendors(business_name), concierge_requests!concierge_vendor_assignments_concierge_request_id_fkey(*)",
+    )
+    .eq("vendor_id", vendorId)
+    .order("sent_at", { ascending: false });
+  if (assignmentId) query = query.eq("id", assignmentId);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []).flatMap((row) => {
+    const parent = (row as { concierge_requests?: ConciergeRow | ConciergeRow[] | null })
+      .concierge_requests;
+    const request = Array.isArray(parent) ? parent[0] : parent;
+    if (!request) return [];
+    return [
+      {
+        assignment: mapAssignment(row as AssignmentRow),
+        request: mapRequest(request),
+      },
+    ];
+  });
 }
 
 export async function dispatchConciergeToVendors(input: {
@@ -826,8 +879,8 @@ export async function updateConciergeFulfilment(input: {
           ? `Deliver to ${row?.recipient_name ?? "the client"}: ${[address.line1, address.city, address.state].filter(Boolean).join(", ")}.`
           : "No delivery address on file — contact the client before dispatch.",
       ],
-      ctaUrl: `${getEmailSiteUrl()}/admin/concierge`,
-      ctaLabel: "Open concierge",
+      ctaUrl: `${getEmailSiteUrl()}/admin/jobs/concierge/${assignment.concierge_request_id}`,
+      ctaLabel: "Open the job",
     }).catch((err) => console.error("[concierge at_hub notify]", err));
   }
 }

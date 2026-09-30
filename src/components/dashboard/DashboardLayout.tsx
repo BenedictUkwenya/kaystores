@@ -6,7 +6,7 @@ import type { ComponentType, ReactNode } from "react";
 import type { UserRole } from "@/types/dashboard";
 import type { DashboardNavAttention } from "@/lib/dashboard/nav-attention";
 import {
-  NavAttentionDot,
+  NavAttention,
   useDashboardNavAttention,
 } from "@/components/dashboard/DashboardNavAttention";
 import {
@@ -49,6 +49,8 @@ export type DashboardNavItem = {
   attentionLabel?: string;
   icon?: DashboardNavIcon;
   group?: string;
+  /** Extra path prefixes that should highlight this item (e.g. its job pages). */
+  alsoActive?: string[];
 };
 
 type Props = {
@@ -83,6 +85,7 @@ const NAV_ICONS: Record<
 };
 
 function isActive(pathname: string, item: DashboardNavItem) {
+  if (item.alsoActive?.some((prefix) => pathname.startsWith(prefix))) return true;
   return item.exact
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -122,11 +125,21 @@ function DashboardSidebar({
           aria-label="Dashboard navigation"
         >
           <ul className="space-y-1">
-            {nav.map((item) => {
+            {nav.map((item, index) => {
               const active = isActive(pathname, item);
-              const needsAttention = attention[item.href];
+              const showGroup =
+                item.group && item.group !== nav[index - 1]?.group;
               return (
                 <li key={item.href}>
+                  {showGroup && (
+                    <p
+                      className={`px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-kay-subtle ${
+                        index === 0 ? "" : "pt-3"
+                      }`}
+                    >
+                      {item.group}
+                    </p>
+                  )}
                   <Link
                     href={item.href}
                     className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-colors ${
@@ -143,13 +156,11 @@ function DashboardSidebar({
                       <NavIcon name={item.icon} />
                     </span>
                     <span className="flex-1">{item.label}</span>
-                    {needsAttention && (
-                      <NavAttentionDot
-                        label={
-                          item.attentionLabel ?? `${item.label} needs attention`
-                        }
-                      />
-                    )}
+                    <NavAttention
+                      value={attention[item.href]}
+                      active={active}
+                      label={item.attentionLabel ?? `${item.label} need you`}
+                    />
                   </Link>
                 </li>
               );
@@ -196,7 +207,6 @@ function MobileNav({
       >
         {primary.map((item) => {
           const active = isActive(pathname, item);
-          const needsAttention = attention[item.href];
           return (
             <Link
               key={item.href}
@@ -211,11 +221,11 @@ function MobileNav({
                 <NavIcon name={item.icon} />
               </span>
               {item.label}
-              {needsAttention && (
-                <NavAttentionDot
-                  label={item.attentionLabel ?? `${item.label} needs attention`}
-                />
-              )}
+              <NavAttention
+                value={attention[item.href]}
+                active={active}
+                label={item.attentionLabel ?? `${item.label} need you`}
+              />
             </Link>
           );
         })}
@@ -224,7 +234,6 @@ function MobileNav({
         <div className="mt-2 flex flex-wrap gap-2">
           {overflow.map((item) => {
             const active = isActive(pathname, item);
-            const needsAttention = attention[item.href];
             return (
               <Link
                 key={item.href}
@@ -236,13 +245,11 @@ function MobileNav({
                 }`}
               >
                 {item.label}
-                {needsAttention && (
-                  <NavAttentionDot
-                    label={
-                      item.attentionLabel ?? `${item.label} needs attention`
-                    }
-                  />
-                )}
+                <NavAttention
+                  value={attention[item.href]}
+                  active={active}
+                  label={item.attentionLabel ?? `${item.label} need you`}
+                />
               </Link>
             );
           })}
@@ -361,59 +368,70 @@ export function DashboardLayout({
 }
 
 export const ADMIN_NAV: DashboardNavItem[] = [
-  { href: "/admin", label: "Overview", exact: true, icon: "home" },
-  { href: "/admin/users", label: "Users", icon: "users" },
   {
-    href: "/admin/orders",
-    label: "Orders",
-    icon: "orders",
-    attentionLabel: "Open orders need attention",
+    href: "/admin",
+    label: "Today",
+    exact: true,
+    icon: "home",
+    group: "Work",
+    attentionLabel: "jobs waiting on you",
   },
-  { href: "/admin/vendors", label: "Vendors", icon: "store" },
-  { href: "/admin/products", label: "Products", exact: true, icon: "tag" },
-  { href: "/admin/products/import", label: "Import", icon: "import" },
-  { href: "/admin/pricing", label: "Pricing", icon: "percent" },
-  { href: "/admin/hubs", label: "Shipping", icon: "store" },
-  { href: "/admin/payouts", label: "Payouts", icon: "wallet" },
+  {
+    href: "/admin/gifts",
+    label: "Gift orders",
+    icon: "bag",
+    group: "Work",
+    alsoActive: ["/admin/jobs/gift"],
+    attentionLabel: "gift orders waiting on you",
+  },
+  {
+    href: "/admin/kitchen",
+    label: "Kay Kitchen",
+    icon: "package",
+    group: "Work",
+    alsoActive: ["/admin/jobs/kitchen"],
+    attentionLabel: "kitchen requests waiting on you",
+  },
   {
     href: "/admin/concierge",
     label: "Concierge",
     icon: "concierge",
-    attentionLabel: "Concierge requests need attention",
-  },
-  {
-    href: "/admin/table",
-    label: "Kay Kitchen",
-    icon: "tag",
+    group: "Work",
+    alsoActive: ["/admin/jobs/concierge"],
+    attentionLabel: "concierge requests waiting on you",
   },
   {
     href: "/admin/support",
-    label: "Support",
+    label: "Messages",
     icon: "support",
-    attentionLabel: "Support messages need a reply",
+    group: "Work",
+    attentionLabel: "messages need a reply",
   },
+  { href: "/admin/vendors", label: "Vendors", icon: "store", group: "People" },
+  { href: "/admin/users", label: "Users", icon: "users", group: "People" },
+  {
+    href: "/admin/payouts",
+    label: "Payouts",
+    icon: "wallet",
+    group: "Money",
+    attentionLabel: "payouts to review",
+  },
+  { href: "/admin/pricing", label: "Kay's margin", icon: "percent", group: "Money" },
+  { href: "/admin/products", label: "Products", exact: true, icon: "tag", group: "Catalogue" },
+  { href: "/admin/products/import", label: "Import", icon: "import", group: "Catalogue" },
+  { href: "/admin/hubs", label: "Hubs & shipping", icon: "settings", group: "Settings" },
 ];
 
 export const VENDOR_NAV: DashboardNavItem[] = [
-  { href: "/vendor", label: "Overview", exact: true, icon: "home" },
+  {
+    href: "/vendor",
+    label: "Your jobs",
+    exact: true,
+    icon: "home",
+    alsoActive: ["/vendor/jobs"],
+    attentionLabel: "jobs to do",
+  },
   { href: "/vendor/products", label: "Products", icon: "tag" },
-  {
-    href: "/vendor/orders",
-    label: "Orders",
-    icon: "orders",
-    attentionLabel: "Open orders need fulfilment",
-  },
-  {
-    href: "/vendor/concierge",
-    label: "Concierge",
-    icon: "concierge",
-    attentionLabel: "Concierge requests need your response",
-  },
-  {
-    href: "/vendor/table",
-    label: "Kay Kitchen",
-    icon: "tag",
-  },
   { href: "/vendor/wallet", label: "Wallet", icon: "wallet" },
   { href: "/vendor/settings", label: "Settings", icon: "settings" },
 ];

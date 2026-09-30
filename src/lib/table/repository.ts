@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseStoredAttachments } from "@/lib/storage/concierge-attachments";
+import { mapHubStepFields } from "@/types/fulfilment";
 import type {
   ChatChannel,
   CreateTableRequestInput,
@@ -74,6 +75,7 @@ function mapRequest(
     messageOnItem: row.message_on_item != null ? String(row.message_on_item) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    ...mapHubStepFields(row),
   };
 }
 

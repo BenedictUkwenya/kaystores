@@ -81,7 +81,7 @@ export async function confirmOrderPayment(
       paragraphs: [
         `A payment (reference ${paymentReference}) arrived for order ${orderId} after it was cancelled. The order was not reopened — please refund it in Paystack.`,
       ],
-      ctaUrl: `${getEmailSiteUrl()}/admin/orders/${orderId}`,
+      ctaUrl: `${getEmailSiteUrl()}/admin/jobs/gift/${orderId}`,
       ctaLabel: "Open order",
     });
     return true;
@@ -152,6 +152,9 @@ export async function confirmConciergePayment(
   if (error) throw new Error(error.message);
   if (!claimed?.length) return true;
 
+  const { assignDropoffHub } = await import("@/lib/fulfilment/hub-steps");
+  await assignDropoffHub("concierge", requestId);
+
   await notifyConciergePaid(requestId, existing).catch((err) =>
     console.error("[concierge paid notify]", err),
   );
@@ -195,6 +198,15 @@ async function notifyConciergePaid(
     contact_name?: string;
     business_name?: string;
   } | null;
+  // dropoff_hub_* need migration 045; a missing column just means no hub line.
+  const { data: hubRow } = await admin()
+    .from("concierge_requests")
+    .select("dropoff_hub_name, dropoff_hub_address")
+    .eq("id", requestId)
+    .maybeSingle();
+  const hubName = (hubRow as { dropoff_hub_name?: string | null } | null)?.dropoff_hub_name;
+  const hubAddress = (hubRow as { dropoff_hub_address?: string | null } | null)
+    ?.dropoff_hub_address;
 
   await Promise.all([
     row.contact_email
@@ -221,8 +233,8 @@ async function notifyConciergePaid(
         vendor?.business_name ? `Partner: ${vendor.business_name}.` : "",
         deliverTo,
       ].filter(Boolean),
-      ctaUrl: `${site}/admin/concierge`,
-      ctaLabel: "Open concierge",
+      ctaUrl: `${site}/admin/jobs/concierge/${requestId}`,
+      ctaLabel: "Open the job",
     }),
     vendor?.contact_email
       ? sendNotice({
@@ -232,10 +244,12 @@ async function notifyConciergePaid(
           title: "The client has paid",
           paragraphs: [
             `Hi ${vendor.contact_name || vendor.business_name || "there"},`,
-            `${row.product_name ?? "The item"} (${ref}) is paid. Please prepare it and bring it to the Kay hub shown in your vendor portal.`,
+            `${row.product_name ?? "The item"} (${ref}) is paid. Please prepare it and bring it to ${hubName ? `${hubName}${hubAddress ? ` (${hubAddress})` : ""}` : "the Kay hub shown in your vendor portal"}, then tap "I've sent it".`,
           ],
-          ctaUrl: `${site}/vendor/concierge`,
-          ctaLabel: "Open vendor portal",
+          ctaUrl: row.selected_assignment_id
+            ? `${site}/vendor/jobs/concierge/${row.selected_assignment_id}`
+            : `${site}/vendor`,
+          ctaLabel: "Open the job",
         })
       : Promise.resolve(),
   ]);

@@ -23,6 +23,33 @@ export function useDashboardNavAttention() {
   return useContext(DashboardNavAttentionContext);
 }
 
+/** Count pill when there's a number of jobs waiting, pulsing dot otherwise. */
+export function NavAttention({
+  value,
+  label,
+  active,
+}: {
+  value: number | boolean | undefined;
+  label: string;
+  active?: boolean;
+}) {
+  if (typeof value === "number") {
+    if (value <= 0) return null;
+    return (
+      <span
+        className={`ml-2 inline-flex min-w-[20px] shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none ${
+          active ? "bg-kay-gold text-[#111111]" : "bg-[#111111] text-kay-gold"
+        }`}
+        aria-label={`${value} ${label}`}
+        title={`${value} ${label}`}
+      >
+        {value > 99 ? "99+" : value}
+      </span>
+    );
+  }
+  return value ? <NavAttentionDot label={label} /> : null;
+}
+
 export function NavAttentionDot({ label }: { label: string }) {
   return (
     <span

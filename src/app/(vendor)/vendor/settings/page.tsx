@@ -29,9 +29,9 @@ export default async function VendorSettingsPage() {
           icon={<IconTag className="h-[18px] w-[18px]" />}
         />
         <PortalActionCard
-          href="/vendor/orders"
-          title="Orders"
-          description="Hub fulfilment pipeline."
+          href="/vendor"
+          title="Your jobs"
+          description="Orders, cake briefs and client requests."
           icon={<IconOrders className="h-[18px] w-[18px]" />}
         />
         <PortalActionCard

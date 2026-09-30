@@ -1,9 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchConciergeQueueCounts } from "@/lib/concierge/dispatch";
 import { countSupportThreadsNeedingAttention } from "@/lib/support/repository";
-import { fetchVendorOrderItems } from "@/lib/vendors/repository";
+import {
+  countAdminTodo,
+  countVendorTodo,
+  loadAdminJobs,
+  loadVendorJobs,
+} from "@/lib/jobs";
 
-export type DashboardNavAttention = Partial<Record<string, boolean>>;
+/** Number = count badge; true = unread dot (e.g. a chat waiting on a reply). */
+export type DashboardNavAttention = Partial<Record<string, number | boolean>>;
 
 function admin() {
   const client = createAdminClient();
@@ -28,86 +33,51 @@ function latestSenders(rows: LatestMessageRow[]): Map<string, string> {
   return latest;
 }
 
-async function kitchenNeedsAdmin(
+async function threadsAwaitingAdmin(
   db: NonNullable<ReturnType<typeof admin>>,
+  table: "table_request_messages" | "order_support_messages",
 ): Promise<boolean> {
-  const [newRequests, messages] = await Promise.all([
-    db
-      .from("table_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "submitted"),
-    db
-      .from("table_request_messages")
-      .select("request_id, channel, sender_role")
-      .order("created_at", { ascending: false })
-      .limit(400),
-  ]);
-  if ((newRequests.count ?? 0) > 0) return true;
-  for (const role of latestSenders(
-    (messages.data ?? []) as LatestMessageRow[],
-  ).values()) {
-    if (role !== "admin") return true;
-  }
-  return false;
-}
-
-async function orderChatsNeedAdmin(
-  db: NonNullable<ReturnType<typeof admin>>,
-): Promise<boolean> {
+  const idColumn = table === "table_request_messages" ? "request_id" : "order_id";
   const { data } = await db
-    .from("order_support_messages")
-    .select("order_id, channel, sender_role")
+    .from(table)
+    .select(`${idColumn}, channel, sender_role`)
     .order("created_at", { ascending: false })
     .limit(400);
-  for (const role of latestSenders((data ?? []) as LatestMessageRow[]).values()) {
+  for (const role of latestSenders((data ?? []) as unknown as LatestMessageRow[]).values()) {
     if (role !== "admin") return true;
   }
   return false;
 }
 
-async function overdueDispatchCount(
-  db: NonNullable<ReturnType<typeof admin>>,
-): Promise<number> {
-  const { count } = await db
-    .from("vendor_order_items")
-    .select("id", { count: "exact", head: true })
-    .eq("fulfillment_status", "awaiting_hub_delivery")
-    .is("vendor_dispatched_at", null)
-    .not("hub_reminder_sent_at", "is", null);
-  return count ?? 0;
+/** Prefer the count; fall back to a dot when only a chat is waiting. */
+function countOrDot(count: number, dot: boolean): number | boolean {
+  return count > 0 ? count : dot;
 }
 
 export async function fetchAdminNavAttention(): Promise<DashboardNavAttention> {
   const db = admin();
   if (!db) return {};
 
-  const [counts, ordersRes, supportAttention, kitchen, orderChats, overdue] =
-    await Promise.all([
-      fetchConciergeQueueCounts(),
-      db
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("payment_status", "paid")
-        .in("status", ["confirmed", "processing", "pending_handover"]),
-      countSupportThreadsNeedingAttention().catch(() => 0),
-      kitchenNeedsAdmin(db).catch(() => false),
-      orderChatsNeedAdmin(db).catch(() => false),
-      overdueDispatchCount(db).catch(() => 0),
-    ]);
-  const { count: payoutCount } = await db
-    .from("withdrawal_requests")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["pending", "approved"]);
-
-  const conciergeAttention =
-    counts.needsDispatch + counts.readyToRelease + counts.clientDeciding > 0;
+  const [jobs, support, kitchenChats, orderChats, payouts] = await Promise.all([
+    loadAdminJobs(),
+    countSupportThreadsNeedingAttention().catch(() => 0),
+    threadsAwaitingAdmin(db, "table_request_messages").catch(() => false),
+    threadsAwaitingAdmin(db, "order_support_messages").catch(() => false),
+    db
+      .from("withdrawal_requests")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "approved"])
+      .then((res) => res.count ?? 0),
+  ]);
+  const todo = countAdminTodo(jobs);
 
   return {
-    "/admin/concierge": conciergeAttention,
-    "/admin/orders": (ordersRes.count ?? 0) > 0 || orderChats || overdue > 0,
-    "/admin/support": supportAttention > 0,
-    "/admin/table": kitchen,
-    "/admin/payouts": (payoutCount ?? 0) > 0,
+    "/admin": todo.total,
+    "/admin/gifts": countOrDot(todo.gift, orderChats),
+    "/admin/kitchen": countOrDot(todo.kitchen, kitchenChats),
+    "/admin/concierge": todo.concierge,
+    "/admin/support": support,
+    "/admin/payouts": payouts,
   };
 }
 
@@ -115,43 +85,13 @@ export async function fetchVendorNavAttention(
   vendorId: string,
 ): Promise<DashboardNavAttention> {
   const db = admin();
+  const jobs = await loadVendorJobs(vendorId);
 
-  let pendingConcierge = 0;
-  let activeConciergeJobs = 0;
-
+  let kitchenChat = false;
   if (db) {
-    const { data: assignments } = await db
-      .from("concierge_vendor_assignments")
-      .select("status, outcome, fulfilment_status")
-      .eq("vendor_id", vendorId);
-
-    for (const row of assignments ?? []) {
-      if (row.status === "pending") pendingConcierge += 1;
-      if (
-        row.outcome === "selected" &&
-        row.fulfilment_status !== "completed"
-      ) {
-        activeConciergeJobs += 1;
-      }
-    }
-  }
-
-  const orderItems = await fetchVendorOrderItems(vendorId).catch(() => []);
-  const openOrders = orderItems.some(
-    (item) =>
-      item.paymentStatus === "paid" &&
-      item.fulfillmentStatus === "awaiting_hub_delivery" &&
-      !item.vendorDispatchedAt,
-  );
-
-  let kitchenAttention = false;
-  if (db) {
-    const { data: requests } = await db
-      .from("table_requests")
-      .select("id")
-      .eq("assigned_vendor_id", vendorId)
-      .not("status", "in", "(declined,fulfilled)");
-    const ids = (requests ?? []).map((r) => String(r.id));
+    const ids = jobs
+      .filter((job) => job.kind === "kitchen" && job.tab !== "done")
+      .map((job) => job.id);
     if (ids.length) {
       const { data: messages } = await db
         .from("table_request_messages")
@@ -161,14 +101,12 @@ export async function fetchVendorNavAttention(
         .order("created_at", { ascending: false })
         .limit(200);
       const latest = latestSenders((messages ?? []) as LatestMessageRow[]);
-      kitchenAttention = [...latest.values()].some((role) => role === "admin");
+      kitchenChat = [...latest.values()].some((role) => role === "admin");
     }
   }
 
   return {
-    "/vendor/concierge": pendingConcierge > 0 || activeConciergeJobs > 0,
-    "/vendor/orders": openOrders,
-    "/vendor/table": kitchenAttention,
+    "/vendor": countOrDot(countVendorTodo(jobs), kitchenChat),
   };
 }
 

@@ -1,4 +1,5 @@
 import type { ChatChannel } from "@/types/order-support";
+import type { HubStepFields } from "@/types/fulfilment";
 
 export type { ChatChannel };
 
@@ -61,7 +62,7 @@ export type TableRequest = {
   messageOnItem?: string | null;
   createdAt: string;
   updatedAt: string;
-};
+} & HubStepFields;
 
 export type TablePaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
 

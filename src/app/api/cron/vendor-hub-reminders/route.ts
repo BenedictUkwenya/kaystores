@@ -133,8 +133,8 @@ export async function GET(request: Request) {
       ],
       ctaUrl:
         overdue.length === 1
-          ? `${getEmailSiteUrl()}/admin/orders/${overdue[0].orderId}`
-          : `${getEmailSiteUrl()}/admin/orders`,
+          ? `${getEmailSiteUrl()}/admin/jobs/gift/${overdue[0].orderId}`
+          : `${getEmailSiteUrl()}/admin/gifts`,
       ctaLabel: "Open orders",
     });
   }

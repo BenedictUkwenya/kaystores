@@ -46,7 +46,7 @@ export async function notifyAdminsNewOrder(order: Order): Promise<void> {
       ...orderDetailLines(order),
       `Total paid: ${formatNaira(order.pricing.grandTotal)}${order.paymentReference ? ` · ref ${order.paymentReference}` : ""}`,
     ],
-    ctaUrl: `${getEmailSiteUrl()}/admin/orders/${order.id}`,
+    ctaUrl: `${getEmailSiteUrl()}/admin/jobs/gift/${order.id}`,
     ctaLabel: "Open order",
   });
 }
@@ -63,7 +63,7 @@ export async function notifyManualPaymentClaim(order: Order): Promise<void> {
       "Check the bank account, then use “Mark payment paid” on the order. Vendors are only notified after you confirm.",
       ...orderDetailLines(order),
     ],
-    ctaUrl: `${getEmailSiteUrl()}/admin/orders/${order.id}`,
+    ctaUrl: `${getEmailSiteUrl()}/admin/jobs/gift/${order.id}`,
     ctaLabel: "Verify payment",
   });
 }
@@ -202,7 +202,7 @@ export async function notifyAdminsVendorDispatched(input: {
       `${input.vendorName} has sent ${input.productName} to ${input.hubName ?? "a Kay hub"}.`,
       "Mark it received when it arrives, then run QC.",
     ],
-    ctaUrl: `${getEmailSiteUrl()}/admin/orders/${input.orderId}`,
+    ctaUrl: `${getEmailSiteUrl()}/admin/jobs/gift/${input.orderId}`,
     ctaLabel: "Open order",
   });
 }

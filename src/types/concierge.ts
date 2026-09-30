@@ -1,4 +1,5 @@
 import type { ConciergePaymentBreakdown } from "@/lib/pricing/concierge";
+import type { HubStepFields } from "@/types/fulfilment";
 
 export type ConciergePaymentStatus = "unpaid" | "pending" | "paid" | "refunded";
 
@@ -85,7 +86,7 @@ export type ConciergeRequest = {
   /** "Name (phone): street, city, state" — set when the client pays. */
   deliverySummary?: string | null;
   createdAt: string;
-};
+} & HubStepFields;
 
 export type ConciergeVendorAssignment = {
   id: string;

@@ -112,7 +112,7 @@ export async function GET(request: Request) {
             ? ["Refund these payments manually in Paystack:", ...refundLines]
             : ["No shares were paid — no refunds needed."]),
         ],
-        ctaUrl: `${getEmailSiteUrl()}/admin/orders/${order.id}`,
+        ctaUrl: `${getEmailSiteUrl()}/admin/jobs/gift/${order.id}`,
         ctaLabel: "Open order",
       });
 

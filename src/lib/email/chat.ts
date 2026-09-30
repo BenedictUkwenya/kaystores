@@ -90,7 +90,7 @@ export async function notifyKitchenChatMessage(input: {
       title: "New Kay Kitchen message",
       lead: `${who} (${input.senderName}) sent a message on request ${input.reference}.`,
       body: input.body,
-      ctaUrl: `${appUrl}/admin/table#request-${input.requestId}`,
+      ctaUrl: `${appUrl}/admin/jobs/kitchen/${input.requestId}`,
     });
     return;
   }
@@ -120,7 +120,7 @@ export async function notifyKitchenChatMessage(input: {
     title: "New message from Kay",
     lead: `Kay sent you a message about Kitchen request ${input.reference}.`,
     body: input.body,
-    ctaUrl: `${appUrl}/vendor/table`,
+    ctaUrl: `${appUrl}/vendor/jobs/kitchen/${input.requestId}`,
   });
 }
 
@@ -147,7 +147,7 @@ export async function notifyOrderChatMessage(input: {
       title: "New order support message",
       lead: `${who} (${input.senderName}) sent a message on order ${input.orderNumber}.`,
       body: input.body,
-      ctaUrl: `${appUrl}/admin/orders/${input.orderId}`,
+      ctaUrl: `${appUrl}/admin/jobs/gift/${input.orderId}`,
     });
     return;
   }

@@ -139,10 +139,10 @@ export async function notifyAdminsVendorQuoted(request: TableRequest) {
     paragraphs: [
       `${request.assignedVendorName ?? "The assigned vendor"} quoted ${naira(request.vendorQuoteAmount)} for ${request.reference} (${request.category}).`,
       ...(request.budget != null ? [`Client budget: ${naira(request.budget)}`] : []),
-      "Add Kay's margin, then send the quote to the client from the Kay Kitchen admin page.",
+      "Add Kay's margin, then send the quote to the client from the job page.",
     ],
     quote: request.vendorQuoteNote ?? undefined,
-    ctaUrl: `${getEmailSiteUrl()}/admin/table`,
+    ctaUrl: `${getEmailSiteUrl()}/admin/jobs/kitchen/${request.id}`,
     ctaLabel: "Review & send quote",
   });
 }
@@ -165,8 +165,8 @@ export async function notifyTableQuoteDeclined(
           : []),
       ],
       quote: reason,
-      ctaUrl: `${getEmailSiteUrl()}/admin/table`,
-      ctaLabel: "Open Kay Kitchen",
+      ctaUrl: `${getEmailSiteUrl()}/admin/jobs/kitchen/${request.id}`,
+      ctaLabel: "Open the job",
     }),
   ];
   if (request.contactEmail) {

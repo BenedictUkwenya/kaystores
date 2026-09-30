@@ -306,6 +306,8 @@
 
 - [ ] **Kay Kitchen vendor quotes** — assigned baker sends a price, admins emailed, admin card shows vendor price + suggested client price (markup tiers) and “Send quote to client”, client accept & pay or decline (admins + client emailed); run migration `044_kitchen_vendor_quotes.sql`, test the flow live, then mark complete
 
+- [ ] **Admin & vendor portal overhaul ("Jobs")** — admin Today inbox (whose turn, one-click next steps), Gift / Kitchen / Concierge boards, guided job page (stage tracker, client ⇄ Kay ⇄ vendor money panel, relay chat, timeline); vendor "Your jobs" home + job page with "I've sent it"; kitchen & concierge now go through the hub (sent → at hub → QC → out for delivery → delivered) with emails; run migration `045_job_fulfilment_steps.sql`, click through each flow live, then mark complete
+
 - [ ] **Catalog attributes & discovery** — structured tags, vendor original price, and improved search are implemented; run migration `028_catalog_attributes.sql`, backfill tags/prices on existing products, then mark complete
 
 - [ ] **Flexible product variations** — vendor/admin-defined variation axis with per-option stock and PDP chips are implemented; run migration `029_product_variations.sql`, then mark complete
@@ -340,11 +342,11 @@
 
 | Help & legal      | 11   | 12    |
 
-| Backend           | 18   | 19    |
+| Backend           | 18   | 20    |
 
 
 
-**Overall:** 86 / 91 checklist items complete
+**Overall:** 86 / 92 checklist items complete
 
 
 

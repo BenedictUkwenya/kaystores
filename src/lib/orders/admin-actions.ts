@@ -96,6 +96,11 @@ export async function adminQcPass(orderId: string, itemId: string) {
     .update({ fulfillment_status: "qc_passed", updated_at: new Date().toISOString() })
     .eq("id", itemId)
     .eq("fulfillment_status", "at_hub");
+  await db()
+    .from("vendor_order_items")
+    .update({ qc_note: null })
+    .eq("id", itemId)
+    .then(() => undefined, () => undefined);
 }
 
 export async function adminQcFail(orderId: string, itemId: string, note: string) {
@@ -104,14 +109,23 @@ export async function adminQcFail(orderId: string, itemId: string, note: string)
   if (!["at_hub", "qc_passed"].includes(item.fulfillment_status)) {
     throw new OrderActionError("Only items at the hub can fail QC.");
   }
+  // The replacement gets a fresh reminder cycle, not "already reminded".
   await db()
     .from("vendor_order_items")
     .update({
       fulfillment_status: "awaiting_hub_delivery",
       vendor_dispatched_at: null,
+      hub_reminder_sent_at: null,
+      hub_reminder_count: 0,
       updated_at: new Date().toISOString(),
     })
     .eq("id", itemId);
+  // qc_note needs migration 045; don't fail the QC step without it.
+  await db()
+    .from("vendor_order_items")
+    .update({ qc_note: note.trim() || "Didn't pass Kay's quality check." })
+    .eq("id", itemId)
+    .then(() => undefined, () => undefined);
   if (item.vendors?.contact_email) {
     await notifyVendorItemUpdate({
       vendorEmail: item.vendors.contact_email,
