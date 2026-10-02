@@ -3,6 +3,7 @@ import {
   sanitizePlacementArrays,
 } from "@/lib/shop/taxonomy";
 import type { VendorProductInput } from "@/lib/vendors/repository";
+import { defaultParcelFor } from "@/lib/shipping/parcel-defaults";
 
 export function prepareVendorProductInput(
   body: VendorProductInput,
@@ -18,18 +19,21 @@ export function prepareVendorProductInput(
       "Choose at least one category (occasion, recipient, or collection) before publishing.",
     );
   }
-  if (
-    body.publish &&
-    (!body.shippingWeightKg ||
-      !body.shippingLengthCm ||
-      !body.shippingWidthCm ||
-      !body.shippingHeightCm ||
-      body.shippingWeightKg <= 0 ||
-      body.shippingLengthCm <= 0 ||
-      body.shippingWidthCm <= 0 ||
-      body.shippingHeightCm <= 0)
-  ) {
-    throw new Error("Packaged weight and dimensions are required before publishing.");
+  if (body.publish) {
+    const size = defaultParcelFor({
+      productType: body.productType,
+      masterCategory: body.masterCategory,
+      name: body.name,
+    });
+    const orDefault = (value: number | undefined, def: number) =>
+      value != null && value > 0 ? value : def;
+    body = {
+      ...body,
+      shippingWeightKg: orDefault(body.shippingWeightKg, size.weightKg),
+      shippingLengthCm: orDefault(body.shippingLengthCm, size.lengthCm),
+      shippingWidthCm: orDefault(body.shippingWidthCm, size.widthCm),
+      shippingHeightCm: orDefault(body.shippingHeightCm, size.heightCm),
+    };
   }
 
   if (

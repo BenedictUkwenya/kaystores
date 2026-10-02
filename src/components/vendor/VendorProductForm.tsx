@@ -25,6 +25,7 @@ import {
   MAX_PRODUCT_IMAGES,
 } from "@/lib/storage/product-images";
 import { formatNaira } from "@/lib/data/home";
+import { defaultParcelFor } from "@/lib/shipping/parcel-defaults";
 import type { Product } from "@/types/product";
 
 type Props = {
@@ -176,16 +177,6 @@ export function VendorProductForm({
       setError(
         "Choose at least one shop category (occasion, recipient, or collection) before publishing.",
       );
-      return;
-    }
-    const parcelValues = [
-      Number(shippingWeightKg),
-      Number(shippingLengthCm),
-      Number(shippingWidthCm),
-      Number(shippingHeightCm),
-    ];
-    if (publish && parcelValues.some((value) => !Number.isFinite(value) || value <= 0)) {
-      setError("Enter the packaged weight and dimensions before publishing.");
       return;
     }
     if (
@@ -392,14 +383,32 @@ export function VendorProductForm({
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
           Shipping parcel
         </p>
-        <p className="mb-4 text-[12px] text-kay-muted">
-          Packaged measurements let Kay quote accurate hub-to-customer delivery.
+        <p className="mb-3 text-[12px] text-kay-muted">
+          Packaged weight and size set the delivery price. Not sure? Leave them empty and Kay uses a
+          typical size for this kind of item. You can change it any time.
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            const size = defaultParcelFor({
+              productType: catalogAttrs.productType,
+              masterCategory: catalogAttrs.masterCategory,
+              name,
+            });
+            setShippingWeightKg(String(size.weightKg));
+            setShippingLengthCm(String(size.lengthCm));
+            setShippingWidthCm(String(size.widthCm));
+            setShippingHeightCm(String(size.heightCm));
+          }}
+          className="mb-4 rounded-full border border-kay-border px-4 py-1.5 text-[12px] font-medium text-kay-fg hover:border-kay-fg"
+        >
+          Use typical size for this item
+        </button>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Weight (kg)" type="number" min="0.01" step="0.01" value={shippingWeightKg} onChange={(e) => setShippingWeightKg(e.target.value)} required />
-          <Input label="Length (cm)" type="number" min="1" step="0.1" value={shippingLengthCm} onChange={(e) => setShippingLengthCm(e.target.value)} required />
-          <Input label="Width (cm)" type="number" min="1" step="0.1" value={shippingWidthCm} onChange={(e) => setShippingWidthCm(e.target.value)} required />
-          <Input label="Height (cm)" type="number" min="1" step="0.1" value={shippingHeightCm} onChange={(e) => setShippingHeightCm(e.target.value)} required />
+          <Input label="Weight (kg)" type="number" min="0.01" step="0.01" value={shippingWeightKg} onChange={(e) => setShippingWeightKg(e.target.value)} />
+          <Input label="Length (cm)" type="number" min="1" step="0.1" value={shippingLengthCm} onChange={(e) => setShippingLengthCm(e.target.value)} />
+          <Input label="Width (cm)" type="number" min="1" step="0.1" value={shippingWidthCm} onChange={(e) => setShippingWidthCm(e.target.value)} />
+          <Input label="Height (cm)" type="number" min="1" step="0.1" value={shippingHeightCm} onChange={(e) => setShippingHeightCm(e.target.value)} />
         </div>
       </div>
 
@@ -594,7 +603,7 @@ export function VendorProductForm({
           <li>{publishReady.price ? "✓" : "○"} Price set</li>
           <li>{publishReady.original ? "✓" : "○"} Vendor original price set</li>
           <li>{publishReady.tags ? "✓" : "○"} Searchable tags set</li>
-          <li>{publishReady.parcel ? "✓" : "○"} Parcel weight and dimensions set</li>
+          <li>{publishReady.parcel ? "✓" : "○"} Parcel weight and size (optional, Kay estimates if empty)</li>
         </ul>
       </div>
 

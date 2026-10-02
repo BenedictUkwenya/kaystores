@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveShippingHub, type ShippingHub } from "@/lib/shipping/hubs";
 import { getShippingSettings } from "@/lib/shipping/settings";
 import { resolveTerminalCity } from "@/lib/shipping/terminal-cities";
+import { defaultParcelFor } from "@/lib/shipping/parcel-defaults";
 import {
   MANUAL_RATE_ID,
   MANUAL_SHIPMENT_ID,
@@ -189,28 +190,38 @@ async function getParcel(items: OrderItem[]) {
   if (!admin) throw new Error("Shipping is temporarily unavailable.");
   const { data, error } = await admin
     .from("products")
-    .select("id, shipping_weight_kg, shipping_length_cm, shipping_width_cm, shipping_height_cm")
+    .select(
+      "id, name, product_type, master_category, shipping_weight_kg, shipping_length_cm, shipping_width_cm, shipping_height_cm",
+    )
     .in("id", items.map((item) => item.productId));
   if (error) throw new Error("Could not prepare this order for shipping.");
 
   const byId = new Map((data ?? []).map((product) => [product.id, product]));
-  const missing = items.some((item) => {
+  const sizeOf = (item: OrderItem) => {
     const product = byId.get(item.productId);
-    return !product?.shipping_weight_kg || !product?.shipping_length_cm ||
-      !product?.shipping_width_cm || !product?.shipping_height_cm;
-  });
-  if (missing) {
-    throw new Error("One or more gifts are not yet configured for delivery.");
-  }
+    const fallback = defaultParcelFor({
+      productType: product?.product_type,
+      masterCategory: product?.master_category,
+      name: product?.name ?? item.name,
+    });
+    const pick = (value: unknown, def: number) => (Number(value) > 0 ? Number(value) : def);
+    return {
+      weightKg: pick(product?.shipping_weight_kg, fallback.weightKg),
+      lengthCm: pick(product?.shipping_length_cm, fallback.lengthCm),
+      widthCm: pick(product?.shipping_width_cm, fallback.widthCm),
+      heightCm: pick(product?.shipping_height_cm, fallback.heightCm),
+    };
+  };
+  const sizes = new Map(items.map((item) => [item.productId, sizeOf(item)]));
 
-  const totalWeight = items.reduce((total, item) => {
-    const product = byId.get(item.productId)!;
-    return total + Number(product.shipping_weight_kg) * item.quantity;
-  }, 0);
-  const length = Math.max(...items.map((item) => Number(byId.get(item.productId)!.shipping_length_cm)));
-  const width = Math.max(...items.map((item) => Number(byId.get(item.productId)!.shipping_width_cm)));
+  const totalWeight = items.reduce(
+    (total, item) => total + sizes.get(item.productId)!.weightKg * item.quantity,
+    0,
+  );
+  const length = Math.max(...items.map((item) => sizes.get(item.productId)!.lengthCm));
+  const width = Math.max(...items.map((item) => sizes.get(item.productId)!.widthCm));
   const height = items.reduce(
-    (total, item) => total + Number(byId.get(item.productId)!.shipping_height_cm) * item.quantity,
+    (total, item) => total + sizes.get(item.productId)!.heightCm * item.quantity,
     0,
   );
 
@@ -228,7 +239,7 @@ async function getParcel(items: OrderItem[]) {
       currency: "NGN",
       value: item.price,
       quantity: item.quantity,
-      weight: Number(byId.get(item.productId)!.shipping_weight_kg),
+      weight: sizes.get(item.productId)!.weightKg,
     })),
   };
 }
