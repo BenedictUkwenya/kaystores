@@ -66,6 +66,8 @@ export type ProductFilters = {
   tags?: string[];
   /** Hide products in any of these collections (e.g. Kay Kitchen on /gifts). */
   excludeCollections?: string[];
+  /** Match any of these `product_type` values (e.g. Watch, Perfume). */
+  productTypes?: string[];
   search?: string;
 };
 

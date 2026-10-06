@@ -110,6 +110,13 @@ function applyFiltersLocally(
     );
   }
 
+  if (filters.productTypes?.length) {
+    const wanted = filters.productTypes.map((t) => t.toLowerCase());
+    result = result.filter(
+      (p) => p.product_type && wanted.includes(p.product_type.toLowerCase()),
+    );
+  }
+
   return result;
 }
 
@@ -273,6 +280,10 @@ export async function getProducts(
 
     if (filters.tags?.length) {
       query = query.overlaps("tags", filters.tags);
+    }
+
+    if (filters.productTypes?.length) {
+      query = query.in("product_type", filters.productTypes);
     }
 
     // Random: pull a pool, shuffle with a stable seed, then paginate locally so
@@ -502,6 +513,38 @@ export async function getCuratedProducts(limit = 5): Promise<Product[]> {
     seed: randomShuffleSeed(),
   });
   return products.slice(0, limit);
+}
+
+/**
+ * "Messi's Picks" — things we'd gift the number 10: watches, sneakers,
+ * perfume, phones. Tops up with gifts for him if the catalogue is thin.
+ */
+export async function getMessiPicks(limit = 8): Promise<Product[]> {
+  const seed = randomShuffleSeed();
+  const { products: typed } = await getProducts({
+    sort: "random",
+    pageSize: 40,
+    seed,
+    filters: {
+      productTypes: ["Watch", "Sneaker", "Slide", "Perfume", "Phone"],
+      excludeCollections: ["table"],
+    },
+  });
+  const picks = typed.slice(0, limit);
+  if (picks.length >= limit) return picks;
+
+  const { products: forHim } = await getProducts({
+    sort: "random",
+    pageSize: 40,
+    seed,
+    filters: { recipients: ["for-him"], excludeCollections: ["table"] },
+  });
+  const seen = new Set(picks.map((p) => p.id));
+  for (const product of forHim) {
+    if (picks.length >= limit) break;
+    if (!seen.has(product.id)) picks.push(product);
+  }
+  return picks;
 }
 
 /** Age-gated surfaces only — callers must verify the After Dark age cookie. */
