@@ -98,14 +98,20 @@ export async function registerWithResendOtp(input: {
     }
 
     if (existing) {
-      // Incomplete prior signup — replace so we can issue a fresh OTP.
-      await admin.auth.admin.deleteUser(existing.id);
-      link = await admin.auth.admin.generateLink({
-        type: "signup",
+      // Account was started but never confirmed. Send a fresh code instead of deleting it.
+      const magic = await admin.auth.admin.generateLink({
+        type: "magiclink",
         email,
-        password,
-        options: fullName ? { data: { full_name: fullName } } : undefined,
       });
+      if (!magic.error && magic.data.properties?.email_otp) {
+        return emailOtp(
+          email,
+          magic.data.properties.email_otp,
+          "signup",
+          "email",
+        );
+      }
+      link = magic;
     }
   }
 

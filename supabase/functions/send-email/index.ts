@@ -359,7 +359,7 @@ function buildMessage(
   tags?: { name: string; value: string }[];
 } | null {
   const teamEmail = Deno.env.get("KAY_TEAM_EMAIL");
-  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <hello@shoponkay.com>";
 
   switch (payload.type) {
     case "order_confirmation": {
@@ -1140,6 +1140,10 @@ const RAW_KEYS = new Set([
   "email",
   "recipientEmail",
   "contactEmail",
+  "inviteUrl",
+  "accessUrl",
+  "statusUrl",
+  "ctaUrl",
 ]);
 
 function decodeEntities(value: string): string {
@@ -1266,7 +1270,7 @@ Deno.serve(async (req) => {
   try {
     const raw = (await req.json()) as Payload;
     const payload = SELF_ESCAPING.has(raw.type) ? raw : escapeDeep(raw);
-    const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+    const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "Kay Stores <hello@shoponkay.com>";
 
     if (payload.type === "concierge") {
       const { request } = payload;

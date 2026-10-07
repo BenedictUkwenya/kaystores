@@ -379,7 +379,7 @@ function buildMessage(
   tags?: { name: string; value: string }[];
 } | null {
   const teamEmail = envGet("KAY_TEAM_EMAIL");
-  const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+  const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <hello@shoponkay.com>";
 
   switch (payload.type) {
     case "order_confirmation": {
@@ -1161,6 +1161,10 @@ const RAW_KEYS = new Set([
   "email",
   "recipientEmail",
   "contactEmail",
+  "inviteUrl",
+  "accessUrl",
+  "statusUrl",
+  "ctaUrl",
 ]);
 
 function decodeEntities(value: string): string {
@@ -1233,7 +1237,7 @@ export type DeliverResult = { ok: boolean; id?: string; error?: string };
 export async function deliverKayEmail(raw: Payload): Promise<DeliverResult> {
   try {
     const payload = SELF_ESCAPING.has(raw.type) ? raw : escapeDeep(raw);
-    const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <onboarding@resend.dev>";
+    const from = envGet("RESEND_FROM_EMAIL") ?? "Kay Stores <hello@shoponkay.com>";
 
     if (payload.type === "concierge") {
       const { request } = payload;

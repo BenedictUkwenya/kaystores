@@ -127,6 +127,10 @@ function VerifyFormInner() {
         Enter the code we just sent to{" "}
         <span className="font-medium text-kay-fg">{email}</span>
       </p>
+      <p className="mt-2 text-[13px] text-kay-subtle">
+        It can take a minute. Check Spam and Promotions for an email from Kay Stores
+        titled &ldquo;Verify your Kay account&rdquo;.
+      </p>
 
       <form onSubmit={handleVerify} className="mt-8">
         <OTPInput

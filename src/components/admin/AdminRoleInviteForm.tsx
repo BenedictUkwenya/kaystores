@@ -40,7 +40,17 @@ export function AdminRoleInviteForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Invite failed");
+      if (!res.ok) {
+        setResult({
+          variant: "error",
+          title: "Email did not send",
+          message:
+            data.error ??
+            "The invite is saved, but the email did not go out. Copy the link and send it to them.",
+          inviteUrl: data.inviteUrl,
+        });
+        return;
+      }
 
       if (data.action === "upgraded") {
         setResult({

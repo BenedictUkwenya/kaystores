@@ -256,9 +256,7 @@ export async function resendRoleInviteReminder(inviteId: string): Promise<{
     reminder: true,
   });
 
-  if (!emailResult.ok && !emailResult.skipped) {
-    throw new Error(emailResult.error || "Failed to send reminder email.");
-  }
+  requireEmailSent(emailResult, inviteUrl);
 
   return { email, inviteUrl };
 }
@@ -385,6 +383,28 @@ export type InviteResult =
   | { action: "upgraded"; userId: string; role: "admin" | "vendor" }
   | { action: "invited"; token: string; inviteUrl: string; email: string; role: "admin" | "vendor" };
 
+/** Invite row exists, but the email did not go out. Carries the signup link. */
+export class InviteEmailError extends Error {
+  inviteUrl: string;
+  constructor(message: string, inviteUrl: string) {
+    super(message);
+    this.name = "InviteEmailError";
+    this.inviteUrl = inviteUrl;
+  }
+}
+
+function requireEmailSent(
+  result: { ok: boolean; skipped?: boolean; error?: string },
+  inviteUrl: string,
+) {
+  if (result.ok) return;
+  throw new InviteEmailError(
+    result.error ||
+      "The invite is saved, but the email did not send. Copy the link and send it yourself, or try again.",
+    inviteUrl,
+  );
+}
+
 export async function inviteUserByRole(input: {
   email: string;
   role: "admin" | "vendor";
@@ -399,13 +419,19 @@ export async function inviteUserByRole(input: {
   if (existing) {
     if (input.role === "admin") {
       await upgradeUserToAdmin(existing.id, input.invitedBy);
-      await sendKayEmail({
+      const emailResult = await sendKayEmail({
         type: "role_upgraded",
         appUrl: getEmailSiteUrl(),
         recipientEmail: email,
         recipientName: existing.user_metadata?.full_name as string | undefined,
         role: "admin",
       });
+      if (!emailResult.ok) {
+        throw new Error(
+          emailResult.error ||
+            "They are now an admin, but the email did not send. Ask them to sign in.",
+        );
+      }
       return { action: "upgraded", userId: existing.id, role: "admin" };
     }
 
@@ -414,17 +440,22 @@ export async function inviteUserByRole(input: {
       input.invitedBy,
       input.businessName ?? email.split("@")[0],
     );
-    await sendKayEmail({
+    const emailResult = await sendKayEmail({
       type: "role_upgraded",
       appUrl: getEmailSiteUrl(),
       recipientEmail: email,
       recipientName: existing.user_metadata?.full_name as string | undefined,
       role: "vendor",
     });
+    if (!emailResult.ok) {
+      throw new Error(
+        emailResult.error ||
+          "They are now a vendor, but the email did not send. Ask them to sign in.",
+      );
+    }
     return { action: "upgraded", userId: existing.id, role: "vendor" };
   }
 
-  const token = crypto.randomUUID();
   const inviteMode =
     input.role === "vendor"
       ? (input.inviteMode === "instant" ? "instant" : "profile")
@@ -435,15 +466,34 @@ export async function inviteUserByRole(input: {
       ? { business_name: businessName, inviteMode }
       : {};
 
-  const { error: inviteErr } = await db.from("role_invites").insert({
-    email,
-    invite_role: input.role,
-    token,
-    invited_by: input.invitedBy,
-    metadata,
-  });
+  const { data: openInvite, error: openErr } = await db
+    .from("role_invites")
+    .select("id, token")
+    .eq("email", email)
+    .eq("invite_role", input.role)
+    .is("accepted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (openErr) throw new Error(openErr.message);
 
-  if (inviteErr) throw new Error(inviteErr.message);
+  let token = openInvite ? String(openInvite.token) : crypto.randomUUID();
+  if (openInvite) {
+    const { error: updateErr } = await db
+      .from("role_invites")
+      .update({ metadata, invited_by: input.invitedBy })
+      .eq("id", openInvite.id);
+    if (updateErr) throw new Error(updateErr.message);
+  } else {
+    const { error: inviteErr } = await db.from("role_invites").insert({
+      email,
+      invite_role: input.role,
+      token,
+      invited_by: input.invitedBy,
+      metadata,
+    });
+    if (inviteErr) throw new Error(inviteErr.message);
+  }
 
   const siteUrl = getEmailSiteUrl();
   const inviteUrl =
@@ -464,13 +514,7 @@ export async function inviteUserByRole(input: {
     businessName: input.businessName,
   });
 
-  if (!emailResult.ok && !emailResult.skipped) {
-    console.error("[invite] role_invite email failed:", emailResult.error);
-    throw new Error(
-      emailResult.error ||
-        "Invite was saved but the email could not be sent. Copy the signup link from the dashboard after fixing email config.",
-    );
-  }
+  requireEmailSent(emailResult, inviteUrl);
 
   return { action: "invited", token, inviteUrl, email, role: input.role };
 }

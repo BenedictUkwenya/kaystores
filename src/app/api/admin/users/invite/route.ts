@@ -1,5 +1,5 @@
 import { apiErrorResponse, requireAdmin } from "@/lib/auth/roles";
-import { inviteUserByRole } from "@/lib/admin/users";
+import { InviteEmailError, inviteUserByRole } from "@/lib/admin/users";
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +27,12 @@ export async function POST(request: Request) {
 
     return Response.json(result);
   } catch (err) {
+    if (err instanceof InviteEmailError) {
+      return Response.json(
+        { error: err.message, inviteUrl: err.inviteUrl },
+        { status: 502 },
+      );
+    }
     return apiErrorResponse(err);
   }
 }
