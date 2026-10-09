@@ -1,6 +1,8 @@
 import type { Product } from "@/types/product";
 import { getProducts } from "@/lib/products/queries";
 import { parsePrompt, type ParsedPrompt } from "@/lib/ai/parse-prompt";
+import { writeConciergeReply } from "@/lib/ai/concierge-reply";
+import { loadShopperContext, loadVendorPlaces } from "@/lib/ai/shopper";
 import { rankProductsForQuery } from "@/lib/ai/similarity";
 import type { SimilarityMode } from "@/lib/ai/similarity";
 
@@ -57,17 +59,31 @@ function scoreProduct(
   return score;
 }
 
-function buildMessage(query: string, products: Product[], afterDark: boolean) {
+function fallbackMessage(firstName: string | null, products: Product[]) {
   if (products.length === 0) {
     return "I couldn't find a perfect match yet — try describing the recipient, occasion, or budget.";
   }
+  const greeting = firstName ? `${firstName}, these` : "These";
+  return `${greeting} are the closest gifts I can offer for that brief right now.`;
+}
 
-  const names = products.slice(0, 2).map((p) => p.name).join(" and ");
-  const tone = afterDark
-    ? "For an evening gift, I've leaned toward our more exclusive picks."
-    : "Based on what you shared,";
-
-  return `${tone} here are ${products.length} curated ideas — including ${names}.`;
+function shortlistForModel(
+  catalog: Product[],
+  parsed: ParsedPrompt,
+  afterDark: boolean,
+): Product[] {
+  const scored = catalog
+    .map((product) => ({ product, score: scoreProduct(product, parsed, afterDark) }))
+    .sort((a, b) => b.score - a.score);
+  const picked = new Map<string, Product>();
+  for (const row of scored.slice(0, 40)) picked.set(row.product.id, row.product);
+  if (parsed.maxPrice != null) {
+    for (const product of catalog) {
+      if (picked.size >= 60) break;
+      if (product.price <= parsed.maxPrice) picked.set(product.id, product);
+    }
+  }
+  return [...picked.values()].slice(0, 60);
 }
 
 export type SuggestResult = {
@@ -125,9 +141,32 @@ export async function suggestProducts(
     });
   }
 
+  const shopper = await loadShopperContext();
+  const candidates = shortlistForModel(inStock, parsed, afterDark);
+  const vendors = await loadVendorPlaces(
+    candidates.map((product) => product.vendor_id ?? ""),
+  );
+  const reply = await writeConciergeReply({
+    query: trimmed,
+    afterDark,
+    shopper,
+    products: candidates,
+    vendors,
+  });
+
+  if (reply) {
+    const byId = new Map(candidates.map((product) => [product.id, product]));
+    const chosen = reply.productIds
+      .map((id) => byId.get(id))
+      .filter((product): product is Product => product != null);
+    if (chosen.length > 0) {
+      return { products: chosen, message: reply.message, mode };
+    }
+  }
+
   return {
     products: picks,
-    message: buildMessage(trimmed, picks, afterDark),
+    message: fallbackMessage(shopper.firstName, picks),
     mode: picks.length > 0 ? mode : "metadata",
   };
 }

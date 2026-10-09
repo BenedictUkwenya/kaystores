@@ -74,9 +74,6 @@ export function AISuggestionResults({
         ))}
       </ul>
 
-      <p className="mt-3 text-center text-[11px] text-kay-subtle">
-        Suggestions powered by Kay AI (demo mode — real AI coming soon)
-      </p>
     </div>
   );
 }

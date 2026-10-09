@@ -118,6 +118,24 @@ export function AIConciergeSection() {
                 <p className="mt-4 text-[13px] text-red-600">{error}</p>
               )}
 
+              {loading && (
+                <div className="kay-ai-thinking mt-6" role="status" aria-live="polite">
+                  <div className="kay-ai-thinking-mark" aria-hidden>
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] text-kay-fg">Kay is looking through the catalogue</p>
+                    <div className="kay-ai-thinking-lines" aria-hidden>
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {results && (
                 <AISuggestionResults
                   message={results.message}

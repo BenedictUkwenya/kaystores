@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-10-06
+**Last updated:** 2026-10-09
 
 ---
 
@@ -159,7 +159,7 @@
 
 - [x] Mock suggestion API route (`/api/ai/suggest` — rules-based, no API keys)
 
-- [ ] LLM wrapper + vector search API route (replace mock when keys ready)
+- [x] LLM wrapper on `/api/ai/suggest` — Gemini writes the homepage reply from the live catalogue, and when signed in uses first name, recent orders, and vendor city. Keyword ranking fills in if Gemini is busy. Product embeddings still separate.
 
 - [ ] Product embeddings in Supabase
 
@@ -338,7 +338,7 @@
 
 | Cart & checkout   | 13   | 13    |
 
-| AI engine         | 4    | 6     |
+| AI engine         | 5    | 6     |
 
 | About & concierge | 9    | 9     |
 
@@ -348,7 +348,7 @@
 
 
 
-**Overall:** 87 / 93 checklist items complete
+**Overall:** 88 / 93 checklist items complete
 
 
 
