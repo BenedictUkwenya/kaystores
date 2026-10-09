@@ -134,6 +134,7 @@
 - [x] Gift flow: recipient WhatsApp / email capture
 
 - [x] Gift flow: recipient note (with character limit)
+- [x] **Occasion date** — sender picks occasion, date, and whether the recipient is emailed now or on that morning; checkout warns if the quoted arrival is after the date; daily cron sends the held email (`/api/cron/occasion-emails`)
 
 - [x] Gift flow: **Anonymous sender** toggle (strip buyer name from labels/slips)
 - [x] **Anonymous packaging for everyone** — plain outer wrap option on all checkouts (self + gift, not After Dark only)
@@ -336,7 +337,7 @@
 
 | Shop pages        | 17   | 17    |
 
-| Cart & checkout   | 13   | 13    |
+| Cart & checkout   | 14   | 14    |
 
 | AI engine         | 5    | 6     |
 
@@ -348,7 +349,7 @@
 
 
 
-**Overall:** 88 / 93 checklist items complete
+**Overall:** 89 / 94 checklist items complete
 
 
 

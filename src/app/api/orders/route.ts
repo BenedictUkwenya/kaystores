@@ -19,6 +19,7 @@ import { isPaystackConfigured } from "@/lib/payments/config";
 import { createPaymentShares, validateSplitCount } from "@/lib/payments/shares";
 import { GIFT_NOTE_MAX_LENGTH, type CreateOrderPayload } from "@/types/order";
 import { isValidEmail, matchNigerianState, normalizeNigerianPhone } from "@/lib/geo/nigeria";
+import { OCCASIONS } from "@/lib/shop/taxonomy";
 
 export async function POST(request: Request) {
   try {
@@ -145,11 +146,30 @@ export async function POST(request: Request) {
     }
 
     if (body.deliveryType === "gift" && body.gift) {
+      const occasion = OCCASIONS.some((item) => item.slug === body.gift?.occasion)
+        ? body.gift.occasion
+        : undefined;
+      const occasionDate = /^\d{4}-\d{2}-\d{2}$/.test(body.gift.occasionDate ?? "")
+        ? body.gift.occasionDate
+        : undefined;
+      if (occasion && !occasionDate) {
+        return NextResponse.json(
+          { error: "Add the date of that occasion." },
+          { status: 400 },
+        );
+      }
       body.gift = {
         ...body.gift,
         recipientEmail: body.gift.recipientEmail?.trim().toLowerCase(),
         recipientName: body.gift.recipientName.trim(),
         addressUnknown: false,
+        occasion,
+        occasionDate: occasion ? occasionDate : undefined,
+        recipientEmailOn:
+          occasion && occasionDate && body.gift.recipientEmailOn === "date"
+            ? "date"
+            : "now",
+        recipientEmailSentAt: undefined,
       };
     }
 

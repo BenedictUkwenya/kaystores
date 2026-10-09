@@ -39,6 +39,8 @@ import { CheckoutProcessing } from "@/components/checkout/CheckoutProcessing";
 import { AfterDarkPrivacyBanner } from "@/components/checkout/AfterDarkPrivacyBanner";
 import { markCartPendingOrder } from "@/components/checkout/ClearCartOnPaid";
 import { isValidEmail, normalizeNigerianPhone } from "@/lib/geo/nigeria";
+import { OCCASIONS } from "@/lib/shop/taxonomy";
+import { earliestArrivalDate, formatOccasionDate } from "@/lib/orders/occasion";
 
 const emptyAddress: AddressDetails = {
   line1: "",
@@ -67,6 +69,7 @@ export function CheckoutForm({
       serviceName?: string;
       amount: number;
       deliveryEta?: string;
+      deliveryDate?: string;
       hubName?: string;
       kind?: "manual" | "terminal";
     }[]
@@ -102,6 +105,9 @@ export function CheckoutForm({
     isPrivateCheckout || hasPrivateItems,
   );
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [occasion, setOccasion] = useState("");
+  const [occasionDate, setOccasionDate] = useState("");
+  const [recipientEmailOn, setRecipientEmailOn] = useState<"now" | "date">("now");
   const [recipientAddress, setRecipientAddress] = useState(emptyAddress);
   const [addReveal, setAddReveal] = useState(false);
   const [revealVideo, setRevealVideo] = useState<File | null>(null);
@@ -273,6 +279,10 @@ export function CheckoutForm({
         setError("Please complete the recipient's delivery address.");
         return;
       }
+      if (occasion && !occasionDate) {
+        setError("Add the date of that occasion.");
+        return;
+      }
     }
 
     if (!paystackEnabled && !paidConfirmed) {
@@ -316,6 +326,16 @@ export function CheckoutForm({
                   anonymous,
                   addressUnknown: false,
                   recipientAddress: { ...recipientAddress, instructions },
+                  ...(occasion
+                    ? {
+                        occasion,
+                        occasionDate,
+                        recipientEmailOn:
+                          recipientEmail.trim() && recipientEmailOn === "date"
+                            ? "date"
+                            : "now",
+                      }
+                    : { recipientEmailOn: "now" as const }),
                 }
               : undefined,
         }),
@@ -823,7 +843,7 @@ export function CheckoutForm({
               )}
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
               <Textarea
                 label="Delivery instructions (optional)"
                 value={deliveryNotes}
@@ -832,6 +852,71 @@ export function CheckoutForm({
                 rows={2}
                 placeholder="Gate code, best time to deliver, who to ask for…"
               />
+              {deliveryType === "gift" && (
+                <div className="space-y-3 rounded-xl border border-kay-border-light bg-kay-surface-elevated p-4">
+                  <label className="block text-[13px] text-kay-muted">
+                    Occasion
+                    <select
+                      value={occasion}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setOccasion(next);
+                        if (!next) {
+                          setOccasionDate("");
+                          setRecipientEmailOn("now");
+                        }
+                      }}
+                      className="mt-1 h-11 w-full rounded-xl border border-kay-border bg-kay-input-bg px-3 text-[14px] text-kay-fg"
+                    >
+                      <option value="">No occasion</option>
+                      {OCCASIONS.map((item) => (
+                        <option key={item.slug} value={item.slug}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {occasion && (
+                    <>
+                      <label className="block text-[13px] text-kay-muted">
+                        Date of the occasion
+                        <input
+                          type="date"
+                          value={occasionDate}
+                          onChange={(e) => setOccasionDate(e.target.value)}
+                          className="mt-1 h-11 w-full rounded-xl border border-kay-border bg-kay-input-bg px-3 text-[14px] text-kay-fg"
+                        />
+                      </label>
+                      {recipientEmail.trim() && (
+                        <fieldset className="space-y-2">
+                          <legend className="text-[13px] text-kay-muted">
+                            When should they hear about it?
+                          </legend>
+                          <label className="flex items-center gap-2 text-[13px] text-kay-fg">
+                            <input
+                              type="radio"
+                              name="recipientEmailOn"
+                              checked={recipientEmailOn === "now"}
+                              onChange={() => setRecipientEmailOn("now")}
+                            />
+                            Tell them now
+                          </label>
+                          <label className="flex items-center gap-2 text-[13px] text-kay-fg">
+                            <input
+                              type="radio"
+                              name="recipientEmailOn"
+                              checked={recipientEmailOn === "date"}
+                              onChange={() => setRecipientEmailOn("date")}
+                            />
+                            Email them on that date
+                          </label>
+                        </fieldset>
+                      )}
+                      {occasionDate && <OccasionArrivalNote date={occasionDate} quote={selectedShipping} />}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </CheckoutStep>
 
@@ -1160,5 +1245,31 @@ export function CheckoutForm({
         </div>
       </div>
     </form>
+  );
+}
+
+function OccasionArrivalNote({
+  date,
+  quote,
+}: {
+  date: string;
+  quote?: { deliveryEta?: string; deliveryDate?: string };
+}) {
+  const earliest = earliestArrivalDate(quote);
+  if (!earliest) {
+    return (
+      <p className="text-[12px] leading-relaxed text-kay-muted">
+        Choose a delivery service to see if this can arrive by {formatOccasionDate(date)}.
+      </p>
+    );
+  }
+  const tooSoon = date < earliest;
+  return (
+    <p className={`text-[12px] leading-relaxed ${tooSoon ? "text-red-600" : "text-kay-muted"}`}>
+      Earliest we can get this there is {formatOccasionDate(earliest)}.
+      {tooSoon
+        ? ` That is after ${formatOccasionDate(date)}, so it may not arrive in time. You can still place the order.`
+        : ` That is in time for ${formatOccasionDate(date)}.`}
+    </p>
   );
 }

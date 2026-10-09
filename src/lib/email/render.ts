@@ -1,6 +1,8 @@
 /* Generated from supabase/functions/send-email/index.ts — keep templates in sync. */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+import { formatOccasionDate, lagosToday } from "@/lib/orders/occasion";
+
 function envGet(key: string): string | undefined {
   const v = process.env[key];
   return v && v.trim() ? v.trim() : undefined;
@@ -16,6 +18,8 @@ type Order = {
     anonymous?: boolean;
     note?: string;
     addressUnknown?: boolean;
+    recipientEmailOn?: "now" | "date";
+    occasionDate?: string;
   };
   handoverToken?: string;
   revealToken?: string;
@@ -390,6 +394,11 @@ function buildMessage(
       const isGift = order.deliveryType === "gift" && order.gift;
       const recipient = order.gift?.recipientName ?? "your recipient";
       const recipientEmail = order.gift?.recipientEmail ?? "";
+      const emailOnDate =
+        order.gift?.recipientEmailOn === "date" &&
+        order.gift.occasionDate &&
+        order.gift.occasionDate >
+          new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
       const refLabel = discreet ? "private reference" : "order";
       const viewCta = order.accessUrl
         ? ctaButton(order.accessUrl, discreet ? "View private order" : "View your order")
@@ -410,7 +419,11 @@ function buildMessage(
               ? `<p style="color:#5c5c5c;line-height:1.6">Hi ${order.buyer.fullName}, we've received your gift order <strong>${order.orderNumber}</strong> for <strong>${recipient}</strong>.</p>
             <ul style="color:#5c5c5c;padding-left:18px">${items}</ul>
             <p style="font-size:18px;color:#000"><strong>Total: ${naira(order.pricing.grandTotal)}</strong></p>
-            <p style="color:#5c5c5c;font-size:13px">We've emailed <strong>${recipient}</strong>${recipientEmail ? ` at ${recipientEmail}` : ""} about this gift${order.gift?.addressUnknown ? " with a secure link to share their delivery address" : ""}. If they don't see it, ask them to check Spam and Promotions.</p>
+            <p style="color:#5c5c5c;font-size:13px">${
+              emailOnDate
+                ? `We'll email <strong>${recipient}</strong>${recipientEmail ? ` at ${recipientEmail}` : ""} on ${order.gift?.occasionDate}.`
+                : `We've emailed <strong>${recipient}</strong>${recipientEmail ? ` at ${recipientEmail}` : ""} about this gift${order.gift?.addressUnknown ? " with a secure link to share their delivery address" : ""}. If they don't see it, ask them to check Spam and Promotions.`
+            }</p>
             <p style="color:#5c5c5c;font-size:13px;margin-top:8px">Payment received — we'll email you when it ships.</p>
             ${viewCta}`
               : `<p style="color:#5c5c5c;line-height:1.6">Hi ${order.buyer.fullName}, we've received your order <strong>${order.orderNumber}</strong>.</p>

@@ -34,6 +34,13 @@ export type GiftDetails = {
   anonymous: boolean;
   addressUnknown: boolean;
   recipientAddress?: AddressDetails;
+  /** Occasion slug from the shop taxonomy, or omitted when there is none. */
+  occasion?: string;
+  /** YYYY-MM-DD, Lagos calendar date of the occasion. */
+  occasionDate?: string;
+  /** Sender chooses when the recipient hears about the gift. */
+  recipientEmailOn?: "now" | "date";
+  recipientEmailSentAt?: string;
 };
 
 export type OrderItem = Pick<

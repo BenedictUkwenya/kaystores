@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/split-expiry",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/occasion-emails",
+      "schedule": "0 7 * * *"
     }
   ]
 }

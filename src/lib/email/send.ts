@@ -3,6 +3,7 @@ import type { KayEmailPayload } from "@/lib/email/types";
 import type { Order } from "@/types/order";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { deliverKayEmail } from "@/lib/email/render";
+import { deferRecipientEmail } from "@/lib/orders/occasion";
 
 export type SendEmailResult =
   | { ok: true; id?: string }
@@ -113,13 +114,24 @@ export async function notifyOrderEmails(
     }),
   ];
 
-  if (order.deliveryType === "gift" && order.gift?.recipientEmail) {
+  const sendRecipientNow =
+    order.deliveryType === "gift" &&
+    Boolean(order.gift?.recipientEmail) &&
+    !deferRecipientEmail(order.gift);
+
+  if (sendRecipientNow) {
     tasks.push(sendKayEmail({ type: "gift_recipient", order, appUrl }));
-  } else if (order.handoverToken) {
+  } else if (
+    order.handoverToken &&
+    !(order.deliveryType === "gift" && order.gift?.recipientEmail)
+  ) {
     tasks.push(sendKayEmail({ type: "handover_link", order, appUrl }));
   }
 
   const results = await Promise.all(tasks);
+  if (sendRecipientNow && order.gift?.recipientEmailOn === "date" && results.at(-1)?.ok) {
+    await markGiftRecipientEmailed(order);
+  }
   for (const result of results) {
     if (!result.ok && !result.skipped) {
       console.error("[email] send failed:", result.error);
@@ -143,7 +155,21 @@ export async function resendGiftRecipientEmail(
   } catch {
     // still send without reveal link
   }
-  return sendKayEmail({ type: "gift_recipient", order: withReveal, appUrl });
+  const result = await sendKayEmail({ type: "gift_recipient", order: withReveal, appUrl });
+  if (result.ok) await markGiftRecipientEmailed(withReveal);
+  return result;
+}
+
+async function markGiftRecipientEmailed(order: Order): Promise<void> {
+  if (!order.id || !order.gift) return;
+  const db = createAdminClient();
+  if (!db) return;
+  await db
+    .from("orders")
+    .update({
+      gift: { ...order.gift, recipientEmailSentAt: new Date().toISOString() },
+    })
+    .eq("id", order.id);
 }
 
 export async function notifyHandoverCompleted(
