@@ -22,16 +22,18 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const geminiKey = process.env.GEMINI_API_KEY;
-
-if (!url || !serviceKey || !geminiKey) {
-  console.error(
-    "Missing env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY",
-  );
-  process.exit(1);
+function requiredEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    console.error(`Missing env: ${name}`);
+    throw new Error(`Missing env: ${name}`);
+  }
+  return value;
 }
+
+const url = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+const serviceKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+const geminiKey = requiredEnv("GEMINI_API_KEY");
 
 const supabase = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
