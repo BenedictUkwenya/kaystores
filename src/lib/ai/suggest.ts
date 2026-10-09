@@ -1,7 +1,8 @@
 import type { Product } from "@/types/product";
 import { getProducts } from "@/lib/products/queries";
 import { parsePrompt, type ParsedPrompt } from "@/lib/ai/parse-prompt";
-import { writeConciergeReply } from "@/lib/ai/concierge-reply";
+import { writeChatReply, type ChatTurn } from "@/lib/ai/concierge-reply";
+import { listActiveFeaturedProducts } from "@/lib/ai/featured";
 import { loadShopperContext, loadVendorPlaces } from "@/lib/ai/shopper";
 import { rankProductsForQuery } from "@/lib/ai/similarity";
 import type { SimilarityMode } from "@/lib/ai/similarity";
@@ -57,14 +58,6 @@ function scoreProduct(
   if (!product.in_stock) score -= 100;
 
   return score;
-}
-
-function fallbackMessage(firstName: string | null, products: Product[]) {
-  if (products.length === 0) {
-    return "I couldn't find a perfect match yet — try describing the recipient, occasion, or budget.";
-  }
-  const greeting = firstName ? `${firstName}, these` : "These";
-  return `${greeting} are the closest gifts I can offer for that brief right now.`;
 }
 
 function shortlistForModel(
@@ -146,11 +139,12 @@ export async function suggestProducts(
   const vendors = await loadVendorPlaces(
     candidates.map((product) => product.vendor_id ?? ""),
   );
-  const reply = await writeConciergeReply({
-    query: trimmed,
+  const reply = await writeChatReply({
+    turns: [{ role: "user", text: trimmed }],
     afterDark,
     shopper,
     products: candidates,
+    featuredIds: new Set(),
     vendors,
   });
 
@@ -159,14 +153,96 @@ export async function suggestProducts(
     const chosen = reply.productIds
       .map((id) => byId.get(id))
       .filter((product): product is Product => product != null);
-    if (chosen.length > 0) {
+    if (reply.message && chosen.length > 0) {
       return { products: chosen, message: reply.message, mode };
+    }
+    if (reply.message && chosen.length === 0) {
+      return { products: [], message: reply.message, mode: "metadata" };
     }
   }
 
   return {
-    products: picks,
-    message: fallbackMessage(shopper.firstName, picks),
+    products: [],
+    message: "Kay is busy right now. Send that again in a moment.",
     mode: picks.length > 0 ? mode : "metadata",
+  };
+}
+
+export type KayReply = {
+  message: string;
+  products: Product[];
+  featuredIds: string[];
+  note: string | null;
+  handoff: { href: string; label: string } | null;
+  busy: boolean;
+};
+
+export async function replyToKay(
+  turns: ChatTurn[],
+  afterDark = false,
+): Promise<KayReply> {
+  const busy: KayReply = {
+    message: "Kay is busy right now. Send that again in a moment.",
+    products: [],
+    featuredIds: [],
+    note: null,
+    handoff: null,
+    busy: true,
+  };
+  const lastUser = [...turns].reverse().find((turn) => turn.role === "user");
+  if (!lastUser?.text.trim()) {
+    return { ...busy, message: "Tell me who the gift is for.", busy: false };
+  }
+
+  const parsed = parsePrompt(lastUser.text);
+  const [{ products: catalog }, featuredProducts, shopper] = await Promise.all([
+    getProducts({ pageSize: 80 }),
+    listActiveFeaturedProducts(),
+    loadShopperContext(),
+  ]);
+  const inStock = catalog.filter((product) => product.in_stock);
+  const pool = new Map<string, Product>();
+  for (const product of shortlistForModel(inStock, parsed, afterDark)) {
+    pool.set(product.id, product);
+  }
+  for (const product of featuredProducts) pool.set(product.id, product);
+  const products = [...pool.values()];
+  const featuredIds = new Set(featuredProducts.map((product) => product.id));
+  const vendors = await loadVendorPlaces(products.map((product) => product.vendor_id ?? ""));
+  const reply = await writeChatReply({
+    turns,
+    afterDark,
+    shopper,
+    products,
+    featuredIds,
+    vendors,
+  });
+  if (!reply) return busy;
+
+  const byId = new Map(products.map((product) => [product.id, product]));
+  const chosen: Product[] = [];
+  for (const id of reply.productIds) {
+    const product = byId.get(id);
+    if (product && !chosen.some((item) => item.id === product.id)) chosen.push(product);
+  }
+  if (reply.featuredId) {
+    const featured = byId.get(reply.featuredId);
+    if (featured && !chosen.some((item) => item.id === featured.id)) chosen.unshift(featured);
+  }
+
+  const handoff =
+    reply.handoff === "kitchen"
+      ? { href: "/table/request", label: "Start a Kay Kitchen request" }
+      : reply.handoff === "concierge"
+        ? { href: "/concierge", label: "Start a concierge request" }
+        : null;
+
+  return {
+    message: reply.message,
+    products: chosen.slice(0, 5),
+    featuredIds: reply.featuredId ? [reply.featuredId] : [],
+    note: reply.note,
+    handoff,
+    busy: false,
   };
 }

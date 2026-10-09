@@ -159,7 +159,7 @@
 
 - [x] Mock suggestion API route (`/api/ai/suggest` — rules-based, no API keys)
 
-- [x] LLM wrapper on `/api/ai/suggest` — Gemini writes the homepage reply from the live catalogue, and when signed in uses first name, recent orders, and vendor city. Keyword ranking fills in if Gemini is busy. Product embeddings still separate.
+- [x] LLM wrapper on `/api/ai/suggest` — floating Kay chat (gift talk, order status, gift note, compare, Kitchen or concierge handoff). Gemini model chain. Featured slots in admin (`046_ai_featured_slots.sql`). Product embeddings still separate.
 
 - [ ] Product embeddings in Supabase
 

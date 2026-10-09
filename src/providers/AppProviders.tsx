@@ -10,6 +10,7 @@ import { CartShell } from "@/components/cart/CartShell";
 import { LaunchCountdown } from "@/components/launch/LaunchCountdown";
 import { MessiIntro } from "@/components/tribute/MessiIntro";
 import { RollingFootball } from "@/components/tribute/RollingFootball";
+import { KayChat } from "@/components/kay/KayChat";
 
 function BrandUIChrome({ children }: { children: React.ReactNode }) {
   const { isBusy } = useBrandUI();
@@ -38,6 +39,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <BrandUIChrome>
               {children}
               <CartShell />
+              <KayChat />
             </BrandUIChrome>
           </BrandUIProvider>
         </CompareProvider>

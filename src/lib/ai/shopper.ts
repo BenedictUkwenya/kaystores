@@ -3,9 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import type { AddressDetails } from "@/types/order";
 
 export type ShopperContext = {
+  signedIn: boolean;
   firstName: string | null;
   places: string[];
   pastOrders: { items: string[]; place: string | null }[];
+  orders: { number: string; status: string; items: string }[];
 };
 
 export type VendorPlace = {
@@ -25,7 +27,13 @@ function placeLabel(address: AddressDetails | null | undefined): string | null {
 }
 
 export async function loadShopperContext(): Promise<ShopperContext> {
-  const empty: ShopperContext = { firstName: null, places: [], pastOrders: [] };
+  const empty: ShopperContext = {
+    signedIn: false,
+    firstName: null,
+    places: [],
+    pastOrders: [],
+    orders: [],
+  };
   try {
     const supabase = await createClient();
     const { data: auth } = await supabase.auth.getUser();
@@ -38,16 +46,19 @@ export async function loadShopperContext(): Promise<ShopperContext> {
       .eq("id", user.id)
       .maybeSingle();
 
-    const { data: orders } = await supabase
+    const { data: orderRows } = await supabase
       .from("orders")
-      .select("items, buyer_address, gift, recipient_address, delivery_type, created_at")
+      .select(
+        "order_number, status, items, buyer_address, gift, recipient_address, delivery_type, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(5);
 
     const pastOrders: ShopperContext["pastOrders"] = [];
+    const orders: ShopperContext["orders"] = [];
     const places = new Set<string>();
 
-    for (const row of orders ?? []) {
+    for (const row of orderRows ?? []) {
       const items = Array.isArray(row.items)
         ? row.items
             .map((item) =>
@@ -67,14 +78,21 @@ export async function loadShopperContext(): Promise<ShopperContext> {
       const place = placeLabel(address);
       if (place) places.add(place);
       if (items.length) pastOrders.push({ items, place });
+      orders.push({
+        number: String(row.order_number ?? ""),
+        status: String(row.status ?? ""),
+        items: items.join(", "),
+      });
     }
 
     return {
+      signedIn: true,
       firstName: firstName(
         profile?.full_name ?? (user.user_metadata?.full_name as string | undefined),
       ),
       places: [...places],
       pastOrders,
+      orders,
     };
   } catch {
     return empty;

@@ -1,56 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import type { Product } from "@/types/product";
 import { AI_SUGGESTIONS } from "@/lib/data/home";
-import { IconSparkle } from "@/components/ui/Icons";
-import { AISuggestionResults } from "@/components/home/AISuggestionResults";
+import { openKayChat } from "@/components/kay/KayChat";
 import { useTheme } from "@/providers/ThemeProvider";
 
 export function AIConciergeSection() {
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [results, setResults] = useState<{
-    message: string;
-    products: Product[];
-  } | null>(null);
   const { isAfterDark } = useTheme();
-
-  async function runSuggest(prompt: string) {
-    const q = prompt.trim();
-    if (!q) return;
-
-    setQuery(q);
-    setLoading(true);
-    setError("");
-    setResults(null);
-
-    try {
-      const res = await fetch("/api/ai/suggest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: q, afterDark: isAfterDark }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Could not get suggestions.");
-      }
-
-      const data = await res.json();
-      setResults({ message: data.message, products: data.products });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    runSuggest(query);
-  }
 
   return (
     <section id="ai-concierge" className="bg-kay-bg px-4 py-10 lg:px-10 lg:py-12">
@@ -78,71 +33,25 @@ export function AIConciergeSection() {
             </div>
 
             <div>
-              <form onSubmit={handleSubmit}>
-                <div className="flex overflow-hidden rounded-xl border border-kay-border bg-kay-input-bg shadow-sm">
-                  <div className="flex flex-1 items-center gap-2 px-4">
-                    <IconSparkle className="shrink-0 text-kay-subtle" />
-                    <input
-                      type="text"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="e.g. Gift for my sister who loves skincare, under ₦50,000"
-                      className="h-12 w-full bg-transparent text-[14px] text-kay-fg outline-none placeholder:text-kay-subtle"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading || !query.trim()}
-                    className="shrink-0 bg-kay-accent px-6 text-[14px] font-medium text-kay-accent-fg transition-opacity hover:opacity-85 disabled:opacity-50"
-                  >
-                    {loading ? "Thinking…" : "Get Ideas"}
-                  </button>
-                </div>
-              </form>
-
+              <button
+                type="button"
+                onClick={() => openKayChat()}
+                className="inline-flex h-12 items-center rounded-full bg-kay-accent px-6 text-[14px] font-medium text-kay-accent-fg"
+              >
+                Talk to Kay
+              </button>
               <div className="mt-4 flex flex-wrap gap-2">
                 {AI_SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
                     type="button"
-                    onClick={() => runSuggest(suggestion)}
-                    disabled={loading}
-                    className="rounded-full border border-kay-border bg-kay-surface-elevated px-4 py-2 text-[12px] text-kay-muted transition-colors hover:border-kay-fg hover:text-kay-fg disabled:opacity-50"
+                    onClick={() => openKayChat(suggestion)}
+                    className="rounded-full border border-kay-border bg-kay-surface-elevated px-4 py-2 text-[12px] text-kay-muted transition-colors hover:border-kay-fg hover:text-kay-fg"
                   >
                     {suggestion}
                   </button>
                 ))}
               </div>
-
-              {error && (
-                <p className="mt-4 text-[13px] text-red-600">{error}</p>
-              )}
-
-              {loading && (
-                <div className="kay-ai-thinking mt-6" role="status" aria-live="polite">
-                  <div className="kay-ai-thinking-mark" aria-hidden>
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] text-kay-fg">Kay is looking through the catalogue</p>
-                    <div className="kay-ai-thinking-lines" aria-hidden>
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {results && (
-                <AISuggestionResults
-                  message={results.message}
-                  products={results.products}
-                  onClose={() => setResults(null)}
-                />
-              )}
             </div>
           </div>
         </div>

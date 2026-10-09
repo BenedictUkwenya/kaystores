@@ -418,6 +418,7 @@ export const ADMIN_NAV: DashboardNavItem[] = [
   },
   { href: "/admin/pricing", label: "Kay's margin", icon: "percent", group: "Money" },
   { href: "/admin/products", label: "Products", exact: true, icon: "tag", group: "Catalogue" },
+  { href: "/admin/kay", label: "Kay featured", icon: "concierge", group: "Catalogue" },
   { href: "/admin/products/import", label: "Import", icon: "import", group: "Catalogue" },
   { href: "/admin/hubs", label: "Hubs & shipping", icon: "settings", group: "Settings" },
 ];

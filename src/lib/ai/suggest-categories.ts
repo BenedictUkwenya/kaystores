@@ -1,10 +1,5 @@
 import { parsePrompt } from "@/lib/ai/parse-prompt";
-import {
-  GEMINI_CHAT_MODEL,
-  geminiEndpoint,
-  geminiHeaders,
-  geminiKey,
-} from "@/lib/ai/gemini";
+import { generateGeminiText } from "@/lib/ai/gemini";
 import {
   COLLECTIONS,
   OCCASIONS,
@@ -85,9 +80,6 @@ function suggestByRules(input: CategorySuggestInput): CategorySuggestResult {
 async function suggestByLlm(
   input: CategorySuggestInput,
 ): Promise<CategorySuggestResult | null> {
-  const apiKey = geminiKey();
-  if (!apiKey) return null;
-
   const prompt = `You classify luxury gift products for a Nigerian e-commerce shop.
 Return ONLY valid JSON with keys occasions, recipients, collections (string arrays).
 Use ONLY these slugs:
@@ -103,27 +95,12 @@ description: ${input.description}
 
 Pick all relevant categories (can be multiple).`;
 
-  const res = await fetch(geminiEndpoint(GEMINI_CHAT_MODEL, "generateContent"), {
-    method: "POST",
-    headers: geminiHeaders(apiKey),
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: "You output JSON only. Use slug values exactly as provided." }],
-      },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-      },
-    }),
+  const content = await generateGeminiText({
+    system: "You output JSON only. Use slug values exactly as provided.",
+    prompt,
+    temperature: 0.2,
+    json: true,
   });
-
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) return null;
 
   try {
