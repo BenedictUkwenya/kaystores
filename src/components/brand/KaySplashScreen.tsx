@@ -21,6 +21,23 @@ export function KaySplashScreen() {
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState<Phase>("enter");
   const timersRef = useRef<number[]>([]);
+  const dismissedRef = useRef(false);
+
+  function dismiss() {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
+    try {
+      sessionStorage.setItem(SPLASH_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    document.documentElement.removeAttribute("data-splash");
+    document.documentElement.removeAttribute("data-splash-boot");
+    markSplashDone();
+    setActive(false);
+  }
 
   useEffect(() => {
     if (splashDone) return;
@@ -33,9 +50,7 @@ export function KaySplashScreen() {
     }
 
     if (skip) {
-      document.documentElement.removeAttribute("data-splash");
-      document.documentElement.removeAttribute("data-splash-boot");
-      markSplashDone();
+      dismiss();
       return;
     }
 
@@ -56,16 +71,7 @@ export function KaySplashScreen() {
     timersRef.current = [
       window.setTimeout(() => setPhase("hold"), holdAt),
       window.setTimeout(() => setPhase("exit"), exitAt),
-      window.setTimeout(() => {
-        try {
-          sessionStorage.setItem(SPLASH_KEY, "1");
-        } catch {
-          /* ignore */
-        }
-        document.documentElement.removeAttribute("data-splash");
-        markSplashDone();
-        setActive(false);
-      }, doneAt),
+      window.setTimeout(dismiss, doneAt),
     ];
 
     return () => {
@@ -81,6 +87,7 @@ export function KaySplashScreen() {
       className={`kay-splash kay-splash--${phase}`}
       role="presentation"
       aria-hidden={phase === "exit"}
+      onClick={dismiss}
     >
       <div className="kay-splash-panel kay-splash-panel--left" aria-hidden />
       <div className="kay-splash-panel kay-splash-panel--right" aria-hidden />
@@ -118,6 +125,14 @@ export function KaySplashScreen() {
       <div className="kay-splash-footer">
         <span>Kay Stores</span>
       </div>
+
+      <button
+        type="button"
+        className="kay-splash-skip"
+        onClick={dismiss}
+      >
+        Skip
+      </button>
     </div>
   );
 }
