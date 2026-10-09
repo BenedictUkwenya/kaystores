@@ -1,7 +1,7 @@
 /**
  * Backfill embeddings for all live products.
  * Usage: npx tsx scripts/backfill-product-embeddings.ts
- * Requires OPENAI_API_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL in .env.local
+ * Requires GEMINI_API_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL in .env.local
  */
 
 import { readFileSync } from "fs";
@@ -24,10 +24,12 @@ loadEnvLocal();
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const openaiKey = process.env.OPENAI_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
 
-if (!url || !serviceKey || !openaiKey) {
-  console.error("Missing env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY");
+if (!url || !serviceKey || !geminiKey) {
+  console.error(
+    "Missing env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY",
+  );
   process.exit(1);
 }
 
@@ -50,21 +52,27 @@ function buildText(row: Record<string, unknown>): string {
 }
 
 async function embed(text: string): Promise<number[]> {
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-goog-api-key": geminiKey,
+      },
+      body: JSON.stringify({
+        content: { parts: [{ text }] },
+        outputDimensionality: 1536,
+      }),
     },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: text,
-      dimensions: 1536,
-    }),
-  });
+  );
   if (!res.ok) throw new Error(await res.text());
-  const data = (await res.json()) as { data: { embedding: number[] }[] };
-  return data.data[0].embedding;
+  const data = (await res.json()) as { embedding?: { values?: number[] } };
+  const values = data.embedding?.values;
+  if (!values || values.length !== 1536) {
+    throw new Error("Gemini embedding was not 1536 dimensions");
+  }
+  return values;
 }
 
 async function main() {

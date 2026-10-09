@@ -123,7 +123,7 @@ Do **not** rely on client `signUp` / `resetPasswordForEmail` for mail — those 
 
 Optional Supabase Edge secret (not in `.env`): `PUBLIC_SITE_URL` — live URL fallback for the auth-hook invite template.
 
-**Also on Vercel (not committed):** `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `KAY_TEAM_EMAIL`, `KAY_REPLY_TO_EMAIL`. `SEND_EMAIL_HOOK_SECRET` is Supabase-only.
+**Also on Vercel (not committed):** `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `KAY_TEAM_EMAIL`, `KAY_REPLY_TO_EMAIL`, `GEMINI_API_KEY` (category suggestions and product embeddings). `SEND_EMAIL_HOOK_SECRET` is Supabase-only.
 
 ## 6. Email triggers
 

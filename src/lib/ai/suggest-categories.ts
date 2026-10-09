@@ -1,5 +1,11 @@
 import { parsePrompt } from "@/lib/ai/parse-prompt";
 import {
+  GEMINI_CHAT_MODEL,
+  geminiEndpoint,
+  geminiHeaders,
+  geminiKey,
+} from "@/lib/ai/gemini";
+import {
   COLLECTIONS,
   OCCASIONS,
   RECIPIENTS,
@@ -79,7 +85,7 @@ function suggestByRules(input: CategorySuggestInput): CategorySuggestResult {
 async function suggestByLlm(
   input: CategorySuggestInput,
 ): Promise<CategorySuggestResult | null> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = geminiKey();
   if (!apiKey) return null;
 
   const prompt = `You classify luxury gift products for a Nigerian e-commerce shop.
@@ -97,32 +103,27 @@ description: ${input.description}
 
 Pick all relevant categories (can be multiple).`;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(geminiEndpoint(GEMINI_CHAT_MODEL, "generateContent"), {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: geminiHeaders(apiKey),
     body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: "You output JSON only. Use slug values exactly as provided.",
-        },
-        { role: "user", content: prompt },
-      ],
+      systemInstruction: {
+        parts: [{ text: "You output JSON only. Use slug values exactly as provided." }],
+      },
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+      },
     }),
   });
 
   if (!res.ok) return null;
 
   const data = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
   };
-  const content = data.choices?.[0]?.message?.content;
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!content) return null;
 
   try {

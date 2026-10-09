@@ -1,8 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Product } from "@/types/product";
-
-const EMBEDDING_MODEL = "text-embedding-3-small";
-const EMBEDDING_DIMS = 1536;
+import {
+  EMBEDDING_DIMS,
+  GEMINI_EMBEDDING_MODEL,
+  geminiEndpoint,
+  geminiHeaders,
+  geminiKey,
+} from "@/lib/ai/gemini";
 
 export function buildProductEmbeddingText(product: {
   name: string;
@@ -34,31 +38,29 @@ export function buildProductEmbeddingText(product: {
 }
 
 export async function embedText(text: string): Promise<number[] | null> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = geminiKey();
   if (!apiKey || !text.trim()) return null;
 
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
+  const res = await fetch(geminiEndpoint(GEMINI_EMBEDDING_MODEL, "embedContent"), {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
+    headers: geminiHeaders(apiKey),
     body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: text,
-      dimensions: EMBEDDING_DIMS,
+      content: { parts: [{ text }] },
+      outputDimensionality: EMBEDDING_DIMS,
     }),
   });
 
   if (!res.ok) {
-    console.error("[embeddings] OpenAI error:", await res.text());
+    console.error("[embeddings] Gemini error:", await res.text());
     return null;
   }
 
   const data = (await res.json()) as {
-    data?: { embedding?: number[] }[];
+    embedding?: { values?: number[] };
   };
-  return data.data?.[0]?.embedding ?? null;
+  const values = data.embedding?.values;
+  if (!values || values.length !== EMBEDDING_DIMS) return null;
+  return values;
 }
 
 export async function upsertProductEmbedding(productId: string): Promise<void> {
