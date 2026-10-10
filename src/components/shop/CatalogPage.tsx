@@ -5,6 +5,7 @@ import { CatalogHeader } from "@/components/shop/CatalogHeader";
 import { CatalogFilters } from "@/components/shop/CatalogFilters";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { Pagination } from "@/components/shop/Pagination";
+import { GiftsFeedbackNotice } from "@/components/feedback/GiftsFeedbackNotice";
 
 type CatalogPageProps = {
   config: CollectionConfig;
@@ -91,6 +92,8 @@ export async function CatalogPage({
         searchParams={searchParams}
         showSearch={basePath === "/search"}
       />
+
+      {basePath === "/gifts" && <GiftsFeedbackNotice />}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[220px_1fr] lg:gap-10 xl:grid-cols-[240px_1fr]">
         <CatalogFilters

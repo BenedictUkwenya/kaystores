@@ -21,6 +21,13 @@ const CATEGORIES: Record<FeedbackCategory, { label: string; plural: string }> = 
   praise: { label: "Praise", plural: "Praise" },
 };
 
+const KIND_COPY: Record<FeedbackCategory, string> = {
+  idea: "Something Kay should build",
+  bug: "Something that broke",
+  tip: "A better way to shop",
+  praise: "Something you loved",
+};
+
 const STATUSES: Record<FeedbackStatus, string> = {
   open: "New",
   under_review: "Under review",
@@ -75,6 +82,7 @@ export function FeedbackBoard({
   const [status, setStatus] = useState<FeedbackStatus | "all">("all");
   const [sort, setSort] = useState<"top" | "new">("top");
   const [composing, setComposing] = useState(false);
+  const [composeCategory, setComposeCategory] = useState<FeedbackCategory>("idea");
   const [openId, setOpenId] = useState<string | null>(null);
 
   async function reload() {
@@ -127,16 +135,29 @@ export function FeedbackBoard({
     }
   }
 
+  function openComposer(category: FeedbackCategory = "idea") {
+    setComposeCategory(category);
+    setComposing(true);
+  }
+
   if (!userId) {
     return (
       <section className="kay-fb-gate">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-kay-gold">Kay circle</p>
-        <h1 className="mt-3 font-serif text-[36px] leading-none text-kay-fg sm:text-[48px]">
-          Tell Kay what to build next.
+        <h1 className="mt-3 font-serif text-[40px] leading-[0.95] text-kay-fg sm:text-[56px]">
+          Share your feedback.
         </h1>
         <p className="mt-4 max-w-md text-[15px] leading-relaxed text-kay-muted">
-          Ideas, bugs, tips, and praise live on one board. Sign in to post, vote, and see what the team is already working on.
+          Ideas, bugs, tips, and praise live on one board. Sign in to post, vote, and see what Kay is already working on.
         </p>
+        <ul className="kay-fb-kinds">
+          {(Object.keys(CATEGORIES) as FeedbackCategory[]).map((key, index) => (
+            <li key={key} style={{ animationDelay: `${120 + index * 70}ms` }}>
+              <span className={`kay-fb-pill kay-fb-pill--${key}`}>{CATEGORIES[key].label}</span>
+              <span>{KIND_COPY[key]}</span>
+            </li>
+          ))}
+        </ul>
         <Link href="/login?next=/feedback" className="kay-fb-primary mt-8">
           Sign in to the board
         </Link>
@@ -151,23 +172,33 @@ export function FeedbackBoard({
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-kay-gold">The board</p>
           <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="font-serif text-[36px] leading-none text-kay-fg sm:text-[48px]">
-                What should Kay do next?
+              <h1 className="font-serif text-[40px] leading-[0.95] text-kay-fg sm:text-[56px]">
+                Share your feedback.
               </h1>
               <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-kay-muted">
-                Share an idea, a bug, a tip, or something you loved. Upvote what matters. Kay replies here.
+                An idea, a bug, a tip, or something you loved. Upvote what matters. Kay replies here.
               </p>
             </div>
-            <button type="button" className="kay-fb-primary" onClick={() => setComposing(true)}>
+            <button type="button" className="kay-fb-primary" onClick={() => openComposer()}>
               Share feedback
             </button>
           </div>
+          <ul className="kay-fb-kinds kay-fb-kinds--act">
+            {(Object.keys(CATEGORIES) as FeedbackCategory[]).map((key, index) => (
+              <li key={key} style={{ animationDelay: `${80 + index * 60}ms` }}>
+                <button type="button" onClick={() => openComposer(key)}>
+                  <span className={`kay-fb-pill kay-fb-pill--${key}`}>{CATEGORIES[key].label}</span>
+                  <span>{KIND_COPY[key]}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </header>
       )}
 
       {embedded && (
         <div className="mb-5 flex justify-end">
-          <button type="button" className="kay-fb-primary" onClick={() => setComposing(true)}>
+          <button type="button" className="kay-fb-primary" onClick={() => openComposer()}>
             Share feedback
           </button>
         </div>
@@ -265,6 +296,7 @@ export function FeedbackBoard({
       {composing && (
         <Composer
           userId={userId}
+          initialCategory={composeCategory}
           onClose={() => setComposing(false)}
           onSaved={() => {
             setComposing(false);
@@ -289,14 +321,16 @@ export function FeedbackBoard({
 
 function Composer({
   userId,
+  initialCategory,
   onClose,
   onSaved,
 }: {
   userId: string;
+  initialCategory: FeedbackCategory;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [category, setCategory] = useState<FeedbackCategory>("idea");
+  const [category, setCategory] = useState<FeedbackCategory>(initialCategory);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [shot, setShot] = useState<File | null>(null);

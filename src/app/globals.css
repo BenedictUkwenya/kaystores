@@ -2519,6 +2519,11 @@ html[data-splash-boot="1"] body::before {
   background: var(--kay-surface-elevated);
   padding: 0.85rem;
   box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.25);
+  transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1), box-shadow 0.35s ease;
+}
+.kay-fb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -20px rgba(0, 0, 0, 0.35);
 }
 .kay-fb-card-main {
   min-width: 0;
@@ -2596,6 +2601,10 @@ html[data-splash-boot="1"] body::before {
 .kay-fb-pill--idea {
   color: #3d5c45;
   background: color-mix(in srgb, #6f9a78 18%, transparent);
+}
+.kay-fb-pill--tip {
+  color: #3d4f6b;
+  background: color-mix(in srgb, #7f93b5 18%, transparent);
 }
 .kay-fb-empty,
 .kay-fb-skeleton {
@@ -2756,13 +2765,148 @@ html[data-splash-boot="1"] body::before {
     background-position: -100% 0;
   }
 }
+.kay-fb-kinds {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .kay-fb-kinds {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.kay-fb-kinds > li:not(:has(button)),
+.kay-fb-kinds button {
+  animation: kay-fb-rise 0.6s cubic-bezier(0.19, 1, 0.22, 1) both;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  border: 1px solid var(--kay-border-light);
+  border-radius: 18px;
+  background: var(--kay-surface-elevated);
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--kay-muted);
+}
+.kay-fb-kinds button {
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.kay-fb-kinds button:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--kay-gold) 55%, var(--kay-border));
+}
+.kay-fb-gifts {
+  position: relative;
+  margin-top: 1.25rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kay-gold) 48%, var(--kay-border));
+  border-radius: 22px;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--kay-gold) 16%, var(--kay-surface-elevated)), var(--kay-surface-elevated) 42%);
+  padding: 1.05rem 3rem 1.1rem 1.15rem;
+  animation: kay-fb-gifts-in 0.7s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+.kay-fb-gifts::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -40%;
+  width: 28%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: kay-fb-gifts-sheen 2.8s ease-in-out 0.4s infinite;
+  pointer-events: none;
+}
+.kay-fb-gifts.is-out {
+  animation: kay-fb-gifts-out 0.28s ease forwards;
+}
+.kay-fb-gifts-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--kay-gold);
+}
+.kay-fb-gifts-title {
+  margin-top: 0.25rem;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--kay-fg);
+}
+.kay-fb-gifts-copy {
+  margin-top: 0.35rem;
+  max-width: 36rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--kay-muted);
+}
+.kay-fb-gifts-cta {
+  position: relative;
+  margin-top: 0.9rem;
+}
+.kay-fb-gifts-x {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid var(--kay-border);
+  border-radius: 999px;
+  background: var(--kay-bg);
+  color: var(--kay-fg);
+}
+.kay-fb-gifts-x svg {
+  width: 12px;
+  height: 12px;
+}
+@keyframes kay-fb-gifts-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kay-fb-gifts-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes kay-fb-gifts-sheen {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .kay-fb-list > li,
   .kay-fb-vote.is-on,
   .kay-fb-sheet-card,
   .kay-fb-skeleton,
   .kay-fb-nudge::after,
-  .kay-fb-shot--empty {
+  .kay-fb-shot--empty,
+  .kay-fb-kinds > li:not(:has(button)),
+  .kay-fb-kinds button,
+  .kay-fb-gifts,
+  .kay-fb-gifts::after {
     animation: none;
+  }
+  .kay-fb-card:hover,
+  .kay-fb-kinds button:hover {
+    transform: none;
   }
 }
