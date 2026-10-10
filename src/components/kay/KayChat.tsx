@@ -166,7 +166,7 @@ export function KayChat() {
         aria-label={open ? "Close Kay" : "Talk to Kay"}
       >
         <KayMark className="h-7 w-7 text-kay-gold" spin={!open} />
-        <span className="hidden sm:inline">Kay</span>
+        <span>Kay</span>
       </button>
 
       {open && (

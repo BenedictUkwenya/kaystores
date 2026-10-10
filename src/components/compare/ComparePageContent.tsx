@@ -7,6 +7,7 @@ import { AdvancedComparisonTable } from "@/components/compare/AdvancedComparison
 import { ComparePicker } from "@/components/compare/ComparePicker";
 import { CompareTrustBar } from "@/components/compare/CompareTrustBar";
 import { IconCompare, IconSparkle } from "@/components/ui/Icons";
+import { openKayChat } from "@/components/kay/KayChat";
 import { MAX_COMPARE_PRODUCTS } from "@/types/compare";
 
 export function ComparePageContent() {
@@ -18,7 +19,7 @@ export function ComparePageContent() {
 
   return (
     <div className="compare-page">
-      <div className="mx-auto max-w-[1280px] px-4 py-10 sm:px-10 lg:px-14 lg:py-14">
+      <div className="mx-auto min-w-0 max-w-[1280px] px-4 py-10 pb-28 sm:px-10 lg:px-14 lg:py-14">
         <nav className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] text-kay-subtle">
           <Link href="/" className="transition-colors hover:text-kay-fg">
             Home
@@ -43,6 +44,20 @@ export function ComparePageContent() {
             Curated side-by-side view across price, availability, and gifting fit —
             search the catalog or let Kay AI suggest alternatives.
           </p>
+          {showTable && (
+            <button
+              type="button"
+              onClick={() =>
+                openKayChat(
+                  `Help me choose between these gifts: ${products.map((product) => product.name).join(", ")}.`,
+                )
+              }
+              className="mt-5 inline-flex h-11 items-center gap-2 rounded-full bg-kay-fg px-5 text-[13px] font-medium text-kay-bg"
+            >
+              <IconSparkle className="h-3.5 w-3.5" />
+              Ask Kay about these
+            </button>
+          )}
         </header>
 
         {slugs.length > 0 && (

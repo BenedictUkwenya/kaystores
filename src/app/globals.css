@@ -913,6 +913,8 @@ html[data-splash-boot="1"] body::before {
 }
 
 .compare-matrix {
+  max-width: 100%;
+  min-width: 0;
   border-radius: 1.25rem;
   border: 1px solid var(--kay-border-light);
   background: var(--kay-surface-elevated);
@@ -929,13 +931,23 @@ html[data-splash-boot="1"] body::before {
 }
 
 .compare-matrix-scroll {
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .compare-matrix-grid {
   display: grid;
-  min-width: 720px;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 4.25rem repeat(var(--compare-cols, 2), minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+  .compare-matrix-grid {
+    grid-template-columns: minmax(128px, 148px) repeat(var(--compare-cols, 2), minmax(200px, 1fr));
+  }
 }
 
 .compare-col-divider {
@@ -953,25 +965,45 @@ html[data-splash-boot="1"] body::before {
 .compare-row-label {
   display: flex;
   align-items: center;
-  padding: 1.25rem 1.5rem;
-  font-size: 10px;
+  min-width: 0;
+  padding: 0.85rem 0.4rem;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--kay-subtle);
   border-bottom: 1px solid var(--kay-border-light);
   background: var(--kay-surface);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1024px) {
+  .compare-row-label {
+    padding: 1.25rem 1.5rem;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+  }
 }
 
 .compare-cell {
   display: flex;
   align-items: center;
-  padding: 1.25rem 1.75rem;
-  font-size: 14px;
-  line-height: 1.55;
+  min-width: 0;
+  padding: 0.85rem 0.45rem;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--kay-muted);
   border-bottom: 1px solid var(--kay-border-light);
   min-height: 4.25rem;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1024px) {
+  .compare-cell {
+    padding: 1.25rem 1.75rem;
+    font-size: 14px;
+    line-height: 1.55;
+  }
 }
 
 .compare-cell.is-winner {
@@ -983,9 +1015,33 @@ html[data-splash-boot="1"] body::before {
 
 .compare-product-header {
   position: relative;
-  padding: 2rem 1.75rem 1.75rem;
+  min-width: 0;
+  padding: 2.4rem 0.55rem 1rem;
   text-align: center;
   border-bottom: 1px solid var(--kay-border-light);
+}
+
+.compare-product-name {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.compare-product-price {
+  font-size: 18px;
+}
+
+@media (min-width: 1024px) {
+  .compare-product-header {
+    padding: 2rem 1.75rem 1.75rem;
+  }
+
+  .compare-product-name {
+    font-size: 20px;
+  }
+
+  .compare-product-price {
+    font-size: 26px;
+  }
 }
 
 .compare-product-image {
@@ -1033,8 +1089,32 @@ html[data-splash-boot="1"] body::before {
 }
 
 .compare-cta-cell {
-  padding: 1.5rem 1.75rem 1.75rem;
+  min-width: 0;
+  padding: 0.85rem 0.4rem 1rem;
   background: var(--kay-surface);
+}
+
+.compare-cta-cell button {
+  height: auto;
+  min-height: 2.75rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  font-size: 11px;
+  white-space: normal;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .compare-cta-cell {
+    padding: 1.5rem 1.75rem 1.75rem;
+  }
+
+  .compare-cta-cell button {
+    height: 3rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-size: 13px;
+  }
 }
 
 .compare-picker-card {

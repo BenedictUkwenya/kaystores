@@ -110,13 +110,10 @@ export function AdvancedComparisonTable({
 
   return (
     <div className="compare-matrix">
-      <p className="mb-2 text-[11px] text-kay-subtle lg:hidden">Swipe to compare →</p>
-      <div className="compare-matrix-scroll compare-matrix-scroll-hint">
+      <div className="compare-matrix-scroll">
         <div
           className="compare-matrix-grid"
-          style={{
-            gridTemplateColumns: `minmax(128px, 148px) repeat(${colCount}, minmax(220px, 1fr))`,
-          }}
+          style={{ ["--compare-cols" as string]: colCount }}
         >
           {/* Header corner */}
           <div className="compare-row-label !border-r !bg-kay-surface-elevated !text-[9px]">
@@ -164,12 +161,12 @@ export function AdvancedComparisonTable({
 
                 <Link
                   href={`/products/${product.slug}`}
-                  className="mt-1.5 block font-serif text-[20px] leading-snug text-kay-fg transition-opacity hover:opacity-70"
+                  className="compare-product-name mt-1.5 block font-serif leading-snug text-kay-fg transition-opacity hover:opacity-70"
                 >
                   {product.name}
                 </Link>
 
-                <p className="mt-3 font-serif text-[26px] tracking-tight text-kay-gold">
+                <p className="compare-product-price mt-3 font-serif tracking-tight text-kay-gold">
                   {formatNaira(product.price)}
                 </p>
 
