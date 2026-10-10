@@ -8,7 +8,7 @@
 
 
 
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-10
 
 ---
 
@@ -248,7 +248,7 @@
 
 - [ ] Corporate gifting inquiry flow (beyond catalog page)
 
-- [x] **"Thank you, Messi" tribute (6–8 Oct, self-expiring)** — one-time intro, tribute hero + quote marquee, rolling golden football on shop pages, auto "Messi's Picks" shelf; stylised only (no likeness); window via `NEXT_PUBLIC_MESSI_TRIBUTE_START/END`
+- [x] **"Thank you, Messi" tribute (6–13 Oct, self-expiring)** — one-time intro, tribute hero + quote marquee, rolling golden football on shop pages, auto "Messi's Picks" shelf; stylised only (no likeness); window via `NEXT_PUBLIC_MESSI_TRIBUTE_START/END`
 
 
 

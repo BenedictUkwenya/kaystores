@@ -8,7 +8,7 @@ export const TRIBUTE_START =
   process.env.NEXT_PUBLIC_MESSI_TRIBUTE_START?.trim() || "2026-10-06T00:00:00+01:00";
 
 export const TRIBUTE_END =
-  process.env.NEXT_PUBLIC_MESSI_TRIBUTE_END?.trim() || "2026-10-08T23:59:59+01:00";
+  process.env.NEXT_PUBLIC_MESSI_TRIBUTE_END?.trim() || "2026-10-13T23:59:59+01:00";
 
 export function isTributeActive(now = Date.now()): boolean {
   const start = new Date(TRIBUTE_START).getTime();
@@ -18,7 +18,7 @@ export function isTributeActive(now = Date.now()): boolean {
 }
 
 export const TRIBUTE_COPY = {
-  eyebrow: "A Kay Stores tribute · 6 to 8 October",
+  eyebrow: "A Kay Stores tribute · 6 to 13 October",
   headline: "Thank you, Messi.",
   sub: "The greatest to ever do it. One last dance for Argentina.",
   spanish: "Gracias, Leo.",
