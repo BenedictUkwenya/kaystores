@@ -25,6 +25,8 @@ export type OrderPricing = {
   curationFeeTotal: number;
   deliveryFee: number;
   tax: number;
+  /** True until checkout has a selected delivery rate. */
+  deliveryPending: boolean;
   grandTotal: number;
   movErrors: string[];
   canCheckout: boolean;
@@ -70,9 +72,8 @@ export function calculateOrderPricing(
   const productSubtotal = segments.reduce((s, x) => s + x.productSubtotal, 0);
   const curationFeeTotal = segments.reduce((s, x) => s + x.curationFee, 0);
 
-  const resolvedDeliveryFee = isTestCheckoutMode()
-    ? 0
-    : (deliveryFee ?? PRICING_CONFIG.delivery.flatFee);
+  const deliveryPending = deliveryFee == null && !isTestCheckoutMode();
+  const resolvedDeliveryFee = isTestCheckoutMode() ? 0 : (deliveryFee ?? 0);
 
   const taxable = productSubtotal + curationFeeTotal;
   const tax = Math.round(taxable * PRICING_CONFIG.taxRate);
@@ -90,6 +91,7 @@ export function calculateOrderPricing(
     productSubtotal,
     curationFeeTotal,
     deliveryFee: resolvedDeliveryFee,
+    deliveryPending,
     tax,
     grandTotal,
     movErrors,

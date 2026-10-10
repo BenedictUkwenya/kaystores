@@ -13,9 +13,8 @@ export function isTestCheckoutMode(): boolean {
 
 const testMode = isTestCheckoutMode();
 
-/** Temporary QA — restore 20_000 before public launch. */
-const MOV_GIFTING = 0;
-const MOV_AFTER_DARK = 0;
+const MOV_GIFTING = testMode ? 0 : 20_000;
+const MOV_AFTER_DARK = testMode ? 0 : 20_000;
 
 export const PRICING_CONFIG = {
   gifting: {
@@ -30,8 +29,12 @@ export const PRICING_CONFIG = {
     curationFeeRate: 0,
   },
   delivery: {
-    /** Fallback when no live shipping quote is selected yet. */
-    flatFee: testMode ? 0 : 4_500,
+    /** Shown only after a Kay rate is chosen. Interstate and hub pickup. */
+    interstate: 5_500,
+    hubPickup: 5_500,
+    home: 10_000,
+    /** Door delivery when the address is Abuja or Minna. */
+    localDoor: 5_000,
   },
-  taxRate: testMode ? 0 : 0.075,
+  taxRate: testMode ? 0 : 0.02,
 } as const;

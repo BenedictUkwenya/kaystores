@@ -99,6 +99,10 @@ export const FAQ_ITEMS = [
 
 export const DELIVERY_SECTIONS = [
   {
+    title: "Delivery prices",
+    body: "Kay delivery is a fixed price. Interstate is ₦5,500. Hub pickup is ₦5,500. Home delivery is ₦10,000. Door delivery in Abuja or Minna is ₦5,000. A 2% tax is added to the product total at checkout.",
+  },
+  {
     title: "Our delivery promise",
     body: "Most Kay orders arrive within 72 hours of payment. We partner with white-glove logistics providers who handle delicate, high-value items — not standard parcel services.",
   },

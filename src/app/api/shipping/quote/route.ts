@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  createManualShippingQuote,
-  quoteTerminalShipping,
-} from "@/lib/shipping/terminal";
+import { quoteTerminalShipping } from "@/lib/shipping/terminal";
+import { createKayDeliveryQuotes } from "@/lib/shipping/kay-rates";
 import { getShippingSettings } from "@/lib/shipping/settings";
 import type { AddressDetails, BuyerDetails, OrderItem } from "@/types/order";
 
@@ -46,10 +44,10 @@ export async function POST(request: Request) {
       settings.manualEnabled
     ) {
       quotes.push(
-        await createManualShippingQuote({
+        ...(await createKayDeliveryQuotes({
           items: body.items,
           destination,
-        }),
+        })),
       );
     }
 

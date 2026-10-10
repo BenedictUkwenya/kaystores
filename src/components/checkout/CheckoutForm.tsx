@@ -948,7 +948,7 @@ export function CheckoutForm({
                       Manual / Kay-arranged
                     </p>
                     <p className="mt-1 text-[12px] text-kay-muted">
-                      Kay handles the last mile — no live courier quote needed.
+                      Interstate ₦5,500 · hub pickup ₦5,500 · home ₦10,000. Door delivery in Abuja or Minna is ₦5,000.
                     </p>
                   </button>
                 )}

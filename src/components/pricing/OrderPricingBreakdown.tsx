@@ -24,6 +24,7 @@ export function OrderPricingBreakdown({
     productSubtotal,
     curationFeeTotal,
     deliveryFee,
+    deliveryPending,
     tax,
     grandTotal,
   } = pricing;
@@ -90,7 +91,9 @@ export function OrderPricingBreakdown({
 
       <div className="flex justify-between text-kay-muted">
         <span>Delivery</span>
-        {deliveryFee === 0 ? (
+        {deliveryPending ? (
+          <span>At checkout</span>
+        ) : deliveryFee === 0 ? (
           <span className="font-medium text-emerald-600">Complimentary</span>
         ) : (
           <span>{formatNaira(deliveryFee)}</span>

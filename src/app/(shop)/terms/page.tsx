@@ -34,9 +34,11 @@ export default function TermsPage() {
             are confirmed upon successful payment.
           </p>
           <p>
-            <strong className="text-kay-fg">Delivery:</strong> we target
-            delivery within 72 hours of payment confirmation, subject to vendor
-            and logistics availability. Delays will be communicated promptly.
+            <strong className="text-kay-fg">Delivery:</strong> interstate
+            ₦5,500, hub pickup ₦5,500, home delivery ₦10,000, and door delivery
+            in Abuja or Minna ₦5,000. We target delivery within 72 hours of
+            payment confirmation. A 2% tax is added to the product total.
+            Delays will be communicated promptly.
           </p>
           <p>
             <strong className="text-kay-fg">Returns:</strong> see our{" "}
