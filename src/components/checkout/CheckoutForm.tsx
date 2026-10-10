@@ -41,6 +41,7 @@ import { markCartPendingOrder } from "@/components/checkout/ClearCartOnPaid";
 import { isValidEmail, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 import { OCCASIONS } from "@/lib/shop/taxonomy";
 import { earliestArrivalDate, formatOccasionDate } from "@/lib/orders/occasion";
+import { kayDeliveryChoices } from "@/lib/shipping/kay-delivery-prices";
 
 const emptyAddress: AddressDetails = {
   line1: "",
@@ -72,9 +73,13 @@ export function CheckoutForm({
       deliveryDate?: string;
       hubName?: string;
       kind?: "manual" | "terminal";
+      rateId?: string;
     }[]
   >([]);
   const [selectedShippingToken, setSelectedShippingToken] = useState("");
+  const [deliveryChoiceId, setDeliveryChoiceId] = useState("manual-interstate");
+  const deliveryChoiceRef = useRef(deliveryChoiceId);
+  const deliveryPickedRef = useRef(false);
   const [quoting, setQuoting] = useState(false);
   const [quotingMode, setQuotingMode] = useState<
     "manual" | "terminal" | "all" | null
@@ -116,13 +121,23 @@ export function CheckoutForm({
   const revealPhotoRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${firstName} ${lastName}`.trim();
+  const activeAddress = deliveryType === "gift" ? recipientAddress : buyerAddress;
+  const deliveryChoices = kayDeliveryChoices(activeAddress);
+  const selectedChoice =
+    deliveryChoices.find((choice) => choice.rateId === deliveryChoiceId) ??
+    deliveryChoices[0];
   const selectedShipping = shippingQuotes.find(
     (quote) => quote.token === selectedShippingToken,
   );
+  const quotedAmount =
+    selectedShipping?.rateId === selectedChoice?.rateId
+      ? selectedShipping.amount
+      : selectedChoice?.amount;
   const pricing = useMemo(
-    () => calculateOrderPricing(items, selectedShipping?.amount),
-    [items, selectedShipping?.amount],
+    () => calculateOrderPricing(items, quotedAmount),
+    [items, quotedAmount],
   );
+  deliveryChoiceRef.current = deliveryChoiceId;
 
   const splitMax = maxSplitPeople(pricing.grandTotal);
   const splitAvailable = paystackEnabled && splitMax >= SPLIT_MIN_PEOPLE;
@@ -137,6 +152,16 @@ export function CheckoutForm({
   useEffect(() => {
     if (isPrivateCheckout || hasPrivateItems) setAnonymousPackaging(true);
   }, [isPrivateCheckout, hasPrivateItems]);
+
+  useEffect(() => {
+    const choices = kayDeliveryChoices(activeAddress);
+    setDeliveryChoiceId((current) => {
+      if (deliveryPickedRef.current && choices.some((choice) => choice.rateId === current)) {
+        return current;
+      }
+      return choices[0]?.rateId ?? current;
+    });
+  }, [activeAddress.city, activeAddress.state]);
 
   // A quote is tied to the address and contact it was priced for.
   const quoteKey = JSON.stringify(
@@ -212,9 +237,10 @@ export function CheckoutForm({
       }
       const quotes = data.quotes ?? [];
       setShippingQuotes(quotes);
-      if (quotes.length === 1) {
-        setSelectedShippingToken(quotes[0].token);
-      }
+      const match =
+        quotes.find((quote: { rateId?: string }) => quote.rateId === deliveryChoiceRef.current) ??
+        quotes[0];
+      if (match) setSelectedShippingToken(match.token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not retrieve delivery rates.");
     } finally {
@@ -222,6 +248,22 @@ export function CheckoutForm({
       setQuotingMode(null);
     }
   }
+
+  const quoteDestination = deliveryType === "gift" ? recipientAddress : buyerAddress;
+  const quoteContactReady =
+    deliveryType === "gift"
+      ? Boolean(recipientName.trim() && recipientEmail.trim() && recipientWhatsApp.trim())
+      : Boolean(fullName && buyer.email.trim() && buyer.phone.trim());
+  const quoteAddressReady = Boolean(
+    quoteDestination.line1.trim() && quoteDestination.city.trim() && quoteDestination.state.trim(),
+  );
+
+  useEffect(() => {
+    if (!manualEnabled || !quoteAddressReady || !quoteContactReady) return;
+    void getDeliveryRates("manual");
+    // Refresh the saved rate when the address, contact, or bag changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteKey, itemsKey, manualEnabled]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -927,31 +969,33 @@ export function CheckoutForm({
               </p>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {manualEnabled && (
-                  <button
-                    type="button"
-                    disabled={quoting}
-                    onClick={() => getDeliveryRates("manual")}
-                    className={`rounded-xl border p-4 text-left transition-all disabled:opacity-60 ${
-                      shippingQuotes.some((q) => q.kind === "manual") &&
-                      selectedShippingToken &&
-                      shippingQuotes.find((q) => q.token === selectedShippingToken)
-                        ?.kind === "manual"
-                        ? "border-kay-gold bg-kay-gold-light/30"
-                        : "border-kay-border hover:border-kay-gold/50"
-                    }`}
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-kay-gold">
-                      Kay delivery
-                    </p>
-                    <p className="mt-1 text-[14px] font-medium text-kay-fg">
-                      Manual / Kay-arranged
-                    </p>
-                    <p className="mt-1 text-[12px] text-kay-muted">
-                      Interstate ₦5,500 · hub pickup ₦5,500 · home ₦10,000. Door delivery in Abuja or Minna is ₦5,000.
-                    </p>
-                  </button>
-                )}
+                {manualEnabled &&
+                  deliveryChoices.map((choice) => (
+                    <button
+                      key={choice.rateId}
+                      type="button"
+                      onClick={() => {
+                        deliveryPickedRef.current = true;
+                        setDeliveryChoiceId(choice.rateId);
+                        const match = shippingQuotes.find((quote) => quote.rateId === choice.rateId);
+                        if (match) setSelectedShippingToken(match.token);
+                      }}
+                      className={`rounded-xl border p-4 text-left transition-all ${
+                        selectedChoice?.rateId === choice.rateId
+                          ? "border-kay-gold bg-kay-gold-light/30"
+                          : "border-kay-border hover:border-kay-gold/50"
+                      }`}
+                    >
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-kay-gold">
+                        Kay delivery
+                      </p>
+                      <p className="mt-1 text-[14px] font-medium text-kay-fg">{choice.label}</p>
+                      <p className="mt-1 text-[12px] text-kay-muted">{choice.detail}</p>
+                      <p className="mt-2 text-[14px] font-semibold text-kay-fg">
+                        {formatNaira(choice.amount)}
+                      </p>
+                    </button>
+                  ))}
                 {terminalEnabled && (
                   <button
                     type="button"
@@ -1017,12 +1061,12 @@ export function CheckoutForm({
                 </p>
               )}
 
-              {!quoting && shippingQuotes.length > 0 && (
+              {!quoting && shippingQuotes.some((quote) => quote.kind === "terminal") && (
                 <div className="space-y-2">
                   <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-kay-subtle">
                     Select a rate
                   </p>
-                  {shippingQuotes.map((quote) => {
+                  {shippingQuotes.filter((quote) => quote.kind === "terminal").map((quote) => {
                     const isManual = quote.kind === "manual";
                     return (
                       <label

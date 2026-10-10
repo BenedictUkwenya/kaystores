@@ -64,6 +64,7 @@ export type ShippingQuote = {
   hubName?: string;
   /** manual = Kay delivery; terminal = live carrier */
   kind?: "manual" | "terminal";
+  rateId?: string;
 };
 
 function getSecretKey(): string {

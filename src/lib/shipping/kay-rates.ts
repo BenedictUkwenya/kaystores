@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PRICING_CONFIG } from "@/lib/pricing/config";
+import { kayDeliveryChoices } from "@/lib/shipping/kay-delivery-prices";
 import { getShippingSettings } from "@/lib/shipping/settings";
 import { MANUAL_SHIPMENT_ID } from "@/types/shipping-settings";
 import type { AddressDetails, OrderItem } from "@/types/order";
@@ -12,59 +12,6 @@ function cartFingerprint(items: OrderItem[]) {
   return createHash("sha256")
     .update(items.map((item) => `${item.productId}:${item.quantity}`).sort().join("|"))
     .digest("hex");
-}
-
-function isAbujaOrMinna(destination: AddressDetails) {
-  const city = destination.city.trim().toLowerCase();
-  const state = destination.state.trim().toLowerCase().replace(/\s+state$/, "");
-  const abuja =
-    city.includes("abuja") ||
-    state === "abuja" ||
-    state === "fct" ||
-    state.includes("federal capital");
-  const minna = city.includes("minna");
-  return abuja || minna;
-}
-
-/** Fixed Kay delivery prices from the launch note. */
-export function kayDeliveryChoices(destination: AddressDetails) {
-  const rates = PRICING_CONFIG.delivery;
-  const local = isAbujaOrMinna(destination);
-  const choices: {
-    rateId: string;
-    label: string;
-    detail: string;
-    amount: number;
-  }[] = [
-    {
-      rateId: "manual-hub",
-      label: "Hub pickup",
-      detail: "Collect from a Kay hub",
-      amount: rates.hubPickup,
-    },
-    {
-      rateId: "manual-home",
-      label: "Home delivery",
-      detail: "Brought to the address",
-      amount: rates.home,
-    },
-  ];
-  if (local) {
-    choices.unshift({
-      rateId: "manual-door",
-      label: "Door delivery",
-      detail: "Abuja or Minna",
-      amount: rates.localDoor,
-    });
-  } else {
-    choices.unshift({
-      rateId: "manual-interstate",
-      label: "Interstate",
-      detail: "Fixed delivery outside Abuja and Minna",
-      amount: rates.interstate,
-    });
-  }
-  return choices;
 }
 
 export async function createKayDeliveryQuotes(input: {
@@ -107,6 +54,7 @@ export async function createKayDeliveryQuotes(input: {
       deliveryEta: choice.detail,
       hubName: "Kay",
       kind: "manual",
+      rateId: choice.rateId,
     });
   }
   return quotes;
