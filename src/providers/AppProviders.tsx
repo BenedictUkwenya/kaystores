@@ -11,6 +11,7 @@ import { LaunchCountdown } from "@/components/launch/LaunchCountdown";
 import { MessiIntro } from "@/components/tribute/MessiIntro";
 import { RollingFootball } from "@/components/tribute/RollingFootball";
 import { KayChat } from "@/components/kay/KayChat";
+import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
 
 function BrandUIChrome({ children }: { children: React.ReactNode }) {
   const { isBusy } = useBrandUI();
@@ -39,6 +40,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             <BrandUIChrome>
               {children}
               <CartShell />
+              <FeedbackLauncher />
               <KayChat />
             </BrandUIChrome>
           </BrandUIProvider>
