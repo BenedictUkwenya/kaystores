@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { IconBag, IconChevronDown, IconSearch } from "@/components/ui/Icons";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
+import { HeaderFeedbackLink } from "@/components/feedback/HeaderFeedbackLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { AfterDarkDiscreetStrip } from "@/components/layout/AfterDarkDiscreetStrip";
@@ -234,6 +235,8 @@ export function Header() {
             )}
           </div>
 
+          <HeaderFeedbackLink className="kay-fb-header--bar" />
+
           <div className="mx-0.5 hidden h-4 w-px bg-kay-border sm:block" aria-hidden />
 
           <ThemeToggle className="hidden sm:flex" />
@@ -294,6 +297,8 @@ export function Header() {
             </div>
             <ThemeToggle />
           </div>
+
+          <HeaderFeedbackLink className="mb-4 sm:hidden" onNavigate={() => setMenuOpen(false)} />
 
           <ul className="space-y-4">
             {NAV_ITEMS.map((link) => {

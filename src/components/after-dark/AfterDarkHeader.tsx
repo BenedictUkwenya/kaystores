@@ -9,6 +9,7 @@ import {
 } from "@/lib/after-dark/catalog";
 import { useCart } from "@/providers/CartProvider";
 import { HeaderAccountLink } from "@/components/auth/HeaderAccountLink";
+import { HeaderFeedbackLink } from "@/components/feedback/HeaderFeedbackLink";
 import { HeaderPortalLink } from "@/components/auth/HeaderPortalLink";
 import { Logo } from "@/components/brand/Logo";
 import { IconBag, IconSearch, IconX } from "@/components/ui/Icons";
@@ -105,6 +106,7 @@ export function AfterDarkHeader() {
               </button>
             )}
           </div>
+          <HeaderFeedbackLink variant="dark" className="kay-fb-header--bar" />
           <HeaderPortalLink variant="dark" className="hidden sm:flex" />
           <HeaderAccountLink variant="dark" />
           <button
@@ -133,6 +135,11 @@ export function AfterDarkHeader() {
 
       {menuOpen && (
         <nav className="max-h-[70vh] overflow-y-auto border-t border-white/10 px-4 py-4 sm:px-6 lg:hidden">
+          <HeaderFeedbackLink
+            variant="dark"
+            className="mb-3 sm:hidden"
+            onNavigate={() => setMenuOpen(false)}
+          />
           <ul className="space-y-3">
             {AFTER_DARK_NAV.map((item) => (
               <li key={item.label}>
