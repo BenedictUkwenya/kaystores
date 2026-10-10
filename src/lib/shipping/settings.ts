@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   DEFAULT_SHIPPING_SETTINGS,
+  TERMINAL_CHECKOUT_PAUSED,
   type ShippingSettings,
   type ShippingSettingsInput,
 } from "@/types/shipping-settings";
@@ -23,7 +24,7 @@ function mapRow(row: Record<string, unknown> | null): ShippingSettings {
 
 export async function getShippingSettings(): Promise<ShippingSettings> {
   const admin = createAdminClient();
-  if (!admin) return { ...DEFAULT_SHIPPING_SETTINGS };
+  if (!admin) return applyTerminalPause({ ...DEFAULT_SHIPPING_SETTINGS });
   const { data, error } = await admin
     .from("shipping_settings")
     .select("*")
@@ -31,9 +32,14 @@ export async function getShippingSettings(): Promise<ShippingSettings> {
     .maybeSingle();
   if (error) {
     // Table may not exist before migration 033.
-    return { ...DEFAULT_SHIPPING_SETTINGS };
+    return applyTerminalPause({ ...DEFAULT_SHIPPING_SETTINGS });
   }
-  return mapRow(data as Record<string, unknown> | null);
+  return applyTerminalPause(mapRow(data as Record<string, unknown> | null));
+}
+
+function applyTerminalPause(settings: ShippingSettings): ShippingSettings {
+  if (!TERMINAL_CHECKOUT_PAUSED) return settings;
+  return { ...settings, terminalEnabled: false };
 }
 
 export async function updateShippingSettings(
@@ -44,8 +50,9 @@ export async function updateShippingSettings(
 
   const current = await getShippingSettings();
   const next: ShippingSettings = {
-    terminalEnabled:
-      input.terminalEnabled != null
+    terminalEnabled: TERMINAL_CHECKOUT_PAUSED
+      ? false
+      : input.terminalEnabled != null
         ? Boolean(input.terminalEnabled)
         : current.terminalEnabled,
     manualEnabled:
@@ -89,5 +96,5 @@ export async function updateShippingSettings(
   if (error || !data) {
     throw new Error(error?.message ?? "Could not save shipping settings.");
   }
-  return mapRow(data as Record<string, unknown>);
+  return applyTerminalPause(mapRow(data as Record<string, unknown>));
 }

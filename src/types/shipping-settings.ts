@@ -9,6 +9,9 @@ export type ShippingSettings = {
 
 export type ShippingSettingsInput = Partial<ShippingSettings>;
 
+/** Terminal stays off until live carrier booking has been tested. */
+export const TERMINAL_CHECKOUT_PAUSED = true;
+
 export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {
   terminalEnabled: true,
   manualEnabled: true,

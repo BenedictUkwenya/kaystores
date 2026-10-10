@@ -79,7 +79,7 @@ export function CheckoutForm({
   const [quotingMode, setQuotingMode] = useState<
     "manual" | "terminal" | "all" | null
   >(null);
-  const [terminalEnabled, setTerminalEnabled] = useState(true);
+  const [terminalEnabled, setTerminalEnabled] = useState(false);
   const [manualEnabled, setManualEnabled] = useState(true);
   const [paidConfirmed, setPaidConfirmed] = useState(false);
   const [splitOn, setSplitOn] = useState(false);

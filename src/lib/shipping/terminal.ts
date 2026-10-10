@@ -419,13 +419,17 @@ export async function getSelectedQuoteAmount(
   if (!admin) throw new Error("Shipping is temporarily unavailable.");
   const { data, error } = await admin
     .from("shipping_quotes")
-    .select("amount, destination")
+    .select("amount, destination, terminal_shipment_id, terminal_rate_id")
     .eq("token", token)
     .eq("cart_fingerprint", cartFingerprint(items))
     .gt("expires_at", new Date().toISOString())
     .is("order_id", null)
     .maybeSingle();
   if (error || !data) throw new Error("This delivery rate has expired. Please select a new rate.");
+  const settings = await getShippingSettings();
+  if (!settings.terminalEnabled && !isManualShippingQuote(data)) {
+    throw new Error("Live carrier rates are turned off. Choose Kay delivery instead.");
+  }
   const quoted = data.destination as Partial<AddressDetails> | null;
   if (destination && quoted) {
     const same = (a?: string, b?: string) =>
@@ -448,6 +452,11 @@ export async function arrangeTerminalShipment(order: Order) {
     .eq("order_id", order.id)
     .maybeSingle();
   if (error || !quote) throw new Error("No selected Terminal delivery rate was found.");
+
+  const settings = await getShippingSettings();
+  if (!isManualShippingQuote(quote) && !settings.terminalEnabled) {
+    throw new Error("Terminal booking is paused. Arrange this delivery with Kay instead.");
+  }
 
   if (isManualShippingQuote(quote)) {
     const { error: insertError } = await admin.from("shipments").insert({

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ShippingSettings } from "@/types/shipping-settings";
+import { TERMINAL_CHECKOUT_PAUSED } from "@/types/shipping-settings";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatNaira } from "@/lib/data/home";
@@ -67,7 +68,8 @@ export function AdminShippingSettingsForm({ initial }: Props) {
           <input
             type="checkbox"
             className="mt-1"
-            checked={terminalEnabled}
+            checked={TERMINAL_CHECKOUT_PAUSED ? false : terminalEnabled}
+            disabled={TERMINAL_CHECKOUT_PAUSED}
             onChange={(e) => setTerminalEnabled(e.target.checked)}
           />
           <span>
@@ -75,7 +77,9 @@ export function AdminShippingSettingsForm({ initial }: Props) {
               Terminal Africa (live carrier rates)
             </span>
             <span className="mt-0.5 block text-[12px] text-kay-muted">
-              Shoppers click “Get live delivery rates” and pick a courier.
+              {TERMINAL_CHECKOUT_PAUSED
+                ? "Paused until live carrier booking has been tested. Shoppers only see Kay delivery."
+                : "Shoppers click “Get live delivery rates” and pick a courier."}
             </span>
           </span>
         </label>
