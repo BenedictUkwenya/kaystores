@@ -21,6 +21,7 @@ export const FOOTER_HELP_LINKS: Record<string, string> = {
   "Delivery & Returns": SITE_ROUTES.deliveryReturns,
   "Track Order": SITE_ROUTES.trackOrder,
   "Contact Us": SITE_ROUTES.contact,
+  Feedback: "/feedback",
 };
 
 export const FOOTER_ABOUT_LINKS: Record<string, string> = {

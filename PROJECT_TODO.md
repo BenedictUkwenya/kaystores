@@ -217,6 +217,7 @@
 - [x] Contact Us
 
 - [x] In-app support chat (`/support` + `/admin/support`, email alerts, images)
+- [x] **Feedback board** (`/feedback` + `/admin/feedback`) — ideas, bugs, tips, praise, votes, comments, screenshots, admin reply. Run `047_feedback_board.sql`.
 
 - [x] Our Story (→ `/about`)
 
@@ -343,13 +344,13 @@
 
 | About & concierge | 9    | 9     |
 
-| Help & legal      | 11   | 12    |
+| Help & legal      | 12   | 13    |
 
 | Backend           | 18   | 20    |
 
 
 
-**Overall:** 89 / 94 checklist items complete
+**Overall:** 90 / 95 checklist items complete
 
 
 

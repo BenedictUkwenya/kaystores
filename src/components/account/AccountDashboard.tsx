@@ -22,6 +22,7 @@ import {
   IconInfo,
   IconShield,
 } from "@/components/ui/Icons";
+import { FeedbackNudge } from "@/components/feedback/FeedbackNudge";
 
 type Props = {
   user: User;
@@ -133,6 +134,7 @@ export function AccountDashboard({
     >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
         <div className="space-y-8">
+          <FeedbackNudge />
           {vendorApplication &&
             (pendingVendor || rejectedVendor || approvedVendor) && (
               <section

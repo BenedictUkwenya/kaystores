@@ -407,6 +407,7 @@ export const ADMIN_NAV: DashboardNavItem[] = [
     group: "Work",
     attentionLabel: "messages need a reply",
   },
+  { href: "/admin/feedback", label: "Feedback", icon: "support", group: "Work" },
   { href: "/admin/vendors", label: "Vendors", icon: "store", group: "People" },
   { href: "/admin/users", label: "Users", icon: "users", group: "People" },
   {
