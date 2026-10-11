@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/home/HeroSection";
+import { KitchenEntry } from "@/components/home/KitchenEntry";
 import { AIConciergeSection } from "@/components/home/AIConciergeSection";
 import { ShopBySection } from "@/components/home/ShopBySection";
 import { CuratedSection } from "@/components/home/CuratedSection";
@@ -43,6 +44,11 @@ export default async function Home() {
       <Header />
       <main className="flex-1">
         <HeroSection />
+        <section className="bg-kay-bg px-4 pb-2 lg:px-10">
+          <div className="mx-auto max-w-[1280px]">
+            <KitchenEntry />
+          </div>
+        </section>
         <LaunchCountdownHero />
         <AIConciergeSection />
         <ShopBySection />

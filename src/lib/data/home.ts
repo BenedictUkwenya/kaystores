@@ -99,11 +99,11 @@ export const VALUE_PROPS = [
 
 export const FOOTER_SHOP_LINKS: Record<string, string> = {
   "All Gifts": "/gifts",
+  "Kay's Kitchen": "/table",
   "New Arrivals": "/gifts?sort=newest",
   "Best Sellers": "/gifts",
   "Luxury Collection": "/gifts/luxury-collection",
   "Corporate Gifts": "/gifts/corporate-gifting",
-  "Kay Kitchen": "/table",
 };
 
 export function formatNaira(amount: number) {

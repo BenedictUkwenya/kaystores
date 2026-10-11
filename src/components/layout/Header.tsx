@@ -19,6 +19,12 @@ import {
 const NAV_ITEMS = [
   { label: "Gifts" as const, short: "Gifts", hasDropdown: true, priority: 1 },
   {
+    label: "Kay's Kitchen" as const,
+    short: "Kay's Kitchen",
+    hasDropdown: false,
+    priority: 1,
+  },
+  {
     label: "By Occasion" as const,
     short: "Occasion",
     hasDropdown: true,
@@ -28,12 +34,6 @@ const NAV_ITEMS = [
     label: "By Recipient" as const,
     short: "Recipient",
     hasDropdown: true,
-    priority: 1,
-  },
-  {
-    label: "Kay Kitchen" as const,
-    short: "Kitchen",
-    hasDropdown: false,
     priority: 1,
   },
   {
@@ -174,20 +174,33 @@ export function Header() {
               );
             }
 
+            const kitchen = link.label === "Kay's Kitchen";
             return (
               <Link
                 key={link.label}
                 href={getNavHref(link.label)}
-                className={`${showClass} items-center whitespace-nowrap text-[12px] tracking-[0.02em] text-kay-fg transition-opacity hover:opacity-55 xl:text-[13px]`}
+                className={`${showClass} items-center whitespace-nowrap text-[12px] tracking-[0.02em] transition-opacity hover:opacity-55 xl:text-[13px] ${
+                  kitchen ? "font-medium text-kay-gold" : "text-kay-fg"
+                }`}
               >
-                <span className="xl:hidden">{link.short}</span>
-                <span className="hidden xl:inline">{link.label}</span>
+                {kitchen ? link.label : (
+                  <>
+                    <span className="xl:hidden">{link.short}</span>
+                    <span className="hidden xl:inline">{link.label}</span>
+                  </>
+                )}
               </Link>
             );
           })}
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <Link
+            href="/table"
+            className="inline-flex h-9 items-center px-1.5 text-[12px] font-medium tracking-[0.04em] text-kay-gold lg:hidden"
+          >
+            Cakes
+          </Link>
           <div className="relative flex items-center">
             {searchOpen ? (
               <form
@@ -300,8 +313,21 @@ export function Header() {
 
           <HeaderFeedbackLink className="mb-4 sm:hidden" onNavigate={() => setMenuOpen(false)} />
 
+          <Link
+            href="/table"
+            onClick={() => setMenuOpen(false)}
+            className="mb-4 block border-b border-kay-border-light pb-4"
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-kay-gold">
+              Kay&apos;s Kitchen
+            </span>
+            <span className="mt-1 block text-[15px] text-kay-fg">
+              Cakes and celebration food
+            </span>
+          </Link>
+
           <ul className="space-y-4">
-            {NAV_ITEMS.map((link) => {
+            {NAV_ITEMS.filter((link) => link.label !== "Kay's Kitchen").map((link) => {
               const dropdown =
                 NAV_DROPDOWN_LINKS[
                   link.label as keyof typeof NAV_DROPDOWN_LINKS
