@@ -29,12 +29,10 @@ export const PRICING_CONFIG = {
     curationFeeRate: 0,
   },
   delivery: {
-    /** Shown only after a Kay rate is chosen. Interstate and hub pickup. */
-    interstate: 5_500,
-    hubPickup: 5_500,
-    home: 10_000,
-    /** Door delivery when the address is Abuja or Minna. */
+    /** Door delivery in Abuja or Minna. */
     localDoor: 5_000,
+    /** Door delivery everywhere else. */
+    outsideDoor: 10_000,
   },
   taxRate: testMode ? 0 : 0.02,
 } as const;

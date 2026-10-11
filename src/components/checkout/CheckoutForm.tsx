@@ -77,7 +77,7 @@ export function CheckoutForm({
     }[]
   >([]);
   const [selectedShippingToken, setSelectedShippingToken] = useState("");
-  const [deliveryChoiceId, setDeliveryChoiceId] = useState("manual-interstate");
+  const [deliveryChoiceId, setDeliveryChoiceId] = useState("manual-door");
   const deliveryChoiceRef = useRef(deliveryChoiceId);
   const deliveryPickedRef = useRef(false);
   const [quoting, setQuoting] = useState(false);
@@ -965,7 +965,7 @@ export function CheckoutForm({
           <CheckoutStep step={2} title="Delivery service">
             <div className="space-y-4">
               <p className="text-[13px] leading-relaxed text-kay-muted">
-                Choose how your order leaves the Kay hub after quality checks.
+                Door delivery is included in your total. Abuja and Minna are ₦5,000. Everywhere else is ₦10,000.
               </p>
 
               <div className="grid gap-3 sm:grid-cols-2">

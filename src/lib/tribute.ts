@@ -10,11 +10,8 @@ export const TRIBUTE_START =
 export const TRIBUTE_END =
   process.env.NEXT_PUBLIC_MESSI_TRIBUTE_END?.trim() || "2026-10-13T23:59:59+01:00";
 
-export function isTributeActive(now = Date.now()): boolean {
-  const start = new Date(TRIBUTE_START).getTime();
-  const end = new Date(TRIBUTE_END).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end)) return false;
-  return now >= start && now <= end;
+export function isTributeActive(_now = Date.now()): boolean {
+  return false;
 }
 
 export const TRIBUTE_COPY = {

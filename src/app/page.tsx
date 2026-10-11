@@ -8,21 +8,15 @@ import { CuratedSection } from "@/components/home/CuratedSection";
 import { PressSection } from "@/components/home/PressSection";
 import { ValuePropsBar } from "@/components/home/ValuePropsBar";
 import { LaunchCountdownHero } from "@/components/launch/LaunchCountdownHero";
-import { MessiTributeHero } from "@/components/tribute/MessiTributeHero";
-import { MessiQuoteMarquee } from "@/components/tribute/MessiQuoteMarquee";
-import { MessiPicksSection } from "@/components/tribute/MessiPicksSection";
-import { getCuratedProducts, getMessiPicks } from "@/lib/products/queries";
+import { getCuratedProducts } from "@/lib/products/queries";
 import { baseMetadata } from "@/lib/metadata";
 import { siteConfig } from "@/lib/site";
-import { isTributeActive, TRIBUTE_COPY } from "@/lib/tribute";
 
 /** Fresh product mix on every visit — do not cache a fixed “new arrivals” list. */
 export const dynamic = "force-dynamic";
 
 export function generateMetadata(): Metadata {
-  const title = isTributeActive()
-    ? `${TRIBUTE_COPY.headline} — ${siteConfig.name}`
-    : siteConfig.title;
+  const title = siteConfig.title;
   return {
     ...baseMetadata,
     title,
@@ -42,20 +36,14 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function Home() {
-  const tribute = isTributeActive();
-  const [curatedProducts, messiPicks] = await Promise.all([
-    getCuratedProducts(5),
-    tribute ? getMessiPicks(8) : Promise.resolve([]),
-  ]);
+  const curatedProducts = await getCuratedProducts(5);
 
   return (
     <>
       <Header />
       <main className="flex-1">
-        {tribute ? <MessiTributeHero /> : <HeroSection />}
-        {tribute && <MessiQuoteMarquee />}
+        <HeroSection />
         <LaunchCountdownHero />
-        {tribute && <MessiPicksSection products={messiPicks} />}
         <AIConciergeSection />
         <ShopBySection />
         <CuratedSection products={curatedProducts} />

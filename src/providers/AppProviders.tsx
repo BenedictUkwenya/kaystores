@@ -8,8 +8,6 @@ import { KaySplashScreen } from "@/components/brand/KaySplashScreen";
 import { KayLoadingOverlay } from "@/components/brand/KayLoader";
 import { CartShell } from "@/components/cart/CartShell";
 import { LaunchCountdown } from "@/components/launch/LaunchCountdown";
-import { MessiIntro } from "@/components/tribute/MessiIntro";
-import { RollingFootball } from "@/components/tribute/RollingFootball";
 import { KayChat } from "@/components/kay/KayChat";
 
 function BrandUIChrome({ children }: { children: React.ReactNode }) {
@@ -17,10 +15,8 @@ function BrandUIChrome({ children }: { children: React.ReactNode }) {
   return (
     <>
       <KaySplashScreen />
-      <MessiIntro />
       <KayLoadingOverlay show={isBusy} />
       <LaunchCountdown />
-      <RollingFootball />
       {children}
     </>
   );

@@ -21,41 +21,19 @@ export function isAbujaOrMinna(destination: { city?: string; state?: string }) {
   return abuja || city.includes("minna");
 }
 
-/** Fixed Kay delivery prices. Door delivery replaces interstate in Abuja and Minna. */
+/** Door delivery only. Abuja and Minna are ₦5,000. Everywhere else is ₦10,000. */
 export function kayDeliveryChoices(destination: {
   city?: string;
   state?: string;
 }): KayDeliveryChoice[] {
   const rates = PRICING_CONFIG.delivery;
   const local = isAbujaOrMinna(destination);
-  const choices: KayDeliveryChoice[] = [
+  return [
     {
-      rateId: "manual-hub",
-      label: "Hub pickup",
-      detail: "Collect from a Kay hub",
-      amount: rates.hubPickup,
-    },
-    {
-      rateId: "manual-home",
-      label: "Home delivery",
-      detail: "Brought to the address",
-      amount: rates.home,
-    },
-  ];
-  if (local) {
-    choices.unshift({
       rateId: "manual-door",
       label: "Door delivery",
-      detail: "Abuja or Minna",
-      amount: rates.localDoor,
-    });
-  } else {
-    choices.unshift({
-      rateId: "manual-interstate",
-      label: "Interstate",
-      detail: "Fixed delivery outside Abuja and Minna",
-      amount: rates.interstate,
-    });
-  }
-  return choices;
+      detail: local ? "Abuja or Minna" : "Outside Abuja and Minna",
+      amount: local ? rates.localDoor : rates.outsideDoor,
+    },
+  ];
 }
