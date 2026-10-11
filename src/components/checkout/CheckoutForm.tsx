@@ -129,10 +129,7 @@ export function CheckoutForm({
   const selectedShipping = shippingQuotes.find(
     (quote) => quote.token === selectedShippingToken,
   );
-  const quotedAmount =
-    selectedShipping?.rateId === selectedChoice?.rateId
-      ? selectedShipping.amount
-      : selectedChoice?.amount;
+  const quotedAmount = selectedChoice?.amount;
   const pricing = useMemo(
     () => calculateOrderPricing(items, quotedAmount),
     [items, quotedAmount],
@@ -965,37 +962,22 @@ export function CheckoutForm({
           <CheckoutStep step={2} title="Delivery service">
             <div className="space-y-4">
               <p className="text-[13px] leading-relaxed text-kay-muted">
-                Door delivery is included in your total. Abuja and Minna are ₦5,000. Everywhere else is ₦10,000.
+                This follows the location you added. Abuja and Minna are ₦5,000. Anywhere else is ₦10,000.
               </p>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {manualEnabled &&
-                  deliveryChoices.map((choice) => (
-                    <button
-                      key={choice.rateId}
-                      type="button"
-                      onClick={() => {
-                        deliveryPickedRef.current = true;
-                        setDeliveryChoiceId(choice.rateId);
-                        const match = shippingQuotes.find((quote) => quote.rateId === choice.rateId);
-                        if (match) setSelectedShippingToken(match.token);
-                      }}
-                      className={`rounded-xl border p-4 text-left transition-all ${
-                        selectedChoice?.rateId === choice.rateId
-                          ? "border-kay-gold bg-kay-gold-light/30"
-                          : "border-kay-border hover:border-kay-gold/50"
-                      }`}
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-kay-gold">
-                        Kay delivery
-                      </p>
-                      <p className="mt-1 text-[14px] font-medium text-kay-fg">{choice.label}</p>
-                      <p className="mt-1 text-[12px] text-kay-muted">{choice.detail}</p>
-                      <p className="mt-2 text-[14px] font-semibold text-kay-fg">
-                        {formatNaira(choice.amount)}
-                      </p>
-                    </button>
-                  ))}
+                {manualEnabled && selectedChoice && (
+                  <div className="rounded-xl border border-kay-gold bg-kay-gold-light/30 p-4 text-left">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-kay-gold">
+                      Kay delivery
+                    </p>
+                    <p className="mt-1 text-[14px] font-medium text-kay-fg">{selectedChoice.label}</p>
+                    <p className="mt-1 text-[12px] text-kay-muted">{selectedChoice.detail}</p>
+                    <p className="mt-2 text-[14px] font-semibold text-kay-fg">
+                      {formatNaira(selectedChoice.amount)}
+                    </p>
+                  </div>
+                )}
                 {terminalEnabled && (
                   <button
                     type="button"

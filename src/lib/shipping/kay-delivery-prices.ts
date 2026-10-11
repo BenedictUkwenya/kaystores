@@ -1,39 +1,67 @@
 import { PRICING_CONFIG } from "@/lib/pricing/config";
 
+export type DoorZone = "abuja" | "minna" | "outside";
+
 export type KayDeliveryChoice = {
   rateId: string;
   label: string;
   detail: string;
   amount: number;
+  zone: DoorZone;
 };
 
-export function isAbujaOrMinna(destination: { city?: string; state?: string }) {
-  const city = (destination.city ?? "").trim().toLowerCase();
-  const state = (destination.state ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+state$/, "");
-  const abuja =
-    city.includes("abuja") ||
-    state === "abuja" ||
-    state === "fct" ||
-    state.includes("federal capital");
-  return abuja || city.includes("minna");
-}
-
-/** Door delivery only. Abuja and Minna are ₦5,000. Everywhere else is ₦10,000. */
-export function kayDeliveryChoices(destination: {
+type Destination = {
+  line1?: string;
+  line2?: string;
   city?: string;
   state?: string;
-}): KayDeliveryChoice[] {
+  formattedAddress?: string;
+};
+
+function locationText(destination: Destination) {
+  return [
+    destination.city,
+    destination.state,
+    destination.line1,
+    destination.line2,
+    destination.formattedAddress,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+/** Abuja or Minna anywhere in the address the shopper added. Otherwise outside. */
+export function doorZone(destination: Destination): DoorZone {
+  const text = locationText(destination);
+  if (/\bminna\b/.test(text)) return "minna";
+  if (/\babuja\b/.test(text) || /\bfct\b/.test(text) || text.includes("federal capital")) {
+    return "abuja";
+  }
+  return "outside";
+}
+
+export function isAbujaOrMinna(destination: Destination) {
+  return doorZone(destination) !== "outside";
+}
+
+const ZONE_DETAIL: Record<DoorZone, string> = {
+  abuja: "Abuja",
+  minna: "Minna",
+  outside: "Outside Abuja and Minna",
+};
+
+/** One door rate, chosen from the address. Abuja and Minna are ₦5,000. */
+export function kayDeliveryChoices(destination: Destination): KayDeliveryChoice[] {
   const rates = PRICING_CONFIG.delivery;
-  const local = isAbujaOrMinna(destination);
+  const zone = doorZone(destination);
   return [
     {
       rateId: "manual-door",
       label: "Door delivery",
-      detail: local ? "Abuja or Minna" : "Outside Abuja and Minna",
-      amount: local ? rates.localDoor : rates.outsideDoor,
+      detail: ZONE_DETAIL[zone],
+      amount: zone === "outside" ? rates.outsideDoor : rates.localDoor,
+      zone,
     },
   ];
 }
