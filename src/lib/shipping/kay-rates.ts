@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { kayDeliveryChoices } from "@/lib/shipping/kay-delivery-prices";
+import { matchNigerianState } from "@/lib/geo/nigeria";
 import { getShippingSettings } from "@/lib/shipping/settings";
 import { MANUAL_SHIPMENT_ID } from "@/types/shipping-settings";
 import type { AddressDetails, OrderItem } from "@/types/order";
@@ -25,8 +26,13 @@ export async function createKayDeliveryQuotes(input: {
   const admin = createAdminClient();
   if (!admin) throw new Error("Shipping is temporarily unavailable.");
 
+  const destination: AddressDetails = {
+    ...input.destination,
+    city: input.destination.city.trim(),
+    state: matchNigerianState(input.destination.state) ?? input.destination.state.trim(),
+  };
   const quotes: ShippingQuote[] = [];
-  for (const choice of kayDeliveryChoices(input.destination)) {
+  for (const choice of kayDeliveryChoices(destination)) {
     const { data, error } = await admin
       .from("shipping_quotes")
       .insert({
@@ -38,7 +44,7 @@ export async function createKayDeliveryQuotes(input: {
         currency: "NGN",
         delivery_eta: choice.detail,
         delivery_date: null,
-        destination: input.destination,
+        destination,
         cart_fingerprint: cartFingerprint(input.items),
         hub_id: null,
       })

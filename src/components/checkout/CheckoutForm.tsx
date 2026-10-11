@@ -80,6 +80,7 @@ export function CheckoutForm({
   const [deliveryChoiceId, setDeliveryChoiceId] = useState("manual-door");
   const deliveryChoiceRef = useRef(deliveryChoiceId);
   const deliveryPickedRef = useRef(false);
+  const quoteRequestRef = useRef(0);
   const [quoting, setQuoting] = useState(false);
   const [quotingMode, setQuotingMode] = useState<
     "manual" | "terminal" | "all" | null
@@ -192,6 +193,7 @@ export function CheckoutForm({
   }, []);
 
   async function getDeliveryRates(mode: "terminal" | "manual" | "all" = "all") {
+    const requestId = ++quoteRequestRef.current;
     setError("");
     const destination =
       deliveryType === "gift" ? recipientAddress : buyerAddress;
@@ -214,7 +216,7 @@ export function CheckoutForm({
       setError(
         "Complete the delivery and contact details to see delivery options.",
       );
-      return;
+      return null;
     }
     setQuoting(true);
     setQuotingMode(mode);
@@ -232,17 +234,23 @@ export function CheckoutForm({
         setTerminalEnabled(data.settings.terminalEnabled !== false);
         setManualEnabled(data.settings.manualEnabled !== false);
       }
+      if (requestId !== quoteRequestRef.current) return null;
       const quotes = data.quotes ?? [];
       setShippingQuotes(quotes);
       const match =
         quotes.find((quote: { rateId?: string }) => quote.rateId === deliveryChoiceRef.current) ??
         quotes[0];
       if (match) setSelectedShippingToken(match.token);
+      return (match?.token as string | undefined) ?? null;
     } catch (err) {
+      if (requestId !== quoteRequestRef.current) return null;
       setError(err instanceof Error ? err.message : "Could not retrieve delivery rates.");
+      return null;
     } finally {
-      setQuoting(false);
-      setQuotingMode(null);
+      if (requestId === quoteRequestRef.current) {
+        setQuoting(false);
+        setQuotingMode(null);
+      }
     }
   }
 
@@ -328,12 +336,14 @@ export function CheckoutForm({
       setError('Confirm “Yes, I have paid” before placing your order.');
       return;
     }
-    if (!selectedShippingToken) {
-      setError("Select a live delivery service before placing your order.");
-      return;
-    }
 
     setSubmitting(true);
+    const shippingQuoteToken = await getDeliveryRates("manual");
+    if (!shippingQuoteToken) {
+      setSubmitting(false);
+      setError((current) => current || "Could not confirm door delivery for this address. Try again.");
+      return;
+    }
     const instructions = deliveryNotes.trim() || undefined;
     const recipientPhone = normalizeNigerianPhone(recipientWhatsApp) ?? undefined;
 
@@ -347,7 +357,7 @@ export function CheckoutForm({
           items,
           subtotal: pricing.productSubtotal,
           pricing: toPricingPayload(pricing),
-          shippingQuoteToken: selectedShippingToken,
+          shippingQuoteToken,
           buyer: { fullName, email: buyer.email.trim(), phone: buyerPhone },
           buyerAddress:
             deliveryType === "self" ? { ...buyerAddress, instructions } : undefined,

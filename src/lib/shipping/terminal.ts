@@ -11,6 +11,7 @@ import {
   MANUAL_RATE_ID,
   MANUAL_SHIPMENT_ID,
 } from "@/types/shipping-settings";
+import { kayDeliveryChoices } from "@/lib/shipping/kay-delivery-prices";
 
 const API_URL = "https://api.terminal.africa/v1";
 
@@ -430,6 +431,13 @@ export async function getSelectedQuoteAmount(
   const settings = await getShippingSettings();
   if (!settings.terminalEnabled && !isManualShippingQuote(data)) {
     throw new Error("Live carrier rates are turned off. Choose Kay delivery instead.");
+  }
+  if (isManualShippingQuote(data)) {
+    const expected = destination ? kayDeliveryChoices(destination)[0]?.amount : null;
+    if (expected == null || Number(data.amount) !== expected) {
+      throw new Error("Door delivery for this address changed. Please try again.");
+    }
+    return Number(data.amount);
   }
   const quoted = data.destination as Partial<AddressDetails> | null;
   if (destination && quoted) {
