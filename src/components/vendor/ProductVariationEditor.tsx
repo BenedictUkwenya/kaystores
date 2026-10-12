@@ -111,7 +111,7 @@ export function ProductVariationEditor({ value, onChange }: Props) {
       <div className="space-y-3">
         {active.options.map((opt, index) => (
           <div
-            key={`${opt.id}-${index}`}
+            key={index}
             className="grid gap-3 rounded-lg border border-kay-border-light bg-kay-surface-elevated p-3 sm:grid-cols-[1fr_120px_auto]"
           >
             <Input
