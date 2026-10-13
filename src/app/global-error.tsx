@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureClientException } from "@/lib/analytics/client";
 import "./globals.css";
 
 export default function GlobalError({
@@ -12,6 +13,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    captureClientException(error, { boundary: "global", digest: error.digest });
   }, [error]);
 
   return (

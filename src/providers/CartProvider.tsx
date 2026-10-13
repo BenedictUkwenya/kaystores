@@ -17,6 +17,7 @@ import {
   loadCart,
   saveCart,
 } from "@/lib/cart/storage";
+import { track } from "@/lib/analytics/client";
 import { findVariationOption } from "@/lib/products/variations";
 
 type CartContextValue = {
@@ -127,6 +128,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const option = findVariationOption(variation, optionId);
       if (option && option.stock <= 0) return;
 
+      track("product_added_to_cart", {
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity,
+        variation: option?.label ?? null,
+      });
+
       setItems((prev) => {
         const key = cartKey(product.id, optionId);
         const existing = prev.find((i) => lineKey(i) === key);
@@ -150,6 +159,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const removeItem = useCallback(
     (productId: string, variationOptionId?: string) => {
+      track("product_removed_from_cart", { product_id: productId });
       setItems((prev) =>
         prev.filter((i) => lineKey(i) !== cartKey(productId, variationOptionId)),
       );

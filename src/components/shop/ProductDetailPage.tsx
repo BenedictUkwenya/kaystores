@@ -9,6 +9,7 @@ import { ProductGallery } from "@/components/shop/ProductGallery";
 import { ProductInfo } from "@/components/shop/ProductInfo";
 import { ProductSpecs } from "@/components/shop/ProductSpecs";
 import { RelatedProducts } from "@/components/shop/RelatedProducts";
+import { TrackOnMount } from "@/components/analytics/TrackOnMount";
 import { ProductComparePanel } from "@/components/compare/ProductComparePanel";
 
 type ProductDetailPageProps = {
@@ -26,6 +27,16 @@ export async function ProductDetailPage({ slug }: ProductDetailPageProps) {
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-12 lg:px-16 lg:py-12">
+      <TrackOnMount
+        event="product_viewed"
+        properties={{
+          product_id: product.id,
+          slug: product.slug,
+          name: product.name,
+          price: product.price,
+          brand: product.brand,
+        }}
+      />
       <nav className="mb-8 flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-wider text-kay-subtle">
         <Link href="/" className="transition-colors hover:text-kay-fg">
           Home

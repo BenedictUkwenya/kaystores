@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CatalogPage } from "@/components/shop/CatalogPage";
 import { getSearchConfig } from "@/lib/shop/collections";
+import { TrackOnMount } from "@/components/analytics/TrackOnMount";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -27,10 +28,18 @@ export default async function SearchPage({ searchParams }: PageProps) {
   });
 
   return (
+    <>
+    {q.trim() ? (
+      <TrackOnMount
+        event="search_performed"
+        properties={{ query_length: q.trim().length }}
+      />
+    ) : null}
     <CatalogPage
       config={config}
       basePath="/search"
       searchParams={params}
     />
+    </>
   );
 }

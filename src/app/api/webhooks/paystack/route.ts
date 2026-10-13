@@ -6,6 +6,7 @@ import {
 import { confirmPaymentFromTxRef } from "@/lib/payments/confirm";
 import { isPaystackConfigured } from "@/lib/payments/config";
 import { sendNotice } from "@/lib/email/notice";
+import { captureServer, captureServerException } from "@/lib/analytics/server";
 
 export async function POST(request: Request) {
   if (!isPaystackConfigured()) {
@@ -52,6 +53,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[webhooks/paystack]", err);
+    await captureServerException(err, undefined, { route: "POST /api/webhooks/paystack", tx_ref: tx.txRef });
+    await captureServer("server", "payment_failed", {
+      gateway: "paystack",
+      reason: "webhook_processing_failed",
+    });
     return NextResponse.json({ error: "Processing failed." }, { status: 500 });
   }
 }

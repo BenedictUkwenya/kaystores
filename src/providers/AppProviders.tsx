@@ -9,6 +9,7 @@ import { KayLoadingOverlay } from "@/components/brand/KayLoader";
 import { CartShell } from "@/components/cart/CartShell";
 import { LaunchCountdown } from "@/components/launch/LaunchCountdown";
 import { KayChat } from "@/components/kay/KayChat";
+import { PostHogProvider } from "@/providers/PostHogProvider";
 
 function BrandUIChrome({ children }: { children: React.ReactNode }) {
   const { isBusy } = useBrandUI();
@@ -28,6 +29,7 @@ function BrandUIChrome({ children }: { children: React.ReactNode }) {
  */
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
+    <PostHogProvider>
     <ThemeProvider>
       <CartProvider>
         <CompareProvider>
@@ -41,5 +43,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         </CompareProvider>
       </CartProvider>
     </ThemeProvider>
+    </PostHogProvider>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { track } from "@/lib/analytics/client";
 import { useCart } from "@/providers/CartProvider";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -348,6 +349,13 @@ export function CheckoutForm({
     const recipientPhone = normalizeNigerianPhone(recipientWhatsApp) ?? undefined;
 
     let createdOrderId: string | null = null;
+    track("checkout_submitted", {
+      delivery_type: deliveryType,
+      item_count: items.length,
+      subtotal: pricing.productSubtotal,
+      split: splitActive,
+      paystack: paystackEnabled,
+    });
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -397,6 +405,12 @@ export function CheckoutForm({
 
       const order = await res.json();
       createdOrderId = order.id;
+      track("order_created", {
+        order_id: order.id,
+        delivery_type: deliveryType,
+        item_count: items.length,
+        subtotal: pricing.productSubtotal,
+      });
       setPlacedOrder({ id: order.id, orderNumber: order.orderNumber });
 
       // Pay first — don't block redirect on optional Reveal media upload.
@@ -444,6 +458,9 @@ export function CheckoutForm({
         router.replace(`/order/${createdOrderId}?payment=retry`);
         return;
       }
+      track("checkout_failed", {
+        reason: err instanceof Error ? err.message.slice(0, 120) : "unknown",
+      });
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setSubmitting(false);
     }

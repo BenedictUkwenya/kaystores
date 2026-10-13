@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { captureClientException } from "@/lib/analytics/client";
 import Link from "next/link";
 
 export default function Error({
@@ -12,6 +13,7 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
+    captureClientException(error, { boundary: "route", digest: error.digest });
   }, [error]);
 
   return (

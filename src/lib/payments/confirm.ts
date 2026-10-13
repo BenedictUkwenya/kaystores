@@ -13,6 +13,7 @@ import {
 import { sendNotice } from "@/lib/email/notice";
 import { formatNaira } from "@/lib/data/home";
 
+import { captureServer } from "@/lib/analytics/server";
 import { orderAccessPath } from "@/lib/orders/access";
 import { notifyAdminsNewOrder } from "@/lib/orders/notify";
 function admin() {
@@ -109,6 +110,11 @@ export async function confirmOrderPayment(
     .eq("fulfillment_status", "awaiting_payment");
 
   const order = await fetchOrderById(orderId);
+  await captureServer(order?.userId ?? `order:${orderId}`, "payment_confirmed", {
+    order_id: orderId,
+    amount: order?.pricing.grandTotal,
+    gateway: "paystack",
+  });
   if (order) {
     await notifyOrderEmails(order, getEmailSiteUrl());
     await notifyAdminsNewOrder(order);

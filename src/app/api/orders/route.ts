@@ -20,6 +20,7 @@ import { createPaymentShares, validateSplitCount } from "@/lib/payments/shares";
 import { GIFT_NOTE_MAX_LENGTH, type CreateOrderPayload } from "@/types/order";
 import { isValidEmail, matchNigerianState, normalizeNigerianPhone } from "@/lib/geo/nigeria";
 import { OCCASIONS } from "@/lib/shop/taxonomy";
+import { captureServer, captureServerException } from "@/lib/analytics/server";
 
 export async function POST(request: Request) {
   try {
@@ -255,7 +256,11 @@ export async function POST(request: Request) {
     }
 
     return grantOrderAccess(NextResponse.json(order), order.id);
-  } catch {
+  } catch (err) {
+    await captureServerException(err, undefined, { route: "POST /api/orders" });
+    await captureServer("server", "order_creation_failed", {
+      reason: err instanceof Error ? err.message.slice(0, 200) : "unknown",
+    });
     return NextResponse.json(
       { error: "Failed to create order." },
       { status: 500 },
