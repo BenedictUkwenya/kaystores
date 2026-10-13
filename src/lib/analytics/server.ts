@@ -12,7 +12,7 @@ function getClient(): PostHog | null {
     return client;
   }
   client = new PostHog(key, {
-    host: process.env.POSTHOG_HOST || "https://eu.i.posthog.com",
+    host: process.env.POSTHOG_HOST || "https://us.i.posthog.com",
     // Serverless: send immediately, don't batch across invocations.
     flushAt: 1,
     flushInterval: 0,

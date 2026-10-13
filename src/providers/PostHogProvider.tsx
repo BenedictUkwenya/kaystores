@@ -18,7 +18,7 @@ function initPostHog() {
   posthog.init(KEY, {
     // First-party proxy (see next.config.ts rewrites) so ad blockers don't drop events.
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "/ingest",
-    ui_host: "https://eu.posthog.com",
+    ui_host: "https://us.posthog.com",
     defaults: "2025-05-24",
     // App Router navigations are tracked manually below.
     capture_pageview: false,

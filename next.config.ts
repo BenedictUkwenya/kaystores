@@ -5,20 +5,20 @@ const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   : null;
 
 const nextConfig: NextConfig = {
-  // PostHog EU reverse proxy — first-party path so ad blockers don't drop events.
+  // PostHog US reverse proxy — first-party path so ad blockers don't drop events.
   async rewrites() {
     return [
       {
         source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
       },
       {
         source: "/ingest/array/:path*",
-        destination: "https://eu-assets.i.posthog.com/array/:path*",
+        destination: "https://us-assets.i.posthog.com/array/:path*",
       },
       {
         source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
+        destination: "https://us.i.posthog.com/:path*",
       },
     ];
   },
